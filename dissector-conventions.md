@@ -44,6 +44,11 @@ Before implementing new functionality, locate several analogous dissectors in th
 - A subdissector should not be considered to have successfully claimed payload merely because an opcode/type suggests it *could* decode it. Merged MR !26223 corrected NVMe-MI code that hid the raw-byte item when no structured decoder actually rendered the data. Base the handled/claimed result on successful structured dissection so undecoded payload remains visible.
 - For stateful subdissectors, choose conversation identity from fields that are stable for the lifetime needed by the state machine, not merely the nearest logical protocol identifier. Merged MR !25764 propagates stable SMBus physical source/destination addresses through `pinfo->net_src/net_dst` because MCTP EIDs are unassigned or direction-dependent during discovery; NVMe-MI can then keep devices separate in a multi-device topology. Treat endpoint identity as a protocol-semantics decision, especially before discovery/assignment is complete.
 
+## Heuristic dissectors
+
+- A heuristic dissector must reject packets that do not belong to it without throwing a bounds exception merely because the packet is short or malformed. Recognition logic runs on arbitrary traffic, so every probe read needs to be guarded as part of the heuristic contract.
+- Prefer tvbuff remaining-length APIs such as `tvb_captured_length_remaining()` over hand-written arithmetic like `total_length - offset` when packet-controlled or unsigned offsets are involved. Merged MR !25807, authored by John Thacker, explicitly states that heuristic dissectors must not throw exceptions for nonmatching packets and replaces subtraction-based tests with `tvb_captured_length_remaining()`. This also avoids unsigned underflow turning a negative conceptual remainder into a huge positive value. The successful release-4.6 backport !25809 independently preserves the same pattern.
+
 ## Truncation, verification, and malformed data
 
 - Distinguish **unverifiable** from **invalid** when a capture is missing bytes needed to compute a checksum/MIC or other verdict. Merged MR !26223 changed NVMe-MI MIC handling so a sliced frame reports the MIC as unverified instead of asserting a pass/fail verdict that the capture cannot support.
