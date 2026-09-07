@@ -77,6 +77,16 @@ Authoritative maintainer feedback, especially from Guy Harris, should receive co
 
 **Future check:** Before requesting/finalizing review, are fixup/development-history commits squashed while genuinely independent logical changes remain separate?
 
+### Validate generated-file whitespace and EOF formatting
+
+**Provenance:** Replacement-MR preparation following !26390; Wireshark CI rejected `packet-smpte-291-vanc.c` because it contained an extra blank line at end of file.
+
+**Feedback:** Generated source can be functionally correct and still fail Wireshark CI for mechanical whitespace/EOF formatting.
+
+**Classification:** `confirmed-project-convention` for the practical pre-submission workflow because upstream CI enforces it.
+
+**Future check:** Before delivering or submitting any generated Wireshark fileset, mechanically scan every changed text file for trailing whitespace, extra blank lines at EOF, missing final newline, and other whitespace-only formatting defects. A text file should end with exactly one newline after its final content line, not additional blank lines.
+
 ## Maintenance
 
 This checklist is cumulative. Do not remove an applicable check merely because it has become habitual. If later maintainer feedback supersedes or narrows a rule, update the entry with the new evidence and rationale.
