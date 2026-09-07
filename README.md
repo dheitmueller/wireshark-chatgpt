@@ -4,6 +4,14 @@ This repository is a persistent engineering knowledge base used to make future W
 
 The goal is not to mirror the Wireshark source tree or preserve chat transcripts. Instead, this notebook captures durable, high-value knowledge that would otherwise be expensive to rediscover across conversations: architectural patterns, current APIs and conventions, reviewer preferences, good exemplars, testing/fuzzing practices, design decisions, known pitfalls, and the state of ongoing work.
 
+## Instructions for ChatGPT
+
+When the user asks ChatGPT in any conversation to read, review, consult, or use this notebook/repository for Wireshark work, that request implicitly includes permission and an instruction to **maintain and update the notebook with durable new findings discovered during that work**. The user should not need to separately say "update the notebook" each time.
+
+Updates should be selective rather than transcript-like. Preserve knowledge that will improve future Wireshark development: verified conventions, architectural understanding, authoritative maintainer guidance, useful exemplars, mistakes/pitfalls, testing practices, design decisions and their rationale, and current unfinished work. Correct or remove stale information when new evidence supersedes it.
+
+Before reviewing Wireshark merge requests, consult `reviewed-mrs.md` and avoid re-reviewing MRs already recorded there unless there is a specific reason to revisit one (for example, new review comments, substantial new commits, a changed outcome, or an explicit user request). After a substantive MR review, record it in `reviewed-mrs.md`, including enough status/context to know what was actually examined.
+
 ## Working principles
 
 - Treat the current Wireshark source tree as authoritative.
@@ -21,6 +29,7 @@ The goal is not to mirror the Wireshark source tree or preserve chat transcripts
 - `media-over-ip.md` — SMPTE/RTP/media-specific notes, including ST 2110, ST 2038, and ANC work.
 - `testing-fuzzing.md` — build, validation, fuzzing, and test practices.
 - `review-patterns.md` — conventions learned from upstream merge request reviews.
+- `reviewed-mrs.md` — ledger of MRs already examined, used to avoid duplicate work.
 - `decisions.md` — important design choices, rejected approaches, and rationale.
 - `SESSION_STATE.md` — concise current work state and next steps.
 
