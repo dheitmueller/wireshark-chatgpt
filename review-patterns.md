@@ -22,6 +22,28 @@ Treat technical review feedback from Guy Harris as extremely authoritative for W
 
 This does not mean mechanically generalizing every context-specific comment into a universal rule. Preserve the context and rationale, then corroborate against current source where the scope is unclear. However, when his feedback identifies an architectural or API convention, assume it reflects intentional project practice unless current upstream code demonstrates otherwise.
 
+## MR preparation checklist
+
+The reviewed corpus has not yet shown a canonical checkbox-style Wireshark submission template. However, several successful MRs explicitly document the validation and review material they supplied, and reviewer feedback repeatedly asks for missing items such as captures. Treat those recurring practices as a practical pre-submission checklist rather than waiting for CI or reviewers to discover omissions.
+
+Before submitting one of our Wireshark MRs, check and, where useful, state in the MR description:
+
+- The change is on a named topic branch, not the fork's `master` branch.
+- Commits are clean and focused; squash fixup/development-history commits when the MR represents one logical change.
+- Unrelated cleanup or prerequisite work is split into a separate MR where appropriate.
+- The code builds cleanly with warnings treated as errors.
+- Relevant Wireshark validation/static-analysis scripts have been run. For dissector work, merged MR !26218 explicitly reported clean `tools/check_dissector.py` and `tools/fuzz-test.sh` runs; use the current tree to determine the applicable commands rather than blindly copying an old command list.
+- Representative capture file(s) are supplied for new or materially changed protocol dissection. Prefer small focused captures covering distinct behaviors and edge cases.
+- Automated dissector tests accompany the captures when practical, including expert-info/error behavior and malformed/truncated cases relevant to the change.
+- New dissectors use existing registration/dispatch mechanisms and include any expected integration updates such as build-system entries and release notes.
+- Stateful/reassembly changes are tested across meaningful sequences, not only individual happy-path packets; use differential validation against a mature reference implementation when one exists.
+- The MR description says what was tested and calls out deliberate limitations, deferred functionality, compatibility/filter changes, or cases that remain intentionally opaque.
+- The submitted head has a passing pipeline before merge readiness is assumed.
+
+**Evidence:** !26218 is a particularly useful exemplar: it included a five-packet capture, four dissector tests, malformed/expert-info cases, build/release-note integration, and explicitly reported clean `check_dissector.py` and `fuzz-test.sh` runs. !26211 added five captures and six focused tests and used differential validation against libudx. !22662, !26366, and !26390 independently establish that reviewers expect sample captures. !22208 establishes the topic-branch expectation, and !26390 supplies direct review evidence for cleaning/squashing a focused commit series.
+
+**Confidence:** High for the checklist as our submission practice. It is synthesized from repeated accepted/reviewer-requested behavior, not claimed to be an official Wireshark checklist.
+
 ## Patterns
 
 ### Use separate dissector entry points for different call contracts, with common parsing underneath
