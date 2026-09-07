@@ -15,6 +15,18 @@ Recent ST 2110-40 fuzzing work established the following useful checks:
 - Include malformed/truncated input coverage in addition to valid vectors.
 - For dissector changes, build warnings matter because Wireshark commonly treats warnings as errors.
 
+## Sample captures in upstream review
+
+Representative pcaps are a strong upstream expectation for protocol/dissector work, not merely a local preference. Three independent recent/known reviews provide direct evidence: Michael Mann requested one in !22662, Anders Broman requested example pcaps in !26390, and Alexis La Goutte requested a pcap in !26366; the !26366 thread was resolved after the contributor supplied it.
+
+When preparing a protocol MR, plan to provide small capture(s) that exercise the new behavior and, where practical, edge/error paths. Treat the capture as review/test material rather than waiting for a reviewer to request it.
+
+## Robustness patterns worth fuzzing
+
+- Reassembly length arithmetic is a recurring hardening target. MR !26365 added checked addition and an expert warning for an overlong AVCTP reassembly; !26382 independently clipped Bluetooth HCI ACL fragment copies to remaining capacity instead of relying on potentially overflowing addition.
+- Add malformed cases that stress accumulated lengths, offsets near the end of the tvbuff, oversized fragment sequences, and inconsistent advertised/captured lengths.
+- Prefer APIs and arithmetic forms that make bounds explicit (`ckd_add`, subtract-then-compare after proving ordering) rather than relying on overflow-prone `offset + length` comparisons.
+
 ## Future curation
 
 Add exact upstream-recommended fuzz commands and test-suite integration patterns after correlating them with current Wireshark source and maintainer review feedback.
