@@ -42,6 +42,11 @@ Corpus commit `2ed161d19398e620fa89227724ed928d4f5edf27` added !25759-!25932. Re
 | !25780 | Deep | UMTS-FP fixed-array hardening. Adds an explicit 16-entry storage-capacity check with expert info before indexing tracked MAC-is SDUs; author also reported fuzzing both supplied PoCs and avoiding a downstream MAC dissector call with null `data`. Added capacity and PoC-fuzz lessons to conventions/testing notes. |
 | !25781 | Discussion-focused | PortableApps plugin preservation. Gerald Combs requested a version adjustment; merged after change. Mostly packaging-specific. |
 | !25782 | Scanned | release-4.6 backport of !25778 K12 buffer-overrun fix. Merged; same source-offset-vs-buffer-length lesson as master with no additional review evidence. |
+| !25783 | Scanned | release-4.4 backport of !25778 K12 buffer-overrun fix. Merged; same source-offset-vs-buffer-length lesson, no additional review evidence. |
+| !25784 | Scanned | Widens relative-time formatting inputs to 64 bits and removes incorrect narrowing/casts. Merged; useful API correctness cleanup but no substantive human review or new notebook convention. |
+| !25785 | Scanned | IEEE 802.11 encrypted mesh-control handling. Merged; contributor supplied a focused encrypted capture plus decryption key, reinforcing the existing sample-capture practice without adding a new rule. |
+| !25786 | Scanned | ERF time-tag bounds fix. Merged; validates tag length before fixed-size copy, matching existing malformed-length defensive guidance. |
+| !25787 | Deep | OPC UA secrets-block one-byte overread found with Clang ASan+UBSan and `tools/fuzz-test.sh`; fix allocates terminator space separately from valid source-copy length and reruns the exact crashing capture plus the OPC UA capture set. Strong independent corroboration of the reproducer-driven sanitizer workflow already recorded from !25803. |
 | !25795 | Discussion-focused | release-4.6 backport of OPC UA Abort parsing fix. Anders Broman explicitly noted that correctness issues found in a backport should be fixed in master rather than independently changing the backport. Useful branch/backport workflow rule. |
 | !25797 | Discussion-focused | UET SACK PSN display. Alexis suggested representing calculated information as a generated field; discussion emphasized consistency with existing related fields. Merged final implementation retained the protocol's established style, so do not generalize the generated-field suggestion as mandatory. |
 | !25800 | Scanned | Shared-library version simplification in CMake. Merged; no substantive human review. |
@@ -79,7 +84,7 @@ The `faa3a72bd6a67bf0548e1d646336c6c714ccfa18` corpus batch added !26206-!26226 
 | !26211 | Deep | UDX sequence analysis/reassembly corrections. Validated packet-by-packet against an instrumented libudx over its own test suite and added five captures/six focused tests. Strong differential-testing exemplar. |
 | !26212 | Scanned | Capture header include portability fix. Merged; no substantive human review. |
 | !26213 | Scanned | Stops writing extcap preferences into the main preferences file. Merged extcap-specific change; no substantive human review. |
-| !26214 | Scanned | Python Ruff cleanup. Merged; no substantive human review relevant to notebook goals. |
+| !26214 | Scanned | Python Ruff cleanup. Merged; no substantive human review relevant to current notebook goals. |
 | !26215 | Deep | DICOM 32-bit portability follow-up. Changes accumulated length to `size_t`, combines `ckd_add()` with an explicit realistic cross-platform upper bound, and preserves traversal needed to rewind state. |
 | !26216 | Scanned | MSYS2/cross-compiled Windows library lookup fix. No substantive human review. |
 | !26217 | Scanned | GSM cell-ID discriminator/fallthrough correction backport. Merged; no substantive human review. |
