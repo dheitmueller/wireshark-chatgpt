@@ -39,6 +39,18 @@
 - Hidden protocol-tree items can preserve display-filter fields while another subdissector owns visible dissection; !26393 demonstrates `proto_item_set_hidden()` for eCPRI/O-RAN interaction.
 - Wireshark translations are maintained through Transifex rather than direct translation-file MRs (!26392).
 
+## ST 2110-40 replacement MR pre-submission issues
+
+Maintain this as a live checklist. Add newly discovered unresolved issues here immediately, and do not consider the replacement MR submission-ready until every item is resolved or explicitly rejected with rationale.
+
+- **ST 2010 reassembly edge cases — unresolved.** Revisit behavior when a new first fragment appears while a previous fragmented message is still active, and when a continuation fragment appears with no active message. Determine from ST 2010 semantics whether these should be diagnosed as malformed/orphan/overlap conditions, and whether the current expert fields/state handling are justified or unnecessarily complex.
+- **Combined VANC source cleanup — in review.** Finish human review of `packet-smpte-291-vanc.c` after consolidation. Current agreed cleanup includes consistent declaration grouping, major section headers, registration-array formatting, named DID/SDID constants, protocol-qualified internal symbols, and removal of trivial helpers that duplicate Wireshark APIs.
+- **ST 291 extension-point comment — pending next regeneration.** Use a transport-neutral comment describing `st291.did_sdid` as the public extension point for additional native or Lua VANC payload dissectors; do not describe ST 2110-40/ST 2038 transports as examples of subdissectors.
+- **Public ST 291 API preservation — must verify before submission.** Audit `packet-smpte-291-vanc.h` and all callers before removing or changing apparently redundant helpers. In particular, helpers such as `st291_tree_add_dbn()` may be public transport-facing API even when unused inside the combined implementation file. Preserve future ST 2038 compatibility.
+- **Lua extensibility — must verify before submission.** Ensure the `st291.did_sdid` dissector table remains public and usable by Lua so non-native VANC payload dissectors such as SCTE-104 or ST 2108 can register by DID/SDID.
+- **Replacement-MR organization — planned.** Keep `packet-smpte-2110-40.c` as the transport dissector; keep the transport-independent ST 291 layer and native VANC application dissectors together in `packet-smpte-291-vanc.c`; retain separate protocol registrations/filter namespaces for each VANC standard.
+- **Compile/test gate — not yet complete.** After source review, regenerate the final fileset, compile against current Wireshark, run applicable dissector checks/tests and fuzz validation, and compare behavior against representative captures before submission.
+
 ## Immediate next step
 
 Continue corpus commit `95ef115d...` from the unreviewed MRs in !25933-!26205, prioritizing merged MRs with substantive human review, especially dissector/libwireshark/reassembly/testing/API work. Update the ledger per MR rather than declaring the whole batch complete until every file has been accounted for.
