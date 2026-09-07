@@ -12,6 +12,21 @@ Updates should be selective rather than transcript-like. Preserve knowledge that
 
 Before reviewing Wireshark merge requests, consult `reviewed-mrs.md` and avoid re-reviewing MRs already recorded there unless there is a specific reason to revisit one (for example, new review comments, substantial new commits, a changed outcome, or an explicit user request). After a substantive MR review, record it in `reviewed-mrs.md`, including enough status/context to know what was actually examined.
 
+## Merge-request corpus
+
+The raw Wireshark GitLab merge-request corpus is maintained separately at `dheitmueller/wireshark-corpus-mrs` on GitHub. Treat that repository as the preferred source for historical MR metadata, diffs, commits, diff versions, and review discussions instead of repeatedly retrieving the same information from GitLab.
+
+Each MR is stored as `mr_<iid>.json`. When mining MRs:
+
+1. Consult `reviewed-mrs.md` first.
+2. Use the corpus repository to identify/read candidate MRs.
+3. Prefer high-information-density MRs: substantive human review, core maintainer participation (especially Guy Harris), dissector/libwireshark changes, malformed/truncation handling, field/filter semantics, registration/handoff, reassembly, RTP/media, testing, and fuzzing.
+4. Ignore GitLab system notes when assessing review value; prioritize notes with `system: false` and especially `DiffNote` discussions with position metadata.
+5. After analysis, update the appropriate notebook topic files and the `reviewed-mrs.md` ledger.
+6. Revisit a previously reviewed MR only when its corpus data shows meaningful changes (new head SHA, new human discussion, changed resolution/merge state) or the user explicitly asks.
+
+The corpus is raw evidence; this notebook is the curated durable knowledge derived from it.
+
 ## Working principles
 
 - Treat the current Wireshark source tree as authoritative.
