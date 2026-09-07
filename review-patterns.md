@@ -40,11 +40,27 @@ Before submitting one of our Wireshark MRs, check and, where useful, state in th
 - The MR description says what was tested and calls out deliberate limitations, deferred functionality, compatibility/filter changes, or cases that remain intentionally opaque.
 - The submitted head has a passing pipeline before merge readiness is assumed.
 
-**Evidence:** !26218 is a particularly useful exemplar: it included a five-packet capture, four dissector tests, malformed/expert-info cases, build/release-note integration, and explicitly reported clean `check_dissector.py` and `fuzz-test.sh` runs. !26211 added five captures and six focused tests and used differential validation against libudx. !22662, !26366, and !26390 independently establish that reviewers expect sample captures. !22208 establishes the topic-branch expectation, and !26390 supplies direct review evidence for cleaning/squashing a focused commit series.
+**Evidence:** !26218 is a particularly useful exemplar: it included a five-packet capture, four dissector tests, malformed/expert-info cases, build/release-note integration, and explicitly reported clean `check_dissector.py` and `fuzz-test.sh` runs. !26211 added five captures and six focused tests and used differential validation against libudx. !25977 is another merged exemplar whose MR description contains an explicit `Testing` section: it names the included pcap, states the exact tshark behavior verified for both changed and unaffected packets, and reports a clean warning-free build. !22662, !26366, and !26390 independently establish that reviewers expect sample captures. !22208 establishes the topic-branch expectation, and !26390 supplies direct review evidence for cleaning/squashing a focused commit series.
 
 **Confidence:** High for the checklist as our submission practice. It is synthesized from repeated accepted/reviewer-requested behavior, not claimed to be an official Wireshark checklist.
 
 ## Patterns
+
+### Use existing Wireshark helpers and already-fetched values instead of duplicating work
+
+**Evidence:** Merged MR !25946 (NMEA0183 message consolidation). Pascal Quantin pointed out that the code could reuse the already fetched `sentence_id` rather than fetch it again, and specifically pointed to existing helpers in `epan/strutil.h` (`convert_string_case()` and `convert_string_to_hex()`) instead of reinventing conversion logic.
+
+**Lesson:** Before adding a local parser/conversion helper or re-reading bytes that were already parsed, search current Wireshark utility APIs and retain/reuse the value already obtained. This complements the `_ret_*` tree APIs: the general preference is one authoritative fetch/conversion followed by reuse.
+
+**Confidence:** High as an implementation habit; direct review feedback on a merged MR and consistent with other anti-double-fetch guidance.
+
+### Reassembly tables must be initialized/registered, and this is suitable for automated checking
+
+**Evidence:** Merged MR !25984 fixed a Bluetooth BR/EDR reassembly table that had been declared/used without the required initialization/registration. During review, Stig Bjørlykke asked whether this class of bug could be caught by a commit check; Martin Mathieson explored detecting reassembly tables that were not registered/initialized.
+
+**Lesson:** When adding or modifying code that uses a `reassembly_table`, explicitly verify its initialization/registration path as part of review. Treat declaration + use without registration as a structural bug worth catching before runtime.
+
+**Confidence:** High for the registration requirement (merged bug fix); medium-high for making it a pre-submit/static check, because maintainers explicitly discussed doing so.
 
 ### Use separate dissector entry points for different call contracts, with common parsing underneath
 
