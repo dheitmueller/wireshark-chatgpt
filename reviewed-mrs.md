@@ -12,6 +12,27 @@ An MR may be revisited when there is a reason: new substantive review comments, 
 - **Partial** — some useful material was examined, but access or scope prevented a complete review. A later revisit may be worthwhile.
 - **Probe only** — attempted access but did not obtain enough material to count as a substantive review. These should not normally block a future review.
 
+## Corpus review in progress: commit 2ed161d1 (new !25759-!25932 batch)
+
+Corpus commit `2ed161d19398e620fa89227724ed928d4f5edf27` added !25759-!25932. Review began on 2026-09-07. This is a large batch; only MRs explicitly listed below have been examined so far. Do **not** treat the entire range as reviewed.
+
+| MR | Status | Notes |
+|---|---|---|
+| !25759 | Scanned | release-4.6 backport of sharkd IO-graph cleanup-on-error fix. Merged; no substantive human review in this snapshot. |
+| !25760 | Scanned | release-4.4 backport of the same sharkd IO-graph cleanup fix. Merged; no additional lesson. |
+| !25763 | Deep | NVMe-MI split-by-type + Control Primitive dissector. Alexis questioned creating more dissector files; author justified the split by expected large follow-up command sets and keeping framing thin. Split design ultimately merged, providing the large/expanding-protocol counterexample to the !26390 “consolidate tiny related dissectors” guidance. |
+| !25765 | Scanned | OSPFv3 Authentication Trailer preference/LLS handling. Merged, no substantive human review. |
+| !25766 | Discussion-focused | Clang Analyzer dead-store fixes. Martin Mathieson described using cppcheck and `./tools/check_dissector.py --commits 10` to find recent-commit issues. Added recent-commit static-check guidance. |
+| !25767 | Scanned | Broad dissector-warning cleanup. Merged; no substantive human review. |
+| !25775 | Scanned | O-RAN FH CUS c-plane/u-plane section/timing-header consistency checks. Merged; no human review lesson beyond accepted validation logic. |
+| !25777 | Deep | Display-filter FT_SCALAR NULL-deref hardening. Merged fix makes pseudo-type handling explicit, keeps error formatting safe, uses a non-compiled-out abort check for invalid lookup bounds, and adds five regression tests. Useful defensive-library exemplar. |
+| !25781 | Discussion-focused | PortableApps plugin preservation. Gerald Combs requested a version adjustment; merged after change. Mostly packaging-specific. |
+| !25795 | Discussion-focused | release-4.6 backport of OPC UA Abort parsing fix. Anders Broman explicitly noted that correctness issues found in a backport should be fixed in master rather than independently changing the backport. Useful branch/backport workflow rule. |
+| !25797 | Discussion-focused | UET SACK PSN display. Alexis suggested representing calculated information as a generated field; discussion emphasized consistency with existing related fields. Merged final implementation retained the protocol's established style, so do not generalize the generated-field suggestion as mandatory. |
+| !25800 | Scanned | Shared-library version simplification in CMake. Merged; no substantive human review. |
+| !25803 | Deep | OPC UA padding memory-safety fix found by Clang ASan + `fuzz-test.sh`. Strong sanitizer/reproducer exemplar. Pipeline/reviewer also enforced Wireshark commit-message format (brief component-prefixed subject, blank line before body), now added to our MR checklist. |
+| !25810 | Discussion-focused (open snapshot) | Draft NTPv5 preparation with substantial timescale/era discussion. John Thacker favored solving the underlying wider-time/timescale representation first rather than encoding a narrow workaround. Open/unmerged, so treat as provisional architecture evidence and revisit on outcome/change. |
+
 ## Corpus review in progress: commit 95ef115d (new !25933-!26205 batch)
 
 Corpus commit `95ef115dffb8e01e1896fcaebdd09c78764d1712` added the large !25933-!26205 range. Review began on 2026-09-07. This section intentionally records only MRs actually examined so far; do **not** treat the entire numeric range as reviewed yet.
