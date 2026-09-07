@@ -50,13 +50,14 @@ Maintain this as a live checklist of **issues in this specific MR**: correctness
 - **ST 2016-3 invalid Bar Data flags — resolved in `review3`.** Mixed/partial top-bottom/left-right flag combinations generate an expert warning; valid combinations are Top+Bottom, Left+Right, or no bars.
 - **ST 2016-3 summary text — resolved in `review3`.** The root tree item now includes the human-readable AFD description and 16:9/4:3 mode.
 - **ST 291 extension-point comment — resolved in `review3`.** The comment is now transport-neutral and describes `st291.did_sdid` as the extension point for additional native or Lua VANC payload formats.
-- **Registration type artifacts — resolved in `review3`.** Erroneous `ei_st2016_3_register_info` and `ei_st334_2_register_info` type names introduced during consolidation were corrected to `ei_register_info`.
+- **Registration type artifacts — resolved in `review3` and `buildfix1`.** Erroneous protocol-specific pseudo-types such as `ei_st2016_3_register_info`, `ei_st334_2_register_info`, `hf_st2110_40_register_info`, and `ei_st2110_40_register_info` were corrected to Wireshark's `hf_register_info` / `ei_register_info` types. Continue scanning generated files for this artifact class.
 - **ST 334-2 short payload handling — resolved in `review4`.** Payloads shorter than the fixed CDP header now create the ST 334-2 tree item, emit malformed expert information, and return instead of silently returning 0.
 - **ST 334-2 branch-comment placement — resolved in `review4`.** Section-specific specification comments for `ccdata_section`, `ccsvcinfo_section`, `cdp_footer`, and `future_section` now sit inside the branches they describe.
 - **Trivial WST generated-uint helper — resolved in `review4`.** Removed `st291_wst_add_generated_uint()` and inlined its four call sites.
+- **ST 334-2 CDP identifier constant lost during consolidation — resolved in `review5`.** Restored `#define ST334_2_CDP_IDENTIFIER 0x9669` from the original ST 334-2 source after the build exposed undefined uses.
 - **Public ST 291 API regression check — unresolved.** Audit `packet-smpte-291-vanc.h` and all callers before removing or changing apparently redundant helpers. In particular, helpers such as `st291_tree_add_dbn()` may be public transport-facing API even when unused inside the combined implementation file.
 - **Lua extensibility regression check — unresolved.** Verify that the refactor leaves the `st291.did_sdid` dissector table public and usable by Lua so non-native VANC payload dissectors can still register by DID/SDID.
-- **Compile/test gate — not yet complete.** After source review, compile the final fileset against current Wireshark and run the applicable dissector checks/tests and representative captures to catch mechanical or behavioral regressions before submission.
+- **Compile/test gate — in progress.** First compile attempt exposed the ST 2110-40 `*_register_info` pseudo-types and missing ST 334-2 CDP identifier constant; corrected sources are `packet-smpte-2110-40-buildfix1.c` and `packet-smpte-291-vanc-review5.c`. Rebuild and continue applicable dissector checks/tests and representative captures before submission.
 
 ## Immediate next step
 
