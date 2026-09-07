@@ -29,6 +29,11 @@ Corpus commit `2ed161d19398e620fa89227724ed928d4f5edf27` added !25759-!25932. Re
 | !25767 | Scanned | Broad dissector-warning cleanup. Merged; no substantive human review. |
 | !25768 | Scanned | NAS 5GS S-NSSAI location-validity fix: corrects NR-CGI count from 8 to 16 bits and attaches decoded MCC/MNC to the intended subtree. Merged; no substantive human review. |
 | !25769 | Scanned | release-4.6 backport of !25768 NAS 5GS fix. Merged; no additional lesson. |
+| !25770 | Scanned | release-4.4 backport of !25768 NAS 5GS S-NSSAI location-validity fix. Merged; no substantive human review or additional lesson. |
+| !25771 | Scanned | NAS 5GS NSAG information fix. Corrects parsing of a length-delimited sequence of S-NSSAIs by consuming each inner length before decoding its S-NSSAI. Merged; no substantive human review. |
+| !25772 | Scanned | release-4.4 backport of sharkd tap cleanup-on-registration-failure fix already represented by !25761. Merged; no additional lesson. |
+| !25773 | Scanned | release-4.6 backport of !25771 NAS 5GS NSAG sequence parsing fix. Merged; no additional lesson. |
+| !25774 | Scanned | release-4.4 backport of !25771 NAS 5GS NSAG sequence parsing fix. Merged; no additional lesson. |
 | !25775 | Scanned | O-RAN FH CUS c-plane/u-plane section/timing-header consistency checks. Merged; no human review lesson beyond accepted validation logic. |
 | !25777 | Deep | Display-filter FT_SCALAR NULL-deref hardening. Merged fix makes pseudo-type handling explicit, keeps error formatting safe, uses a non-compiled-out abort check for invalid lookup bounds, and adds five regression tests. Useful defensive-library exemplar. |
 | !25781 | Discussion-focused | PortableApps plugin preservation. Gerald Combs requested a version adjustment; merged after change. Mostly packaging-specific. |
