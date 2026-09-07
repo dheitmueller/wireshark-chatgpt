@@ -12,6 +12,35 @@ An MR may be revisited when there is a reason: new substantive review comments, 
 - **Partial** — some useful material was examined, but access or scope prevented a complete review. A later revisit may be worthwhile.
 - **Probe only** — attempted access but did not obtain enough material to count as a substantive review. These should not normally block a future review.
 
+## Corpus review: !26206 through !26226
+
+The `faa3a72bd6a67bf0548e1d646336c6c714ccfa18` corpus batch added !26206-!26226 and was reviewed on 2026-09-07. !26229 was additionally reviewed because Guy Harris explicitly superseded !26224 with it; the merged successor is the stronger architectural evidence.
+
+| MR | Status | Notes |
+|---|---|---|
+| !26206 | Scanned | `ws_label_strcpy` safety cleanup. Merged; documents why the string is kept NUL-terminated incrementally and why blindly truncating at the final byte could split UTF-8. No substantive human review. |
+| !26207 | Scanned | Release-4.6 CMake dependency-update backport. No substantive human review. |
+| !26208 | Deep | DICOM Export Objects overflow fix/backport. Uses size-appropriate types and checked arithmetic (`ckd_add`) for accumulated object size; corroborates defensive length handling. |
+| !26209 | Scanned | Release-4.4 backport of the same DICOM overflow fix as !26208. |
+| !26210 | Scanned | Extcap control-pipe capability negotiation and backward-compatible defaults. Merged; no durable reviewer feedback relevant to current priorities. |
+| !26211 | Deep | UDX sequence analysis/reassembly corrections. Validated packet-by-packet against an instrumented libudx over its own test suite and added five captures/six focused tests. Strong differential-testing exemplar. |
+| !26212 | Scanned | Capture header include portability fix. Merged; no substantive human review. |
+| !26213 | Scanned | Stops writing extcap preferences into the main preferences file. Merged extcap-specific change; no substantive human review. |
+| !26214 | Scanned | Python Ruff cleanup. Merged; no substantive human review relevant to notebook goals. |
+| !26215 | Deep | DICOM 32-bit portability follow-up. Changes accumulated length to `size_t`, combines `ckd_add()` with an explicit realistic cross-platform upper bound, and preserves traversal needed to rewind state. |
+| !26216 | Scanned | MSYS2/cross-compiled Windows library lookup fix. No substantive human review. |
+| !26217 | Scanned | GSM cell-ID discriminator/fallthrough correction backport. Merged; no substantive human review. |
+| !26218 | Deep | New GUE dissector. Merged exemplar: IANA port registration, payload dispatch via `ip.proto`, undefined extensions left opaque, expert-info validation, five-packet capture, four suite tests, and clean `check_dissector.py`/`fuzz-test.sh`. |
+| !26219 | Scanned | Large merged extcap bookmark/info feature. Human discussion is primarily author design/TODO tracking rather than reusable reviewer correction; no additional dissector convention extracted. |
+| !26220 | Scanned | Removes obsolete MinGW `-municode` linkage from CLI tools. Merged; no substantive human review. |
+| !26221 | Scanned | Follow-up removal of `-municode` from extcaps. Merged; no substantive human review. |
+| !26222 | Scanned | Adds `jsonschema` to macOS CI Python environment. Merged; no substantive human review. |
+| !26223 | Deep | Large merged NVMe/NVMe-MI/TCG Storage expansion and hardening. Key lessons: conservative dispatch, don't hide bytes unless decoding actually occurred, mark incomplete MIC as unverified rather than invalid, audit filter compatibility when changing hf semantics, include complete identity tuple in reassembly keys, and validate protocol-specific minimum lengths. |
+| !26224 | Discussion-focused (closed/superseded) | IEEE 802.15.4 FCS fix proposed runtime pointer-identity discrimination for different meanings of dissector `data`. Guy Harris said it should use different dissectors calling common code, implemented !26229, and closed this MR. The rejected implementation is not an exemplar; Guy's correction is high-authority negative guidance. |
+| !26225 | Scanned | Release-4.6 backport of !26215 DICOM 32-bit fix. |
+| !26226 | Scanned | Release-4.4 backport of !26215 DICOM 32-bit fix. |
+| !26229 | Deep (successor to !26224) | Guy Harris-authored and merged replacement. Uses separate dissector entry points for “FCS type supplied in data” versus top-level/pseudo-header call paths, sharing common parsing beneath them. Very high-confidence architectural exemplar. |
+
 ## Corpus review: !26365 through !26393
 
 The JSON corpus snapshot in `dheitmueller/wireshark-corpus-mrs` was reviewed across the full contiguous range !26365-!26393 on 2026-09-07. Low-information MRs were deliberately scanned rather than over-analyzed; MRs containing useful implementation or human-review evidence received deeper treatment.
@@ -68,6 +97,6 @@ The JSON corpus snapshot in `dheitmueller/wireshark-corpus-mrs` was reviewed acr
 
 Use `dheitmueller/wireshark-corpus-mrs` as the preferred source. Before selecting work, compare corpus entries against this ledger. Do not re-review an unchanged JSON snapshot.
 
-Prioritize information density over recency: substantive human review (especially Guy Harris and other core maintainers), dissector/libwireshark API changes, malformed/truncation handling, field/filter semantics, registration/handoff, reassembly, RTP/media, tests, and fuzzing.
+Prioritize information density over recency: substantive human review (especially Guy Harris and other core maintainers), dissector/libwireshark API changes, malformed/truncation handling, field/filter semantics, registration/handoff, reassembly, RTP/media, tests, and fuzzing. Prefer merged implementations as exemplars; for closed/superseded work, retain authoritative negative review guidance but follow through to the merged successor where possible.
 
 For open MRs marked `Deep (open snapshot)`, `Scanned (open snapshot)`, or similar, revisit when `updated_at`, head SHA, diff-version set, discussion set, or merge state changes. For merged/scanned MRs, revisit only for a concrete reason.
