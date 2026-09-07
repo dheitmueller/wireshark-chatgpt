@@ -50,11 +50,11 @@ This does not mean mechanically generalizing every context-specific comment into
 
 ### New protocol functionality should have a sample capture
 
-**Evidence:** MR !22662 (PTP/NTP: Add support for NTP over PTP). Michael Mann explicitly asked for a sample capture demonstrating the new functionality before the MR was approved. MR !26390 independently received the same request from Anders Broman for the new ST 2110-40/VANC dissectors.
+**Evidence:** MR !22662 (PTP/NTP: Add support for NTP over PTP) received an explicit sample-capture request from Michael Mann. MR !26390 independently received the same request from Anders Broman. MR !26366 (BGP-MUP ADD-PATH) provides a third independent example: Alexis La Goutte asked for a pcap, the author supplied one, and the review thread was resolved.
 
 **Lesson:** When adding or materially extending a dissector, expect reviewers to want representative capture file(s) that exercise the feature. This complements automated dissector tests and makes manual validation/review possible.
 
-**Confidence:** High. Independently requested by multiple established reviewers on separate dissector MRs.
+**Confidence:** High. Independently requested by three established reviewers on separate protocol/dissector MRs.
 
 ### Present review branches as clean, focused commits
 
@@ -66,11 +66,11 @@ This does not mean mechanically generalizing every context-specific comment into
 
 ### Keep unrelated cleanup out of a focused MR
 
-**Evidence:** MR !22662. While extending `dissect_ptp_v2_tlvs()`, the author noticed existing calls that appeared to swap `ptp_tree` and `ti_root`, but explicitly left that issue out of the MR. The MR proceeded independently.
+**Evidence:** MR !22662. While extending `dissect_ptp_v2_tlvs()`, the author noticed existing calls that appeared to swap `ptp_tree` and `ti_root`, but explicitly left that issue out of the MR. MR !26369 exposed an unrelated GCC warning while testing a Qt backport; the warning workaround was handled separately in !26371 instead of being folded into the Qt change.
 
-**Lesson:** Preserve scope discipline. Discovery of adjacent existing problems during implementation is not by itself a reason to fold those fixes into the same change.
+**Lesson:** Preserve scope discipline. Discovery of adjacent existing problems during implementation or CI is not by itself a reason to fold those fixes into the same change.
 
-**Confidence:** Medium-high; also consistent with Wireshark's documented contribution guidance to avoid unrelated changes in one MR.
+**Confidence:** High. Repeated project practice plus documented contribution guidance.
 
 ### Use a feature branch, not the fork's master branch, for merge requests
 
@@ -82,11 +82,11 @@ This does not mean mechanically generalizing every context-specific comment into
 
 ### Separate prerequisite infrastructure from later semantic decoding when appropriate
 
-**Evidence:** MR !20793 (gsm_sim: Add GET RESPONSE and APDU reassembly). John Thacker noted that the change did not yet dissect the reassembled content but was a necessary prerequisite for doing so later; the MR was approved and merged.
+**Evidence:** MR !20793 (gsm_sim: Add GET RESPONSE and APDU reassembly). John Thacker noted that the change did not yet dissect the reassembled content but was a necessary prerequisite for doing so later; the MR was approved and merged. MR !26379 similarly described a deliberately limited first implementation of DTLS retransmission detection and was merged with that limitation clearly stated.
 
-**Lesson:** A self-contained infrastructure/reassembly improvement can be an acceptable MR even if higher-level content decoding is deliberately deferred, provided the intermediate change is useful and architecturally necessary.
+**Lesson:** A self-contained infrastructure/state improvement can be an acceptable MR even if more complete semantic behavior is deliberately deferred, provided the current change is useful, bounded, and its limitations are explicit.
 
-**Confidence:** Medium. Context-specific but useful evidence for incremental dissector development.
+**Confidence:** Medium-high. Multiple merged examples, though applicability remains contextual.
 
 ### Avoid tree-presence guards when they suppress non-UI dissection side effects
 
@@ -96,6 +96,30 @@ This does not mean mechanically generalizing every context-specific comment into
 
 **Confidence:** Medium-high. Direct behavioral evidence; corroborate against current dissector guidance and additional reviews.
 
+### Do not claim an unassigned/dynamic port as a fixed protocol port
+
+**Evidence:** MR !26376 proposed automatically binding UDP port 61631 for Thread/CoAP. John Thacker rejected this because the port is in the dynamic/unassigned range and explicitly said to use Decode As; he cited RFC 6282 discussion of the same issue for 6LoWPAN/Thread.
+
+**Lesson:** A protocol's common implementation convention is not enough to justify `dissector_add_uint("udp.port", ...)` when the port is not actually assigned to that protocol. Prefer Decode As or a sufficiently robust heuristic mechanism. Treat fixed-port registration as a protocol/registry claim, not merely a convenience.
+
+**Confidence:** High for direct binding to an unassigned dynamic port. Whether a specific heuristic is safe is a separate question.
+
+### Keep protocol-specific lookup/dependency logic in the protocol that needs it
+
+**Evidence:** MR !26374 (RADIUS/RadSec). Anders Broman twice requested removing protocol-ID plumbing from generic DTLS/TLS code and using `proto_get_id_by_short_name()` in `packet-radius.c` instead. The author changed the lines and the threads were resolved.
+
+**Lesson:** Avoid modifying generic transport/security dissectors merely to expose or carry protocol-specific identity that the consuming dissector can resolve itself. Prefer keeping such dependency/lookup logic local to the consumer when an existing API supports it.
+
+**Confidence:** Medium-high. Repeated inline review feedback on both TLS and DTLS paths in the same MR; seek broader corroboration before treating every cross-dissector dependency this way.
+
+### Translation updates go through Transifex, not direct translation-file MRs
+
+**Evidence:** MR !26392 directly edited the Korean Qt translation file. Alexis La Goutte told the contributor to request Transifex access and complete the translation there, noting the repository is automatically synchronized weekly.
+
+**Lesson:** Wireshark UI translations should be contributed through the project's Transifex workflow rather than by directly editing generated/synchronized translation files in a normal MR.
+
+**Confidence:** High for translation contributions; direct maintainer workflow guidance.
+
 ## Review-access note
 
-GitLab search/index access is currently uneven for very recent MRs. A local JSON corpus containing MR metadata, full discussions (including DiffNote `position` objects), changes/diffs, commits, and diff-version metadata is preferred for future review mining because it avoids dependence on web indexing and preserves code-review context.
+Use the local JSON corpus in `dheitmueller/wireshark-corpus-mrs` as the preferred source for MR mining. It contains MR metadata, full discussions (including DiffNote `position` objects), changes/diffs, commits, and diff-version metadata, avoiding dependence on GitLab web indexing while preserving review context.
