@@ -12,6 +12,23 @@ An MR may be revisited when there is a reason: new substantive review comments, 
 - **Partial** — some useful material was examined, but access or scope prevented a complete review. A later revisit may be worthwhile.
 - **Probe only** — attempted access but did not obtain enough material to count as a substantive review. These should not normally block a future review.
 
+## Corpus review in progress: commit 95ef115d (new !25933-!26205 batch)
+
+Corpus commit `95ef115dffb8e01e1896fcaebdd09c78764d1712` added the large !25933-!26205 range. Review began on 2026-09-07. This section intentionally records only MRs actually examined so far; do **not** treat the entire numeric range as reviewed yet.
+
+| MR | Status | Notes |
+|---|---|---|
+| !25942 | Scanned | Automatic data/translation update; merged, no substantive human review. |
+| !25943 | Discussion-focused (closed) | Experimental Lua UTF-8 manifest work. Human discussion clarified manifest/test behavior, but MR was closed unmerged; useful context only, not an accepted implementation exemplar. |
+| !25946 | Deep | NMEA0183 consolidation. Pascal Quantin requested reuse of the already-fetched sentence ID and pointed to existing `epan/strutil.h` conversion helpers instead of local reinvention. Merged; strong anti-double-fetch/helper-reuse evidence. |
+| !25950 | Scanned | Export Packet Dissections C-array index/options feature. Merged with release-note/API updates; no substantive human review. |
+| !25952 | Discussion-focused | Dissector warning cleanup. Review demonstrates checking protocol-specific assumptions with the knowledgeable maintainer rather than mechanically applying warning-driven changes; merged after correction. |
+| !25953 | Scanned | DECT NR public `dect_nr_info_t` for parent-supplied PHF type. Merged; no substantive human review. |
+| !25971 | Discussion-focused (open snapshot) | Tagging Rules feature. Stig Bjørlykke argued that behavior with different semantics/lifecycle from coloring rules should be modeled as a separate feature rather than overloaded into coloring rules. Open/unmerged, so architecture lesson remains provisional. |
+| !25973 | Discussion-focused | WSLua Python/Ruff cleanup. John Thacker caught import ordering via the project pipeline even when the author's local Ruff did not report it; reminder that project CI/tool version is authoritative for submission readiness. Merged. |
+| !25977 | Deep | LBMC TSNI Request refinement. Merged MR description contains a useful explicit Testing section: named pcap, tshark verification of changed and unaffected cases, and clean warning-free build. Additional corroboration for our MR checklist practice. |
+| !25984 | Deep | BT BR/EDR reassembly-table registration bug. Merged fix; Stig/Mathieson discussed adding automated checks to ensure declared/used reassembly tables are initialized/registered. Added to conventions/pre-submit checks. |
+
 ## Corpus review: !26206 through !26226
 
 The `faa3a72bd6a67bf0548e1d646336c6c714ccfa18` corpus batch added !26206-!26226 and was reviewed on 2026-09-07. !26229 was additionally reviewed because Guy Harris explicitly superseded !26224 with it; the merged successor is the stronger architectural evidence.
