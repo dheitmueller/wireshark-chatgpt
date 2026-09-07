@@ -22,6 +22,11 @@ Before implementing new functionality, locate several analogous dissectors in th
 - Reuse values that have already been fetched rather than reading the same bytes again later in the same path. In merged MR !25946, Pascal Quantin explicitly called out re-fetching the NMEA sentence ID and suggested using the already available value.
 - Before writing local string/byte conversion helpers, search shared utility headers such as `epan/strutil.h`. The same !25946 review specifically pointed to `convert_string_case()` and `convert_string_to_hex()` as existing functionality that should be considered rather than reinvented locally.
 
+## Strings and column text
+
+- Do not copy packet-controlled bytes into a C string and then pass them directly to packet-list columns unless their character encoding and validity have been handled. Prefer Wireshark string-extraction APIs that know the on-wire encoding and sanitize/replace invalid characters as part of extraction.
+- Merged MR !25806 changed rlogin user-name handling from `tvb_memcpy()` into a fixed `char[]` plus manual NUL termination to `tvb_get_string_enc(..., ENC_ASCII)` allocated in `wmem_file_scope()`. The motivating bug was invalid UTF-8 reaching a column; extracting through the encoding-aware API sanitizes the string before later `col_add_fstr()` use. This is a useful general pattern for any packet-derived text that will outlive the current call or be presented in UI columns.
+
 ## Source-file organization
 
 - One registered protocol does not imply one C source file. Multiple small, closely related protocols/dissectors may appropriately share a source file. Anders Broman explicitly suggested this for the small ST/VANC dissectors in MR !26390.
