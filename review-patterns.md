@@ -24,13 +24,45 @@ This does not mean mechanically generalizing every context-specific comment into
 
 ## Patterns
 
+### Prefix internal hf/ett symbols with the protocol name
+
+**Evidence:** MR !26390 (ST 2110-40 and related VANC dissectors). Anders Broman explicitly requested that header-field symbols follow `hf_<protocol>_<name>` throughout, giving `hf_sdp_identifier` -> `hf_op47_sdp_identifier` as the example. A second inline comment requested `ett_op47_wst` instead of the generic `ett_wst`.
+
+**Lesson:** Internal `hf_` and `ett_` identifiers should be protocol-qualified, even when file-local/static, to make ownership obvious and follow Wireshark naming conventions. Do not generate generic symbols such as `hf_length`, `hf_payload_type`, or `ett_data` in a dissector when a protocol prefix is available.
+
+**Confidence:** High for new dissector code. Direct review feedback explicitly states this as the project naming pattern and asks that it be applied throughout.
+
+### Prefer Wireshark tvbuff/proto bit APIs over custom bit extractors
+
+**Evidence:** MR !26390. In `packet-op47.c`, a custom `get_bits_buf()` helper manually walked bits in a copied byte buffer. Anders Broman requested use of `tvb_get_bits()` or direct addition using `proto_add_bits_item` / `proto_add_bits_item_ret_uint` instead.
+
+**Lesson:** Before writing local bit-extraction helpers, check the tvbuff and protocol-tree bit APIs. Prefer Wireshark's existing bit-access/add APIs when the data is available in a `tvbuff_t`; this reduces custom parsing code and better matches project idioms.
+
+**Confidence:** High for the reviewed pattern; direct maintainer review with specific replacement APIs.
+
+### Small related protocols may share one source file
+
+**Evidence:** MR !26390. The change introduced several small ST/VANC dissector source files. Anders Broman suggested folding the ST dissectors into one file and explicitly noted that registering multiple protocols from one source file is acceptable/positive.
+
+**Lesson:** Do not assume one protocol registration requires one C source file. For a family of small, tightly related dissectors, a shared source file can be preferred over many tiny files. Consider cohesion and size when choosing file boundaries.
+
+**Confidence:** Medium-high. Direct reviewer guidance, but apply contextually rather than as a universal requirement.
+
 ### New protocol functionality should have a sample capture
 
-**Evidence:** MR !22662 (PTP/NTP: Add support for NTP over PTP). Michael Mann explicitly asked for a sample capture demonstrating the new functionality before the MR was approved.
+**Evidence:** MR !22662 (PTP/NTP: Add support for NTP over PTP). Michael Mann explicitly asked for a sample capture demonstrating the new functionality before the MR was approved. MR !26390 independently received the same request from Anders Broman for the new ST 2110-40/VANC dissectors.
 
-**Lesson:** When adding or materially extending a dissector, expect reviewers to want a representative capture that exercises the feature. This complements automated dissector tests and makes manual validation/review possible.
+**Lesson:** When adding or materially extending a dissector, expect reviewers to want representative capture file(s) that exercise the feature. This complements automated dissector tests and makes manual validation/review possible.
 
-**Confidence:** Medium. Strong direct maintainer evidence, and consistent with Wireshark contribution guidance, but continue collecting examples.
+**Confidence:** High. Independently requested by multiple established reviewers on separate dissector MRs.
+
+### Present review branches as clean, focused commits
+
+**Evidence:** MR !26390 contained three commits for the initial implementation/tests. Anders Broman requested that all commits be squashed into one.
+
+**Lesson:** For a focused Wireshark MR, reviewers may expect fixup/development-history commits to be squashed into a clean logical commit before merge. Preserve meaningful independent commits only when they represent genuinely separable changes.
+
+**Confidence:** Medium. Direct review feedback, but commit structure can be context-dependent.
 
 ### Keep unrelated cleanup out of a focused MR
 
@@ -66,4 +98,4 @@ This does not mean mechanically generalizing every context-specific comment into
 
 ## Review-access note
 
-GitLab search/index access is currently uneven for very recent MRs. The MR list may expose an MR before its overview, diff, or discussions are retrievable through the available read-only web path. Do not claim an MR has been fully reviewed unless its actual discussion/diff was available. Track inaccessible recent MRs and revisit after indexing catches up.
+GitLab search/index access is currently uneven for very recent MRs. A local JSON corpus containing MR metadata, full discussions (including DiffNote `position` objects), changes/diffs, commits, and diff-version metadata is preferred for future review mining because it avoids dependence on web indexing and preserves code-review context.
