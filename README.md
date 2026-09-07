@@ -12,6 +12,16 @@ Updates should be selective rather than transcript-like. Preserve knowledge that
 
 Before reviewing Wireshark merge requests, consult `reviewed-mrs.md` and avoid re-reviewing MRs already recorded there unless there is a specific reason to revisit one (for example, new review comments, substantial new commits, a changed outcome, or an explicit user request). After a substantive MR review, record it in `reviewed-mrs.md`, including enough status/context to know what was actually examined.
 
+### Model-quality requirement for MR analysis
+
+MR mining is intended to build a high-confidence long-term knowledge base, so do not knowingly perform it using a fallback/downgraded model caused by exhaustion of the user's normal higher-capability usage allowance. If the runtime/product explicitly indicates that the requested MR analysis is being downgraded or routed to an older/lower-capability fallback because of usage limits, **abort the MR analysis rather than updating the notebook with lower-quality conclusions**. Tell the user that the run was stopped because the preferred model was unavailable. Do not claim to detect a downgrade unless the runtime actually exposes that information; model routing may not always be visible to the assistant.
+
+### Weight evidence by MR outcome
+
+When deriving durable conventions from MR history, give substantially greater evidentiary weight to changes that were ultimately **merged**. A merged MR demonstrates that the resulting implementation/review resolution was accepted upstream. Open MRs can provide useful provisional evidence, especially authoritative maintainer comments, but their conclusions may still change. MRs that were abandoned, closed without merge, or superseded should normally carry less weight as examples of accepted implementation practice.
+
+Do not discard review comments from abandoned/superseded MRs: an authoritative maintainer correction can still be valuable evidence about what *not* to do. Preserve the distinction between reviewer guidance and accepted final implementation. When possible, follow a superseded MR to its replacement and use the merged successor as the stronger implementation exemplar.
+
 ## Merge-request corpus
 
 The raw Wireshark GitLab merge-request corpus is maintained separately at `dheitmueller/wireshark-corpus-mrs` on GitHub. Treat that repository as the preferred source for historical MR metadata, diffs, commits, diff versions, and review discussions instead of repeatedly retrieving the same information from GitLab.
@@ -20,7 +30,7 @@ Each MR is stored as `mr_<iid>.json`. When mining MRs:
 
 1. Consult `reviewed-mrs.md` first.
 2. Use the corpus repository to identify/read candidate MRs.
-3. Prefer high-information-density MRs: substantive human review, core maintainer participation (especially Guy Harris), dissector/libwireshark changes, malformed/truncation handling, field/filter semantics, registration/handoff, reassembly, RTP/media, testing, and fuzzing.
+3. Prefer high-information-density MRs: substantive human review, core maintainer participation (especially Guy Harris), dissector/libwireshark changes, malformed/truncation handling, field/filter semantics, registration/handoff, reassembly, RTP/media, testing, and fuzzing. Among otherwise comparable candidates, prioritize merged MRs over open, abandoned, closed-unmerged, or superseded MRs.
 4. Ignore GitLab system notes when assessing review value; prioritize notes with `system: false` and especially `DiffNote` discussions with position metadata.
 5. After analysis, update the appropriate notebook topic files and the `reviewed-mrs.md` ledger.
 6. Revisit a previously reviewed MR only when its corpus data shows meaningful changes (new head SHA, new human discussion, changed resolution/merge state) or the user explicitly asks.
