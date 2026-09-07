@@ -25,7 +25,8 @@ Before implementing new functionality, locate several analogous dissectors in th
 ## Source-file organization
 
 - One registered protocol does not imply one C source file. Multiple small, closely related protocols/dissectors may appropriately share a source file. Anders Broman explicitly suggested this for the small ST/VANC dissectors in MR !26390.
-- Choose source-file boundaries for cohesion and maintainability, not mechanically by protocol-registration count.
+- Conversely, splitting a genuinely large and expanding protocol family can be justified when it keeps the framing/core layer thin and lets independent command/type sets evolve without creating one enormous file. In merged MR !25763, Alexis La Goutte initially questioned splitting NVMe-MI into multiple dissector files because Wireshark already has many files; the author explained that several large command sets were coming in follow-up MRs, and the split-by-type design was ultimately merged. Treat this as a scale/cohesion judgment, not a one-protocol-one-file rule.
+- Choose source-file boundaries for cohesion and maintainability: consolidate tiny related dissectors, but allow a well-justified split when a protocol family is large enough that separate modules materially improve reviewability and future extension.
 
 ## Subdissector architecture and dispatch
 
