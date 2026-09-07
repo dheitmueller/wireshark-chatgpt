@@ -15,7 +15,7 @@ An MR may be revisited when there is a reason: new substantive review comments, 
 
 | MR | Status | Notes |
 |---|---|---|
-| !26390 | Probe only | User's recent ST 2110-40-related MR; too new for the available GitLab web index during initial attempts. High priority to revisit when accessible. |
+| !26390 | Deep (initial revision) | ST 2110-40 plus related VANC dissectors. Reviewed exported JSON with all 12 changed files, 3 commits, diff-version metadata and six human comments from Anders Broman. Lessons: protocol-prefix `hf_`/`ett_` identifiers; prefer tvbuff/proto bit APIs over custom bit extraction; sample pcaps expected; squash focused development history; small related protocols can share a source file. MR remains open and review threads unresolved in this snapshot, so revisit after new commits/comments. |
 | !26386 | Probe only | Visible in recent MR listing but individual MR content was not accessible during the 2026-09-07 calibration run. |
 | !26378 | Probe only | Visible in recent MR listing but individual MR content was not accessible during the 2026-09-07 calibration run. |
 | !26376 | Probe only | Visible in recent MR listing but individual MR content was not accessible during the 2026-09-07 calibration run. |
@@ -35,5 +35,7 @@ An MR may be revisited when there is a reason: new substantive review comments, 
 ## Selection guidance
 
 For future mining, prioritize information density over recency. Prefer accessible MRs with substantive human review, especially reviews by Guy Harris and other core maintainers; dissector/libwireshark API changes; malformed/truncation handling; field/filter semantics; registration/handoff; reassembly; RTP/media; tests; and fuzzing.
+
+For MRs marked `Deep (initial revision)` or similar, do not re-review an unchanged snapshot. Revisit only when its `updated_at`, head SHA, diff-version set, discussion set, or merge state has changed.
 
 Do not spend repeated retrieval attempts on very recent MRs that are visible in listings but not yet individually indexed. Record them as `Probe only` and move on; revisit later.
