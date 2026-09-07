@@ -15,6 +15,7 @@ Recent ST 2110-40 fuzzing work established the following useful checks:
 - Include malformed/truncated input coverage in addition to valid vectors.
 - For dissector changes, build warnings matter because Wireshark commonly treats warnings as errors.
 - When a mature reference implementation exists, consider differential validation against it rather than relying only on expected tshark output written from the same interpretation of the specification. Merged MR !26211 compared the UDX dissector's stateful verdicts packet-by-packet against an instrumented build of libudx over libudx's own test suite; that process found additional state/reassembly errors beyond those reported in review.
+- Treat the project's CI toolchain as authoritative for submission readiness when local lint/static-analysis versions differ. In merged MR !25973, the project pipeline reported Ruff import-order warning I001 even though the author's local Ruff version did not. A local clean run does not override a project-CI failure; match or trust the versions/configuration used upstream.
 
 ## Sample captures in upstream review
 
@@ -25,6 +26,12 @@ When preparing a protocol MR, plan to provide small capture(s) that exercise the
 Merged MR !26218 is a useful current exemplar for a new dissector submission: the GUE change included a five-packet generated capture covering multiple variants/payloads, four dissector-suite tests, expert-info cases for invalid input, and reported clean runs of `tools/check_dissector.py` and `tools/fuzz-test.sh`. Use that combination as a starting checklist for future new dissectors rather than treating a successful compile as sufficient validation.
 
 Merged MR !26211 similarly added five captures and six tests targeted at distinct stateful-analysis/reassembly failure modes. Prefer one or more focused captures/tests that isolate meaningful behaviors over a single broad happy-path capture.
+
+Merged MR !25977 is a good example of how to communicate validation in the MR description itself. Its explicit `Testing` section names the included capture, states the exact tshark-visible behavior verified for the changed TSNI case, checks an existing 37-packet capture to show ordinary RXREQ behavior remains unchanged, and reports a clean warning-free build. For our submissions, prefer this concrete “what input / what observed result / what regression case” style over a vague statement such as “tested locally.”
+
+## Structural pre-submit checks
+
+- When code declares/uses a reassembly table, verify that the table is initialized/registered along every required lifecycle path. Merged MR !25984 fixed an unregistered Bluetooth BR/EDR reassembly table, and maintainers discussed adding a commit check for this class of defect. Include this in manual pre-submit review even if no automated check currently catches it.
 
 ## Robustness patterns worth fuzzing
 
