@@ -16,6 +16,7 @@ Recent ST 2110-40 fuzzing work established the following useful checks:
 - For dissector changes, build warnings matter because Wireshark commonly treats warnings as errors.
 - When a mature reference implementation exists, consider differential validation against it rather than relying only on expected tshark output written from the same interpretation of the specification. Merged MR !26211 compared the UDX dissector's stateful verdicts packet-by-packet against an instrumented build of libudx over libudx's own test suite; that process found additional state/reassembly errors beyond those reported in review.
 - Treat the project's CI toolchain as authoritative for submission readiness when local lint/static-analysis versions differ. In merged MR !25973, the project pipeline reported Ruff import-order warning I001 even though the author's local Ruff version did not. A local clean run does not override a project-CI failure; match or trust the versions/configuration used upstream.
+- Use recent-commit checking modes when available rather than only whole-tree/manual inspection. In merged MR !25766, Martin Mathieson described using `./tools/check_dissector.py --commits 10` to find issues introduced by recent commits, alongside cppcheck/Clang Analyzer warnings. For our own branches, use the current tool's commit-range option when applicable so new warnings are easier to attribute.
 
 ## Sample captures in upstream review
 
@@ -40,6 +41,7 @@ Merged MR !25977 is a good example of how to communicate validation in the MR de
 - Prefer APIs and arithmetic forms that make bounds explicit (`ckd_add`, subtract-then-compare after proving ordering) rather than relying on overflow-prone `offset + length` comparisons.
 - Include sliced/truncated captures where verification inputs are incomplete. MR !26223 found an NVMe-MI state-linking problem caused by an exception during MIC calculation on a sliced frame and changed the user-facing result to “unverified” when the covered bytes are unavailable. A parser should not turn capture incompleteness into a false protocol-invalid verdict or corrupt later state.
 - Exercise malformed protocol-specific minimum lengths even when a generic PDU helper performs some framing checks. !26223 showed that the generic NVMe/TCP PDU framework guaranteed the common header but not the longer Termination Request header, leaving an underflow until an explicit check was added.
+- Run sanitizer-instrumented fuzzing when investigating memory-safety-sensitive parsing. Merged MR !25803 found a deterministic OPC UA heap-use-after-free/backwards read by building with Clang ASan and running `tools/fuzz-test.sh` over existing OPC UA captures. The accepted fix added an explicit available-byte bound before backwards padding reads, guarded unsigned offset arithmetic before subtraction, and verified the original crashing capture plus the wider OPC UA sample set under ASan. This is a strong exemplar for reproducer-driven fuzz hardening.
 
 ## Future curation
 
