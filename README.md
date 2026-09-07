@@ -14,6 +14,10 @@ Before reviewing Wireshark merge requests, consult `reviewed-mrs.md` and avoid r
 
 When preparing, reviewing, or generating code that Devin is likely to submit upstream, **always consult `personal-review-feedback.md` and run the proposed change against its applicable checks before treating the change as submission-ready.** The objective is that an upstream reviewer should never need to give Devin the same feedback twice.
 
+### Patch-generation requirement
+
+When generating a patch for Devin, **never hand-assemble a unified diff**. Generate the patch mechanically from actual before/after file contents using `git diff`, `diff -u`, or an equivalent tool. Before delivering the patch, validate its syntax and applicability with `git apply --check` (or an equivalent dry-run against the intended target tree when available). Do not describe a patch as ready or provide it for use unless this validation succeeds. If the exact target tree is unavailable, at minimum validate that the diff is structurally well-formed and clearly state that full applicability could not be checked.
+
 ### Model-quality requirement for MR analysis
 
 MR mining is intended to build a high-confidence long-term knowledge base, so do not knowingly perform it using a fallback/downgraded model caused by exhaustion of the user's normal higher-capability usage allowance. If the runtime/product explicitly indicates that the requested MR analysis is being downgraded or routed to an older/lower-capability fallback because of usage limits, **abort the MR analysis rather than updating the notebook with lower-quality conclusions**. Tell the user that the run was stopped because the preferred model was unavailable. Do not claim to detect a downgrade unless the runtime actually exposes that information; model routing may not always be visible to the assistant.
@@ -52,6 +56,7 @@ The corpus is raw evidence; this notebook is the curated durable knowledge deriv
 - Update or remove stale conclusions when upstream changes.
 - Avoid transcript dumps; curate for future usefulness.
 - When implementing new functionality, first find and study analogous upstream implementations.
+- Never hand-assemble patches; generate them mechanically and validate them before delivery.
 
 ## Files
 
