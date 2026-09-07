@@ -12,6 +12,8 @@ Updates should be selective rather than transcript-like. Preserve knowledge that
 
 Before reviewing Wireshark merge requests, consult `reviewed-mrs.md` and avoid re-reviewing MRs already recorded there unless there is a specific reason to revisit one (for example, new review comments, substantial new commits, a changed outcome, or an explicit user request). After a substantive MR review, record it in `reviewed-mrs.md`, including enough status/context to know what was actually examined.
 
+When preparing, reviewing, or generating code that Devin is likely to submit upstream, **always consult `personal-review-feedback.md` and run the proposed change against its applicable checks before treating the change as submission-ready.** The objective is that an upstream reviewer should never need to give Devin the same feedback twice.
+
 ### Model-quality requirement for MR analysis
 
 MR mining is intended to build a high-confidence long-term knowledge base, so do not knowingly perform it using a fallback/downgraded model caused by exhaustion of the user's normal higher-capability usage allowance. If the runtime/product explicitly indicates that the requested MR analysis is being downgraded or routed to an older/lower-capability fallback because of usage limits, **abort the MR analysis rather than updating the notebook with lower-quality conclusions**. Tell the user that the run was stopped because the preferred model was unavailable. Do not claim to detect a downgrade unless the runtime actually exposes that information; model routing may not always be visible to the assistant.
@@ -22,6 +24,10 @@ When deriving durable conventions from MR history, give substantially greater ev
 
 Do not discard review comments from abandoned/superseded MRs: an authoritative maintainer correction can still be valuable evidence about what *not* to do. Preserve the distinction between reviewer guidance and accepted final implementation. When possible, follow a superseded MR to its replacement and use the merged successor as the stronger implementation exemplar.
 
+### Devin-authored MRs
+
+MRs authored by Devin are a priority subset of the corpus. Systematically mine substantive human feedback on those MRs and maintain it in `personal-review-feedback.md` in addition to any generally applicable lessons recorded elsewhere. Feedback on Devin's MRs should become a concrete future pre-submission check even when a single comment is not sufficient evidence to declare a universal Wireshark convention. Preserve reviewer, MR provenance, context, resulting change when known, and classification/scope.
+
 ## Merge-request corpus
 
 The raw Wireshark GitLab merge-request corpus is maintained separately at `dheitmueller/wireshark-corpus-mrs` on GitHub. Treat that repository as the preferred source for historical MR metadata, diffs, commits, diff versions, and review discussions instead of repeatedly retrieving the same information from GitLab.
@@ -30,9 +36,9 @@ Each MR is stored as `mr_<iid>.json`. When mining MRs:
 
 1. Consult `reviewed-mrs.md` first.
 2. Use the corpus repository to identify/read candidate MRs.
-3. Prefer high-information-density MRs: substantive human review, core maintainer participation (especially Guy Harris), dissector/libwireshark changes, malformed/truncation handling, field/filter semantics, registration/handoff, reassembly, RTP/media, testing, and fuzzing. Among otherwise comparable candidates, prioritize merged MRs over open, abandoned, closed-unmerged, or superseded MRs.
+3. Prioritize Devin-authored MRs with substantive human feedback. For general mining, prefer high-information-density MRs: substantive human review, core maintainer participation (especially Guy Harris), dissector/libwireshark changes, malformed/truncation handling, field/filter semantics, registration/handoff, reassembly, RTP/media, testing, and fuzzing. Among otherwise comparable candidates, prioritize merged MRs over open, abandoned, closed-unmerged, or superseded MRs.
 4. Ignore GitLab system notes when assessing review value; prioritize notes with `system: false` and especially `DiffNote` discussions with position metadata.
-5. After analysis, update the appropriate notebook topic files and the `reviewed-mrs.md` ledger.
+5. After analysis, update the appropriate notebook topic files, `personal-review-feedback.md` when applicable, and the `reviewed-mrs.md` ledger.
 6. Revisit a previously reviewed MR only when its corpus data shows meaningful changes (new head SHA, new human discussion, changed resolution/merge state) or the user explicitly asks.
 
 The corpus is raw evidence; this notebook is the curated durable knowledge derived from it.
@@ -54,6 +60,7 @@ The corpus is raw evidence; this notebook is the curated durable knowledge deriv
 - `media-over-ip.md` — SMPTE/RTP/media-specific notes, including ST 2110, ST 2038, and ANC work.
 - `testing-fuzzing.md` — build, validation, fuzzing, and test practices.
 - `review-patterns.md` — conventions learned from upstream merge request reviews.
+- `personal-review-feedback.md` — cumulative feedback from Devin's own upstream MRs, expressed as future pre-submission checks.
 - `reviewed-mrs.md` — ledger of MRs already examined, used to avoid duplicate work.
 - `decisions.md` — important design choices, rejected approaches, and rationale.
 - `SESSION_STATE.md` — concise current work state and next steps.
