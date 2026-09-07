@@ -24,6 +24,14 @@ This does not mean mechanically generalizing every context-specific comment into
 
 ## Patterns
 
+### Use separate dissector entry points for different call contracts, with common parsing underneath
+
+**Evidence:** MR !26224 attempted to make one IEEE 802.15.4 dissector distinguish whether its `void *data` argument was an FCS-type integer or the pseudo-header supplied by a top-level `wtap_encap` call by checking pointer identity. Guy Harris rejected that design: the cases should use different dissectors calling common code. He then implemented that design in !26229, which was merged; !26224 was closed as superseded.
+
+**Lesson:** When the same protocol parser is entered through call paths with materially different `data` contracts or semantics, do not make one entry point guess the argument type from runtime pointer values. Give each call contract an explicit dissector entry point and funnel both into shared parsing logic with typed/explicit parameters.
+
+**Confidence:** Very high. Direct architectural correction from Guy Harris, followed by a merged successor authored by Guy implementing the stated design.
+
 ### Prefix internal hf/ett symbols with the protocol name
 
 **Evidence:** MR !26390 (ST 2110-40 and related VANC dissectors). Anders Broman explicitly requested that header-field symbols follow `hf_<protocol>_<name>` throughout, giving `hf_sdp_identifier` -> `hf_op47_sdp_identifier` as the example. A second inline comment requested `ett_op47_wst` instead of the generic `ett_wst`.
