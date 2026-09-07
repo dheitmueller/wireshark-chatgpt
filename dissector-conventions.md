@@ -15,10 +15,28 @@ Before implementing new functionality, locate several analogous dissectors in th
 - Prefer Wireshark's tvbuff/protocol-tree bit APIs over local hand-written bit extraction when parsing data already represented by a `tvbuff_t`. In MR !26390, Anders Broman specifically recommended `tvb_get_bits()` or direct tree addition with `proto_add_bits_item` / `proto_add_bits_item_ret_uint` instead of a custom `get_bits_buf()` helper.
 - Before adding a parsing helper, search current APIs and analogous dissectors for an existing operation that expresses the same intent.
 
+## Display a value and retrieve it once
+
+- When a field must both be added to the protocol tree and consumed by parser/control-flow logic, prefer the appropriate `proto_tree_add_item_ret_*` / `proto_add_bits_item_ret_*` API instead of separately calling `tvb_get_*` and then adding the same field.
+- MR !26391 systematically replaces pairs such as `tvb_get_uint8()` + `proto_tree_add_item()` with `proto_tree_add_item_ret_uint8()` across multiple dissectors. MR !26367 independently uses `proto_tree_add_item_ret_uint8()` / `_ret_uint16()` while parsing the SACCH Information IE. Treat this as a strong current idiom and search for a `_ret_` helper before double-fetching a field.
+
 ## Source-file organization
 
 - One registered protocol does not imply one C source file. Multiple small, closely related protocols/dissectors may appropriately share a source file. Anders Broman explicitly suggested this for the small ST/VANC dissectors in MR !26390.
 - Choose source-file boundaries for cohesion and maintainability, not mechanically by protocol-registration count.
+
+## Subdissector architecture and dispatch
+
+- Prefer generic extension mechanisms in a generic dissector over hard-coding behavior for one downstream protocol. MR !26376 is refactoring CoAP's Thread-specific special case toward a generic CoAP heuristic payload subdissector list. Because that MR is still open, treat the exact design as provisional, but the separation-of-concerns direction is worth following when looking for analogous code.
+- Do not register a protocol directly on an unassigned/dynamic TCP/UDP port merely because an implementation commonly uses it. John Thacker explicitly rejected fixed UDP 61631 registration in MR !26376 and directed the contributor to Decode As. A robust heuristic may be appropriate, but fixed-port registration should correspond to actual protocol assignment/semantics.
+- Keep protocol-specific lookup/dependency logic in the consuming protocol when an existing lookup API suffices. In MR !26374 Anders Broman requested that RADIUS use `proto_get_id_by_short_name()` locally rather than modifying generic TLS and DTLS code to expose RADIUS-specific protocol identity.
+- It is valid to add a field to the tree and immediately mark it hidden with `proto_item_set_hidden()` when the value should remain display-filterable but another subdissector owns the visible presentation. MR !26393 uses this pattern for eCPRI PC ID/sequence fields when the O-RAN FH dissector claims the PDU.
+
+## Reassembly and length arithmetic
+
+- Treat lengths derived from packets, fragment accumulation, and offsets as hostile arithmetic. Check for overflow before allocation/copy and ensure a fragment copy is clipped to remaining capacity.
+- MR !26365 uses `ckd_add()` before growing a manually reassembled buffer and emits expert information when the resulting PDU would exceed `INT32_MAX`. MR !26382 independently avoids `cur_off + len` overflow by subtracting first (`avail = tot_len - cur_off`) after proving `tot_len > cur_off`, then clipping `len` to `avail`.
+- Prefer the standard Wireshark reassembly API when it fits. The existing manual AVCTP reassembly code touched by !26365 explicitly notes that it should eventually be replaced by the standard API with custom key functions.
 
 ## Field semantics
 
