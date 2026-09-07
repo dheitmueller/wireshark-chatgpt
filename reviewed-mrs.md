@@ -20,10 +20,15 @@ Corpus commit `2ed161d19398e620fa89227724ed928d4f5edf27` added !25759-!25932. Re
 |---|---|---|
 | !25759 | Scanned | release-4.6 backport of sharkd IO-graph cleanup-on-error fix. Merged; no substantive human review in this snapshot. |
 | !25760 | Scanned | release-4.4 backport of the same sharkd IO-graph cleanup fix. Merged; no additional lesson. |
+| !25761 | Scanned | release-4.6 sharkd tap-registration cleanup-on-failure fix. Merged; refactors single-tap registration so already registered taps are deregistered/freed on later failure. No substantive human review beyond approval. |
+| !25762 | Scanned | release-4.6 setup-script change to prefer Qt 6 based on package availability instead of distro-version heuristics. Merged; no substantive human review. |
 | !25763 | Deep | NVMe-MI split-by-type + Control Primitive dissector. Alexis questioned creating more dissector files; author justified the split by expected large follow-up command sets and keeping framing thin. Split design ultimately merged, providing the large/expanding-protocol counterexample to the !26390 “consolidate tiny related dissectors” guidance. |
+| !25764 | Deep | MCTP-over-SMBus propagates stable physical addresses for downstream state and independently guards captured length for Decode As entry. Merged; strong evidence for choosing stable conversation identity and enforcing entry-point preconditions rather than relying on heuristic callers. Added to `dissector-conventions.md`. |
 | !25765 | Scanned | OSPFv3 Authentication Trailer preference/LLS handling. Merged, no substantive human review. |
 | !25766 | Discussion-focused | Clang Analyzer dead-store fixes. Martin Mathieson described using cppcheck and `./tools/check_dissector.py --commits 10` to find recent-commit issues. Added recent-commit static-check guidance. |
 | !25767 | Scanned | Broad dissector-warning cleanup. Merged; no substantive human review. |
+| !25768 | Scanned | NAS 5GS S-NSSAI location-validity fix: corrects NR-CGI count from 8 to 16 bits and attaches decoded MCC/MNC to the intended subtree. Merged; no substantive human review. |
+| !25769 | Scanned | release-4.6 backport of !25768 NAS 5GS fix. Merged; no additional lesson. |
 | !25775 | Scanned | O-RAN FH CUS c-plane/u-plane section/timing-header consistency checks. Merged; no human review lesson beyond accepted validation logic. |
 | !25777 | Deep | Display-filter FT_SCALAR NULL-deref hardening. Merged fix makes pseudo-type handling explicit, keeps error formatting safe, uses a non-compiled-out abort check for invalid lookup bounds, and adds five regression tests. Useful defensive-library exemplar. |
 | !25781 | Discussion-focused | PortableApps plugin preservation. Gerald Combs requested a version adjustment; merged after change. Mostly packaging-specific. |
