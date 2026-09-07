@@ -30,9 +30,10 @@ Before submitting one of our Wireshark MRs, check and, where useful, state in th
 
 - The change is on a named topic branch, not the fork's `master` branch.
 - Commits are clean and focused; squash fixup/development-history commits when the MR represents one logical change.
+- Commit messages follow Wireshark's checked format: a short `component: brief summary` subject, then a blank line before any longer description. Merged MR !25803 was held by the pipeline/reviewer until a missing blank line after the subject was fixed; treat commit-message checks as part of submission readiness, not cosmetic cleanup.
 - Unrelated cleanup or prerequisite work is split into a separate MR where appropriate.
 - The code builds cleanly with warnings treated as errors.
-- Relevant Wireshark validation/static-analysis scripts have been run. For dissector work, merged MR !26218 explicitly reported clean `tools/check_dissector.py` and `tools/fuzz-test.sh` runs; use the current tree to determine the applicable commands rather than blindly copying an old command list.
+- Relevant Wireshark validation/static-analysis scripts have been run. For dissector work, merged MR !26218 explicitly reported clean `tools/check_dissector.py` and `tools/fuzz-test.sh` runs; use the current tree to determine the applicable commands rather than blindly copying an old command list. Merged !25766 also shows `check_dissector.py --commits <N>` being used to focus warning checks on recent changes.
 - Representative capture file(s) are supplied for new or materially changed protocol dissection. Prefer small focused captures covering distinct behaviors and edge cases.
 - Automated dissector tests accompany the captures when practical, including expert-info/error behavior and malformed/truncated cases relevant to the change.
 - New dissectors use existing registration/dispatch mechanisms and include any expected integration updates such as build-system entries and release notes.
@@ -40,7 +41,7 @@ Before submitting one of our Wireshark MRs, check and, where useful, state in th
 - The MR description says what was tested and calls out deliberate limitations, deferred functionality, compatibility/filter changes, or cases that remain intentionally opaque.
 - The submitted head has a passing pipeline before merge readiness is assumed.
 
-**Evidence:** !26218 is a particularly useful exemplar: it included a five-packet capture, four dissector tests, malformed/expert-info cases, build/release-note integration, and explicitly reported clean `check_dissector.py` and `fuzz-test.sh` runs. !26211 added five captures and six focused tests and used differential validation against libudx. !25977 is another merged exemplar whose MR description contains an explicit `Testing` section: it names the included pcap, states the exact tshark behavior verified for both changed and unaffected packets, and reports a clean warning-free build. !22662, !26366, and !26390 independently establish that reviewers expect sample captures. !22208 establishes the topic-branch expectation, and !26390 supplies direct review evidence for cleaning/squashing a focused commit series.
+**Evidence:** !26218 is a particularly useful exemplar: it included a five-packet capture, four dissector tests, malformed/expert-info cases, build/release-note integration, and explicitly reported clean `check_dissector.py` and `fuzz-test.sh` runs. !26211 added five captures and six focused tests and used differential validation against libudx. !25977 is another merged exemplar whose MR description contains an explicit `Testing` section: it names the included pcap, states the exact tshark behavior verified for both changed and unaffected packets, and reports a clean warning-free build. !25803 adds direct evidence that commit-message formatting is CI-enforced/reviewer-visible. !22662, !26366, and !26390 independently establish that reviewers expect sample captures. !22208 establishes the topic-branch expectation, and !26390 supplies direct review evidence for cleaning/squashing a focused commit series.
 
 **Confidence:** High for the checklist as our submission practice. It is synthesized from repeated accepted/reviewer-requested behavior, not claimed to be an official Wireshark checklist.
 
@@ -88,11 +89,11 @@ Before submitting one of our Wireshark MRs, check and, where useful, state in th
 
 ### Small related protocols may share one source file
 
-**Evidence:** MR !26390. The change introduced several small ST/VANC dissector source files. Anders Broman suggested folding the ST dissectors into one file and explicitly noted that registering multiple protocols from one source file is acceptable/positive.
+**Evidence:** MR !26390. The change introduced several small ST/VANC dissector source files. Anders Broman suggested folding the ST dissectors into one file and explicitly noted that registering multiple protocols from one source file is acceptable/positive. Merged MR !25763 provides the complementary case: Alexis La Goutte questioned splitting NVMe-MI because Wireshark already has many dissector files, but the author justified it as preparation for several large command sets and to keep the framing layer thin; the split-by-type design ultimately merged.
 
-**Lesson:** Do not assume one protocol registration requires one C source file. For a family of small, tightly related dissectors, a shared source file can be preferred over many tiny files. Consider cohesion and size when choosing file boundaries.
+**Lesson:** Do not assume one protocol registration requires one C source file. Consolidate small tightly related dissectors; split a protocol family when scale, cohesion, and expected growth genuinely justify independent modules. Source-file layout should be argued from maintainability, not applied mechanically.
 
-**Confidence:** Medium-high. Direct reviewer guidance, but apply contextually rather than as a universal requirement.
+**Confidence:** High for the contextual rule because we now have merged/reviewer evidence on both sides of the tradeoff.
 
 ### New protocol functionality should have a sample capture
 
