@@ -1,23 +1,29 @@
 # Personal Upstream Review Feedback
 
-This file tracks substantive feedback received on Devin Heitmueller's Wireshark merge requests. Its purpose is stronger than general MR archaeology: **a reviewer should not have to give Devin the same feedback twice.**
+This file tracks substantive feedback received on Devin Heitmueller's Wireshark contributions. Its purpose is stronger than general MR archaeology: **a reviewer should not have to give Devin the same feedback twice.**
+
+## Contribution-history note
+
+MR !26390 is Devin's **only Wireshark GitLab merge request to date**. Earlier Wireshark contributions were submitted through the project's mailing-list / patch-review workflow rather than GitLab MRs. Therefore, do not waste corpus-mining effort searching for additional Devin-authored GitLab MRs unless new ones have been submitted since this note was written.
+
+If historical personal-review mining is undertaken, the next high-value source is Devin's older Wireshark mailing-list patch discussions. Reviewer feedback found there should be normalized into the same checklist below, with provenance preserved, just like feedback from GitLab MRs.
 
 ## Operating rule
 
 When preparing, reviewing, or generating code that Devin is likely to submit upstream to Wireshark, consult this file and explicitly check the proposed diff against all applicable lessons before considering it ready for submission.
 
-Feedback on Devin's own MRs has elevated practical significance even when it has not yet been proven to be a universal Wireshark convention. Preserve provenance and scope so reviewer-specific or context-specific advice is not incorrectly generalized.
+Feedback on Devin's own contributions has elevated practical significance even when it has not yet been proven to be a universal Wireshark convention. Preserve provenance and scope so reviewer-specific or context-specific advice is not incorrectly generalized.
 
-When mining the MR corpus, prioritize identifying all MRs authored by Devin and extract every substantive human review comment. For each useful comment, record:
+For each useful review comment on Devin's contributions, record:
 
-- MR and reviewer.
+- MR, mailing-list thread, patch, or other provenance and reviewer.
 - What the reviewer requested or objected to.
 - The resulting change, when known.
 - Scope/context.
 - Classification: `personal-check`, `likely-project-convention`, or `confirmed-project-convention`.
 - A concrete pre-submission check phrased so it can be applied to future diffs.
 
-Authoritative maintainer feedback, especially from Guy Harris, should receive correspondingly high weight. Merged outcomes are stronger evidence of accepted implementation than abandoned or superseded implementations, while reviewer corrections from unmerged MRs can still be valuable negative guidance.
+Authoritative maintainer feedback, especially from Guy Harris, should receive correspondingly high weight. Merged/accepted outcomes are stronger evidence of accepted implementation than abandoned or superseded implementations, while reviewer corrections from unmerged/unaccepted patches can still be valuable negative guidance.
 
 ## Current checklist
 
