@@ -15,10 +15,12 @@ Before implementing new functionality, locate several analogous dissectors in th
 - Prefer Wireshark's tvbuff/protocol-tree bit APIs over local hand-written bit extraction when parsing data already represented by a `tvbuff_t`. In MR !26390, Anders Broman specifically recommended `tvb_get_bits()` or direct tree addition with `proto_add_bits_item` / `proto_add_bits_item_ret_uint` instead of a custom `get_bits_buf()` helper.
 - Before adding a parsing helper, search current APIs and analogous dissectors for an existing operation that expresses the same intent.
 
-## Display a value and retrieve it once
+## Fetch/convert once and reuse
 
 - When a field must both be added to the protocol tree and consumed by parser/control-flow logic, prefer the appropriate `proto_tree_add_item_ret_*` / `proto_add_bits_item_ret_*` API instead of separately calling `tvb_get_*` and then adding the same field.
 - MR !26391 systematically replaces pairs such as `tvb_get_uint8()` + `proto_tree_add_item()` with `proto_tree_add_item_ret_uint8()` across multiple dissectors. MR !26367 independently uses `proto_tree_add_item_ret_uint8()` / `_ret_uint16()` while parsing the SACCH Information IE. Treat this as a strong current idiom and search for a `_ret_` helper before double-fetching a field.
+- Reuse values that have already been fetched rather than reading the same bytes again later in the same path. In merged MR !25946, Pascal Quantin explicitly called out re-fetching the NMEA sentence ID and suggested using the already available value.
+- Before writing local string/byte conversion helpers, search shared utility headers such as `epan/strutil.h`. The same !25946 review specifically pointed to `convert_string_case()` and `convert_string_to_hex()` as existing functionality that should be considered rather than reinvented locally.
 
 ## Source-file organization
 
@@ -47,6 +49,7 @@ Before implementing new functionality, locate several analogous dissectors in th
 - MR !26365 uses `ckd_add()` before growing a manually reassembled buffer and emits expert information when the resulting PDU would exceed `INT32_MAX`. MR !26382 independently avoids `cur_off + len` overflow by subtracting first (`avail = tot_len - cur_off`) after proving `tot_len > cur_off`, then clipping `len` to `avail`.
 - Merged DICOM MRs !26208/!26215 reinforce this pattern outside packet reassembly: use a size-appropriate unsigned type, `ckd_add()`, and a realistic explicit upper bound that is valid on both 32-bit and 64-bit builds rather than relying on unchecked accumulation or a theoretical maximum.
 - Reassembly keys must include every field that participates in the protocol's message identity. !26223 fixed MCTP reassembly collisions by including the tag-owner bit together with the message tag; request and response directions can legally reuse the same numeric tag.
+- A `reassembly_table` must have a valid initialization/registration path, not merely a declaration and uses. Merged MR !25984 fixed a Bluetooth BR/EDR table that was used without being registered/initialized; maintainers explicitly discussed adding automated checking for this class of defect. Include reassembly-table registration in code review/pre-submit checks.
 - Prefer the standard Wireshark reassembly API when it fits. The existing manual AVCTP reassembly code touched by !26365 explicitly notes that it should eventually be replaced by the standard API with custom key functions.
 
 ## Field semantics and compatibility
