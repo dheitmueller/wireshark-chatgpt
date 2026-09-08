@@ -84,11 +84,11 @@ Merged MR !25978, authored and merged by John Thacker, changes LBMR Topic Manage
 
 Loops that decode input in units larger than one byte/character must use a loop bound that guarantees every element read by the iteration exists. An inclusive bound is especially suspicious when the loop body accesses `n + 1`, `n + k`, or emits a smaller number of output units than input units.
 
-Merged MR !25992, authored and merged by John Thacker, fixes the 3GPP log wiretap reader's hex decoder from `n <= data_chars` to `n < (data_chars & ~1)`. The corrected bound processes only complete two-character hex pairs and cannot read the second nibble beyond the validated input. Release-4.6 backport !25995 preserves the fix.
+Merged MR !25992, authored and merged by John Thacker, fixes the 3GPP log wiretap reader's hex decoder from `n <= data_chars` to `n < (data_chars & ~1)`. The corrected bound processes only complete two-character hex pairs and cannot read the second nibble beyond the validated input. Release-4.6 backport !25995 preserves the fix; release-4.4 backport !26000 supplies additional corroboration.
 
 **Implementation rule:** derive the iteration limit from complete input units, not merely the raw input count. For pairwise hex decoding, round the usable character count down to an even boundary before reading `n` and `n+1`.
 
-**Confidence:** Very high. Merged memory-safety fix by John Thacker plus accepted backport.
+**Confidence:** Very high. Merged memory-safety fix by John Thacker plus accepted backports.
 
 ## Width-specific helper APIs must carry the exact width in their type contract
 
@@ -109,3 +109,71 @@ Merged MR !25985 fixes UET CRC verification on big-endian hosts after the CRC32C
 **Implementation rule:** when checksum behavior differs by architecture, inspect the checksum API contract before adding host/network conversions. Include big-endian CI/testing evidence where practical for low-level endian helpers.
 
 **Confidence:** High. Merged portability/correctness fix with a concrete big-endian failure mode.
+
+## Keep mutable dissector state in the narrowest semantic lifetime
+
+Mutable state that belongs to one packet must not live in process-global/static storage merely because several generated callbacks need to share it. Merged MR !25998, authored and merged by John Thacker, moves CMS `top_tree` and `cap_tree` pointers into the packet's CMS private data. The stated failure mode was stale proto-tree reuse in a later frame for unusual non-conforming captures. Release backports !26001 and !26002 preserve the same design.
+
+**Implementation rule:** choose packet-, conversation-, capture-, or process-lifetime storage from the semantics of the state. In particular, tree/item pointers and current-element parser context are normally packet-local; storing them globally creates redissection and cross-frame hazards.
+
+**Confidence:** Very high. Security-motivated master fix authored and merged by John Thacker plus two accepted backports.
+
+## Stateful lookup keys must be stable across both directions when the state is bidirectional
+
+A field visible on every packet is not necessarily a valid request/response lookup key. If its value denotes the destination or another direction-specific endpoint, opposite directions can legitimately carry different values for the same connection.
+
+Merged MR !26003 fixes OBEX-over-L2CAP request/response association by replacing the packet's L2CAP CID with `local_cid` in the OBEX state key. L2CAP packets carry the CID of the endpoint they are directed toward, so request and response CIDs normally differ; `local_cid` is stable for the connection and therefore supports consistent lookup.
+
+**Implementation rule:** before choosing a state key, ask whether each component is invariant under direction reversal for the state being modeled. If the analysis links both directions, use connection identity rather than a directional packet identifier.
+
+**Confidence:** High. Merged master fix with a concrete incorrect-association failure mode and maintainer acceptance.
+
+## Parser bounds must describe bytes actually present in the backing buffer
+
+Do not pass a logical record remainder, advertised length, or total object size to a parser when only a smaller prefix has actually been read into memory. The callee's bound must describe the bytes it can physically access.
+
+Merged MR !26004, authored and merged by John Thacker, fixes Network General Sniffer header processing where only up to 256 bytes were read but the helpers were given the larger `rec_length_remaining`. The corrected calls pass `bytes_to_read` in both code paths. Release backports !26005 and !26006 preserve the same correction.
+
+**Implementation rule:** distinguish “bytes remaining in the format” from “bytes materialized in this buffer.” Bounds supplied to raw-buffer parsers must use the latter.
+
+**Confidence:** Very high. Security-motivated master fix authored and merged by John Thacker plus two release backports.
+
+## Prefer iterative traversal for attacker-controlled nesting when recursion adds no semantic value
+
+Recursive traversal of untrusted structured input can turn nesting depth into stack consumption even when every individual access is bounds-safe. When the traversal can be expressed with an explicit counter/worklist, prefer the iterative form.
+
+Merged MR !26007, authored by John Thacker, replaces recursive `json_get_next_object()` token walking with an iterative token-count traversal specifically to reduce stack use in ASan Debug/fuzz builds. Guy Harris explicitly connected the recursive form with fuzz-test stack overflows in review. Release backports !26009 and !26010 preserve the change.
+
+**Implementation rule:** treat stack depth as a resource controlled by hostile input. Parser recursion is appropriate only when a meaningful, bounded grammar invariant justifies it; otherwise use iterative traversal.
+
+**Confidence:** Very high. Merged security/fuzzing fix plus direct Guy Harris review feedback and two release backports.
+
+## File-format probes should reject implausible input cheaply before expensive parsing
+
+A wiretap format recognizer should perform a small, semantically meaningful plausibility check before committing to expensive whole-file parsing when unrelated input can share the outer syntax. At the same time, the probe should not impose incidental serialization details that the format does not require.
+
+Merged MR !26008 changes Chrome NetLog recognition to inspect only the first two JSON tokens first: the top level must be an object and the first member name must be one of the known NetLog members. This quickly rejects deeply nested unrelated JSON that would otherwise consume substantial parsing work. The check deliberately accepts several valid member names rather than requiring `constants` first, because a standards-compliant JSON rewrite may reorder object members.
+
+**Implementation rule:** make format probes cheap, discriminating, and semantically tolerant. Reject obvious nonmatches early, but do not confuse a producer's usual ordering/layout with a required format invariant.
+
+**Confidence:** High. Merged master hardening by John Thacker with explicit rationale about both denial-of-service cost and member-order tolerance.
+
+## Decode wire lengths in their real domain and validate before arithmetic
+
+If a file or protocol defines a length as an unsigned N-bit quantity, decode and hold it in a corresponding unsigned type until its validity has been established. Validate relational constraints, implementation capacity, and arithmetic headroom before adding headers, narrowing, casting to signed types, or using the value in buffer operations.
+
+Merged MR !26012, authored and merged by John Thacker, hardens Android btsnoop capture handling by reading reported and captured lengths as `uint32_t`, rejecting captured lengths larger than the allocated packet buffer, rejecting reported lengths smaller than captured lengths, and checking addition headroom before subsequent size arithmetic. The prior signed conversion could turn hostile high-bit values negative and undermine the checks.
+
+Merged MR !26013 independently reinforces the local-boundary part of the rule: before a Netflix BBlog TCPINFO option reads its two mandatory `uint64_t` fields, it verifies the option length is at least `2 * sizeof(uint64_t)`. Release-4.6 backport !26016 preserves that guard.
+
+**Implementation rule:** validation precedes arithmetic. First prove the raw wire value is representable and structurally plausible; only then derive totals, offsets, allocation sizes, or signed API values from it.
+
+**Confidence:** Very high. Two merged security fixes, one authored/merged by John Thacker, plus an accepted release backport.
+
+## Prefer portable byte-assembly helpers over architecture-specific pointer tricks
+
+Portable byte-at-a-time shift/mask implementations are not necessarily a performance concession. In merged MR !25999, authored and merged by Guy Harris, `wsutil/pint.h` documents that newer GCC and Clang recognize these unaligned fetch/store idioms and lower them to efficient platform operations such as unaligned loads/stores and byte swaps where appropriate.
+
+**Implementation rule:** favor the project's portable integer access helpers and clear byte-order semantics instead of introducing alignment/aliasing-sensitive casts solely for presumed speed. Let supported compilers optimize recognized idioms unless measurement proves a real need for a specialized path.
+
+**Confidence:** High. Direct documentation change authored and merged by Guy Harris.
