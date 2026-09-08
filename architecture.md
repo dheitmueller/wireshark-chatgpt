@@ -47,6 +47,10 @@ Reserve `WTAP_ERR_INTERNAL` for conditions that are impossible if Wireshark's ow
 
 Merged !25865 supplies direct implementation corroboration: TTL validity states that are impossible at those internal call sites were changed from `WTAP_ERR_BAD_FILE` to `WTAP_ERR_INTERNAL`. This sharpens the rule: classify the condition according to where the violated contract resides, not merely because malformed capture data was involved somewhere earlier in the call chain.
 
+Malformed capture-file syntax is an ordinary input error, not a reason for a parser/scanner to terminate the Wireshark process. Merged !25907, authored and merged by John Thacker, changes the Busmaster scanner's unterminated-header path from Flex `YY_FATAL_ERROR()` to setting `WTAP_ERR_BAD_FILE`, supplying `err_info`, and terminating only the local scan. Wiretap parsers should translate attacker-controlled malformed input into the normal error-return path and let callers decide how to present or recover from it. The release-4.6 and release-4.4 backports !25915 and !25916 preserve the same behavior.
+
+Reader capability and writer capability are independent contracts. A wiretap dumper must validate each record against the format and buffer limits it can actually emit even when the corresponding reader accepts larger records. Merged !25917, authored and merged by John Thacker, guards the K12 writer against records larger than its backing frame buffer and returns `WTAP_ERR_UNWRITABLE_REC_DATA` with a useful size error instead of copying past the allocation. Do not infer “writable” from “readable”; reject unsupported output records before materializing them.
+
 ## Tree visibility versus filterability
 
 A protocol-tree item need not be visibly rendered to remain useful for display filtering. MR !26393 demonstrates adding eCPRI fields and calling `proto_item_set_hidden()` when O-RAN FH owns the visible dissection. This is useful when a parent/encapsulation protocol has filter semantics that should remain available without duplicating visible presentation.
