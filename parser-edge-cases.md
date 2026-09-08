@@ -71,3 +71,23 @@ Merged MR !26045, authored by Jaap Keuter and committed/merged by John Thacker, 
 **Implementation rule:** choose conversation keys from the lifetime and scope of the state being modeled. If the specification permits one transport to configure another, transport ports/stream IDs must not artificially partition that state.
 
 **Confidence:** High. Merged master architecture change, with John Thacker as committer/merger and a concrete cross-transport requirement.
+
+## Parse decimal timestamp fractions as decimal fractions, not fixed-unit integers
+
+A textual fractional-seconds field carries its scale in the number of decimal digits. Parsing the digits directly as an integer and multiplying by a fixed factor is only correct when the input width is fixed. When the format permits fewer digits, normalize the decimal representation to the target precision before numeric conversion.
+
+Merged MR !26061 fixes the Daintree SNA wiretap reader by accepting at most nine decimal digits with `%9[0-9]`, padding the captured fractional string with trailing zeroes to nine digits, and then converting it to nanoseconds. This both validates the character domain and preserves the meaning of values such as `.1`, `.01`, and `.001`.
+
+**Implementation rule:** for variable-width decimal fractions, validate a bounded digit string and scale by decimal position (for example by right-padding to nanosecond precision) rather than assuming the parsed integer already has a fixed unit.
+
+**Confidence:** High. Merged master wiretap fix approved/merged by Anders Broman.
+
+## Bounds-check every dimension before indexing packet-derived state arrays
+
+When packet-derived state selects indices into a multidimensional fixed array, validate each index against the concrete backing dimension before the read or write. Do not rely on earlier protocol-level validation, enum ranges, or assumptions about direction values when corruption of parser state could make an index escape the storage.
+
+Merged MR !26072 fixes potential heap corruption in UMTS RRC by checking both `rbid` against `G_N_ELEMENTS(ciphering_info->seq_no)` and `direction` against `G_N_ELEMENTS(ciphering_info->seq_no[0])` before writing `ciphering_info->seq_no[rbid][direction]`; an invalid value returns without performing the write.
+
+**Implementation rule:** guard the actual storage expression immediately before indexing it, and derive bounds from the array itself where practical (`G_N_ELEMENTS`) so the check remains coupled to the allocation.
+
+**Confidence:** High. Merged master memory-safety fix authored and merged by Ronnie Sahlberg.
