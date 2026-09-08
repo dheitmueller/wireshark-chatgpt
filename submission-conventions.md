@@ -13,3 +13,13 @@ Merged MR !26145 began with a generic `fix:` subject. John Thacker explicitly as
 This sharpens the existing notebook rule that commit messages use a short `component: brief summary` subject followed by a blank line before any longer body.
 
 **Confidence:** Very high. Direct maintainer instruction on a merged first-contribution MR, with the requested form adopted before merge.
+
+## A green pipeline only validates the code actually present in the MR diff
+
+Passing CI is not evidence for a feature if rebasing, force-pushing, or commit reconstruction accidentally drops the feature from the submitted diff. Before declaring an MR ready, inspect the current GitLab diff itself and verify that it contains the intended implementation, its tests, and no unrelated or stale changes.
+
+In still-open MR !26280, the contributor reported a clean rebase and green CI for address-masking work. Pascal Quantin inspected the actual MR diff and pointed out that it contained only an unrelated `packet-trdp.c` include change, so CI was not testing the claimed feature at all. Later review by Pascal and Jaap Keuter also identified unrelated changes and accidental removal of existing CSV formula-escaping behavior.
+
+**Submission rule:** after rebases, force-pushes, or history cleanup, review the MR's current diff as a reviewer would. Confirm that all intended files and tests remain, unrelated changes are absent, and existing behavior outside the feature scope has not been silently reverted. Treat pipeline status as validation of that verified diff, not as a substitute for verifying the diff.
+
+**Confidence:** High for the submission/review rule. The implementation MR remained open and unresolved in the reviewed corpus snapshot, so its proposed masking design is not accepted evidence; the diff-integrity correction itself came from Pascal Quantin and is independent of whether that feature ultimately merges.
