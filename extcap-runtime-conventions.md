@@ -21,3 +21,23 @@ Merged MR !26131, authored by John Thacker and approved/merged by Anders Broman,
 **Implementation rule:** integrate shutdown signaling into the same readiness mechanism used for remote I/O. Do not let an idle producer make an extcap process unkillable, and do not use terminal semantics on a binary capture channel merely to obtain signal behavior.
 
 **Confidence:** Very high. Merged master lifecycle/architecture change authored by John Thacker and approved/merged by Anders Broman.
+
+## Prime asynchronous I/O before attaching the readiness source
+
+When asynchronous I/O needs an initial read operation to establish its pending/event state, complete that priming step before publishing the event source to the main loop. Attaching the source first can let immediately available data trigger the callback while the explicit priming path is also consuming it, producing duplicate callbacks or inconsistent state.
+
+Merged MR !26146, authored, approved, and merged by John Thacker, fixes the Windows extcap control path by calling `issue_next_read()` before `g_source_attach()`. The source is attached, and its watch ID stored, only when the OVERLAPPED read has been successfully primed; failed priming leaves the watch unset.
+
+**Implementation rule:** initialize the platform I/O operation and establish its one authoritative pending/readiness state before exposing the corresponding event source to the main loop. Publish the watch handle only after successful priming.
+
+**Confidence:** Very high. Merged master fix authored and merged by John Thacker, with an explicit duplicate-callback failure mode.
+
+## Teardown should remove auxiliary IPC resources as completely as setup created them
+
+Extcap sessions can create more than the main capture FIFO. Control input/output FIFOs may each live in temporary directories, and removing only the FIFO pathname leaves process-generated filesystem state behind.
+
+Merged MR !26157, authored, approved, and merged by John Thacker, extends non-Windows extcap teardown so the control FIFO paths are unlinked and their temporary parent directories are removed just like the main FIFO directory.
+
+**Implementation rule:** treat session-owned IPC artifacts as a resource set. Teardown should mirror setup for main and auxiliary channels, including temporary container directories, while retaining platform-specific behavior where required.
+
+**Confidence:** Very high. Merged master lifecycle cleanup authored and merged by John Thacker.
