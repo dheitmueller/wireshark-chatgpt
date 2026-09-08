@@ -24,28 +24,48 @@ In merged MR !25952, Martin Mathieson explicitly asked the ETW domain expert to 
 
 For `tvb_get_ptr(tvb, offset, length)`, `length` is the number of bytes requested beginning at `offset`; it is not an absolute end offset and should not have `offset` subtracted from it unless the caller is genuinely converting an end position into a length. The returned value is a raw pointer into the tvbuff's backing data; the length argument validates availability, it does not create a separately length-carrying slice.
 
-Merged MR !25954, authored and merged by John Thacker, fixed KNX/IP code that had already computed `size` as the encrypted-data length but then called `tvb_get_ptr(tvb, offset, size - offset)`. The double subtraction could reduce the requested length to zero and yield `NULL` even though the intended encrypted bytes had already been bounds-checked. The correct call is `tvb_get_ptr(tvb, offset, size)` once `size` bytes at that offset have been validated. Release-4.6 backport !25957 preserves the same correction.
+Merged MR !25954, authored and merged by John Thacker, fixed KNX/IP code that had already computed `size` as the encrypted-data length but then called `tvb_get_ptr(tvb, offset, size - offset)`. The double subtraction could reduce the requested length to zero and yield `NULL` even though the intended encrypted bytes had already been bounds-checked. The correct call is `tvb_get_ptr(tvb, offset, size)` once `size` bytes at that offset have been validated. Release-4.6 backport !25957 preserves the same correction; release-4.4 backport !25958 independently confirms the same semantics.
 
 **Implementation rule:** keep offsets, lengths, and end positions semantically distinct. Once a variable is a length relative to a known offset, pass that length directly to tvbuff APIs that expect a byte count; do not subtract the offset again.
 
-**Confidence:** Very high. Security-motivated merged fix by John Thacker plus an accepted release backport.
+**Confidence:** Very high. Security-motivated merged fix by John Thacker plus accepted release backports.
 
 ## Clear transient parser state before decoding that may fail or be empty
 
 When parser callbacks store temporary/current values outside the immediate local expression, reset that state to a safe default before entering a parse that can throw, short-circuit, encounter an empty container, or omit a mandatory-looking element. Clearing the previous value only after successfully parsing the replacement can leave stale data from an earlier element or packet visible to later logic.
 
-Merged MR !25955, authored and merged by John Thacker, moved clearing of CMS `algorithm_id` to the start of `AlgorithmIdentifier` dissection, before sequence processing. The stated rationale is that an exception or empty sequence must not leave the previous digest algorithm in place. The verifier also treats a missing algorithm as "unable to verify" instead of dereferencing/comparing a null pointer.
+Merged MR !25955, authored and merged by John Thacker, moved clearing of CMS `algorithm_id` to the start of `AlgorithmIdentifier` dissection, before sequence processing. The stated rationale is that an exception or empty sequence must not leave the previous digest algorithm in place. The verifier also treats a missing algorithm as "unable to verify" instead of dereferencing/comparing a null pointer. Release backports !25959 and !25961 preserve both the reset-before-parse ordering and the explicit missing-value check.
 
 **Implementation rule:** establish the failure-state value first, then parse and overwrite it only on success. This is especially important in generated/ASN.1 callback code and other parsers where exceptions can bypass ordinary cleanup/assignment paths.
 
-**Confidence:** Very high. Merged defensive parser-state fix by John Thacker with explicit stale-state rationale.
+**Confidence:** Very high. Merged defensive parser-state fix by John Thacker with explicit stale-state rationale and two accepted backports.
 
 ## Wiretap `caplen` and packet `len` are different semantic quantities
 
 A wiretap reader must keep the number of bytes actually captured/stored separate from the packet's original/on-wire length. Set `caplen` from the captured payload that the reader actually materializes, and set `len` from the format's original packet-length field. Do not assign them based on variable proximity or naming alone; trace each source field's file-format semantics.
 
-Merged MR !25956, authored and merged by John Thacker, fixes RTPDump where these assignments were swapped. After accounting for the exported-PDU header, `caplen` is based on the captured RTPDump record length while `len` is based on the original packet length. The same fix validates that the total record length can include the mandatory 8-byte header using checked subtraction, reporting malformed input as `WTAP_ERR_BAD_FILE` with format-specific context.
+Merged MR !25956, authored and merged by John Thacker, fixes RTPDump where these assignments were swapped. After accounting for the exported-PDU header, `caplen` is based on the captured RTPDump record length while `len` is based on the original packet length. The same fix validates that the total record length can include the mandatory 8-byte header using checked subtraction, reporting malformed input as `WTAP_ERR_BAD_FILE` with format-specific context. Release backports !25962 and !25963 corroborate the same rule.
 
 **Implementation rule:** validate mandatory-header subtraction before consuming payload, and preserve the capture-file distinction between stored bytes and original packet size all the way into `wtap_rec` metadata.
 
-**Confidence:** Very high. Merged wiretap correctness/security fix by John Thacker and consistent with Wireshark's established wiretap error taxonomy.
+**Confidence:** Very high. Merged wiretap correctness/security fix by John Thacker plus accepted release backports.
+
+## Validate fixed-format text length before raw indexing or substring parsing
+
+When a dissector receives a textual parameter whose grammar requires a fixed minimum width, validate that width before passing raw pointers into helpers or indexing fixed offsets. A malformed short parameter should remain dissectable: mark the field with appropriate expert information and stop parsing the fixed subfields rather than reading beyond the supplied bytes.
+
+Merged MR !25976, authored and merged by John Thacker, checks that the first Bluetooth HFP `AT+XAPL` parameter is at least 14 bytes before extracting several fixed-position hexadecimal substrings. Short values receive an expert warning and the parser returns without attempting those fixed-offset reads.
+
+**Implementation rule:** derive the minimum input width from the format grammar, check it once at the boundary where fixed-position parsing begins, and treat failure as malformed protocol input rather than a process-level fault.
+
+**Confidence:** Very high. Security-motivated merged fix by John Thacker.
+
+## Diagnostic previews must respect the actual buffer length
+
+Debug, expert-info, and logging paths are still parser code and must not assume that a value is as long as it normally ought to be. When displaying a bounded preview of an externally derived byte string, clamp the preview length to the actual available length and add truncation indication only when more bytes truly exist.
+
+Merged MR !25970, authored and merged by John Thacker, replaced repeated direct reads of the first four Kerberos key bytes with a helper that emits up to four bytes and an ellipsis only for longer keys. This avoids out-of-bounds reads if an unexpectedly short key reaches an expert-message path. Release backports !25974 and !25975 corroborate the same pattern.
+
+**Implementation rule:** never exempt formatting-only code from length safety; compute `min(actual_length, preview_limit)` before reading the preview bytes.
+
+**Confidence:** Very high. Security-motivated merged fix by John Thacker plus two accepted release backports.
