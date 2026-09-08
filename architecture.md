@@ -13,6 +13,7 @@ When changing a subsystem, trace the real call path in the current source before
 - Registration choices carry semantic meaning. A fixed TCP/UDP port table entry says more than “this often runs here”; do not claim an unassigned/dynamic port. Use Decode As or a well-founded heuristic mechanism instead.
 - Treat a dissector entry point as an API contract, including the meaning of its `data` argument. If different registration/call paths supply different data contracts, prefer separate entry points that invoke common implementation code with explicit parameters. Guy Harris rejected pointer-identity/type guessing in !26224 and implemented the separate-entry-point design in merged !26229 for IEEE 802.15.4 FCS handling.
 - Prefer existing dissector tables when a protocol field names the encapsulated protocol. Merged !26218 dispatches GUE Variant 0 through `ip.proto`, preserving normal protocol registration and nested display rather than embedding a private protocol switch.
+- When nested protocol layers have more than one plausible session context, make that distinction explicit at the API boundary. Merged !25853 separates “current TLS session” from “parent/calling TLS session” and passes the resolved `SslDecryptSession *` into lower helpers rather than making generic `packet_info`-based helpers infer which nesting level the caller intended. Prefer typed, already-resolved context when the semantic choice matters.
 
 ## Stateful analysis and identity
 
@@ -21,6 +22,12 @@ State/reassembly keys must model the protocol's actual identity tuple, not just 
 When a wiretap reader derives packet context only during sequential parsing, do not assume `seek_read()` can reconstruct it from the packet's local byte range. Persist the required per-packet context during the first pass, keyed by the packet's stable `data_offset`, and restore it on random access. Merged !25834 fixes 3GPP nettrace second-pass UE-ID/timestamp corruption with exactly this pattern.
 
 For known-length reassembly, bounds for overlap comparison must be based on bytes that actually exist in the allocated reassembly buffer, not merely on fragment geometry. Merged !25837 clips the overlap end to `datalen` before `memcmp()`, because fragments may legally be recorded beyond the known assembled-data boundary even though no backing buffer exists there.
+
+Sequence-based reassembly must also treat the *aggregate* assembled size as hostile arithmetic. Merged !25844, authored by John Thacker, uses checked addition while summing fragment lengths, caps the result to the implementation's supported `INT32_MAX` domain, and clips subsequent copies to the remaining allocated capacity while flagging overlong fragments. A wrapped total is not merely a bad length value; it can cause under-allocation followed by an out-of-bounds copy. Backports !25846 and !25847 preserve the same rule.
+
+## State transitions and update ordering
+
+When changing configuration that invalidates derived dissector/UI state, determine the effects and quiesce the affected consumers *before* exposing the new values. Merged !25841 fixes preference application that previously mutated stashed preferences while simultaneously discovering whether redissection was required; a dissector could therefore observe a new preference value while still holding resources/state from the old value. The corrected sequence first computes the effect flags, freezes the packet list if redissection is required, and only then applies the preference values. The merged release-4.6 backport !25857 corroborates the ordering. Treat multi-step configuration changes as a state transition, not a series of independently safe assignments.
 
 ## Wiretap error semantics
 
