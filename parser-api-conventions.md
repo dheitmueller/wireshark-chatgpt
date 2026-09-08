@@ -177,3 +177,53 @@ Portable byte-at-a-time shift/mask implementations are not necessarily a perform
 **Implementation rule:** favor the project's portable integer access helpers and clear byte-order semantics instead of introducing alignment/aliasing-sensitive casts solely for presumed speed. Let supported compilers optimize recognized idioms unless measurement proves a real need for a specialized path.
 
 **Confidence:** High. Direct documentation change authored and merged by Guy Harris.
+
+## Macro-generated low-level APIs should have one canonical signature
+
+When a public or widely included header generates families of inline helpers, define the API signature once and vary only the implementation where platform/compiler branches require it. Duplicating whole function definitions behind conditionals makes it possible for alternate paths to drift to different parameter widths or semantics. Internal helper macros used to generate those functions should also be undefined after use so they do not leak into includers' namespaces.
+
+Merged MR !26020, authored by Guy Harris and merged after John Thacker review, restructures `pint.h` specifically to avoid defining the inline helper family twice. The motivating bug was the mismatched width fixed in !25994. John explicitly characterized the consolidated version as easier to read and less likely to lead to mistakes.
+
+**Implementation rule:** a conditional implementation path must not silently become a second API declaration. Keep one source of truth for parameter/return types, and clean up private generation macros at the end of the header.
+
+**Confidence:** Very high. Merged master change authored by Guy Harris, directly tied to a prior memory-safety bug and positively reviewed by John Thacker.
+
+## Remaining-length counters should be consumed with checked subtraction
+
+For a parser or wiretap reader that tracks an unsigned `*_remaining` count, make consumption of that count explicit and monotonic. Before a read whose size has not already been proven to fit, use checked subtraction and report malformed input if it underflows; if the size has already been proven `<= remaining`, the read may occur first and the known-safe subtraction may follow.
+
+Merged MR !26021, authored by Guy Harris and merged after John Thacker review, applies this pattern throughout the Network General Sniffer reader and states that it should ultimately become a general reader pattern. Several structure reads replace a separate comparison plus later decrement with `ckd_sub(&rec_length_remaining, rec_length_remaining, sizeof structure)` before the read.
+
+**Implementation rule:** do not let a remaining-byte counter become merely advisory metadata. Every consumption must either atomically prove-and-subtract with checked arithmetic, or follow an earlier proof that makes the subtraction incapable of underflow.
+
+**Confidence:** Very high. Explicit normative rationale in a merged master MR authored by Guy Harris.
+
+## Validate exact cryptographic input sizes at the external-data boundary
+
+A cryptographic primitive with a fixed-size key/input contract must not be called merely because the surrounding data source is nominally trusted metadata. Validate the exact algorithm-required size before passing externally supplied packet, capture, key-log, or Decryption Secrets Block material to the primitive.
+
+Merged MR !26026, authored and merged by John Thacker, checks that both Curve25519 public and private keys are exactly 32 bytes before calling `crypto_scalarmult_curve25519()`. The malformed length can originate in a bogus Decryption Secrets Block rather than ordinary packet payload. Release backports !26033 and !26034 preserve the check.
+
+**Implementation rule:** library preconditions are parser boundaries too. Validate them explicitly where untrusted/external data crosses into fixed-size crypto APIs, and fail locally rather than relying on the primitive to tolerate malformed sizes.
+
+**Confidence:** Very high. Security-motivated merged master fix by John Thacker plus two accepted release backports.
+
+## Output normalization must not fabricate bytes or underflow semantic lengths
+
+When a capture-file writer must align or normalize an output record, preserve the semantic distinction between bytes actually captured and bytes missing because the packet was snapped. Padding a truncated packet can be wrong when the file format would interpret that padding as captured payload; conversely, rounding down must be rejected if the required subtraction exceeds the captured data.
+
+Merged MR !26028, authored and merged by John Thacker, hardens the ERF writer. ERF records require 64-bit alignment. For already-truncated packets the writer rounds down rather than pads, because padding would masquerade as missing captured bytes; it now checks `caplen < round_down` and returns `WTAP_ERR_UNWRITABLE_REC_DATA` instead of underflowing. Release-4.6 backport !26032 corroborates the behavior.
+
+**Implementation rule:** validate the semantics and arithmetic of writer-side transformations before applying them. If a format constraint cannot be met without inventing payload or making a length negative/wrap, reject the record as unwritable.
+
+**Confidence:** Very high. Security-motivated merged master wiretap fix by John Thacker plus accepted release backport.
+
+## Reject impossible variable headers before allocating from derived sizes
+
+If a file-format field controls a pseudo-header or subrecord size, validate its structural relationship to the enclosing record and perform checked arithmetic before using any derived size for allocation. A later short-read failure is not an adequate guard if overflow can first turn malformed metadata into a huge allocation request.
+
+Merged MR !26036, authored and merged by John Thacker, fixes the Shomiti/Finisar Surveyor snoop reader. A variable pseudo-header larger than the total packet size could overflow derived arithmetic and trigger a near-4-GiB buffer allocation before the subsequent read failed. The fix makes the header length unsigned and uses `ckd_sub()` both for the minimum pseudo-header calculation and for subtracting the pseudo-header from the packet size, returning `WTAP_ERR_BAD_FILE` before allocation on failure.
+
+**Implementation rule:** validate enclosing-size relationships before allocation, not after it. Checked arithmetic should guard the first derivation of a size that can influence allocation or reads.
+
+**Confidence:** Very high. Security-motivated merged master wiretap fix by John Thacker with a concrete resource-exhaustion failure mode.
