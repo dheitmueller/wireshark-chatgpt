@@ -13,9 +13,11 @@ Merged MR !26017, authored by Gerald Combs and accepted by Jaap Keuter, expanded
 - Strongly prefer attaching a capture file that reproduces the issue. This speeds diagnosis and verification.
 - Capture files attached to security issues are also used for fuzz testing. If a reproducer contains confidential information, state that explicitly.
 
-**Submission rule:** for security-sensitive parser/dissector defects, treat a small reproducing capture plus exact reproduction steps as first-class review material. Prefer a concise factual title and keep the sensitive details inside the confidential report rather than encoding them in a decorative subject prefix.
+Merged MR !26241, authored by Gerald Combs, approved by John Thacker, and merged by Anders Broman, further tightened the policy: the problem description itself should be concise, and supplied reproducer files should have unique, descriptive names such as a protocol/failure-mode-oriented capture name rather than a generic `poc.pcap`. This matters operationally when maintainers and automation handle many security artifacts.
 
-**Confidence:** Very high. This is project policy text authored by Gerald Combs and merged into `SECURITY.md`.
+**Submission rule:** for security-sensitive parser/dissector defects, treat a small reproducing capture plus exact reproduction steps as first-class review material. Prefer a concise factual title and description, keep sensitive details inside the confidential report, and give attached artifacts unique descriptive names that identify the affected protocol or failure mode.
+
+**Confidence:** Very high. This is project policy text authored by Gerald Combs and merged into `SECURITY.md`, reinforced by a later Gerald-authored policy update.
 
 ## Do not infer a broad anti-test rule from one review
 
