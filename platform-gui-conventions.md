@@ -25,3 +25,13 @@ Merged MR !25996, authored and merged by John Thacker, fixes Windows software-up
 **Implementation rule:** at boundaries from third-party/native callback threads into Qt UI/application objects, identify the owning thread before touching QObjects, timers, or UI state. Marshal work through a queued Qt invocation/signal when affinity is not guaranteed; do not rely on the callback's current thread.
 
 **Confidence:** Very high. Merged correctness fix authored and merged by John Thacker with an explicit Qt thread-affinity rationale.
+
+## Shared export/print options belong in frontend-independent argument state
+
+When an output-format option is meaningful to more than one frontend, represent it in the shared print/export configuration rather than wiring it directly from one command-line parser into the formatter. That keeps the formatter contract frontend-neutral and lets Wireshark, tshark, and later callers expose the same behavior without parallel plumbing.
+
+Merged MR !26114 adds compact JSON output. John Thacker specifically requested that the option be incorporated into `print_args_t` so the GUI could use it as well, rather than leaving it as a tshark-only flag. The accepted implementation carries `json_compact` through the shared print arguments and exposes the same setting in the JSON export dialog. Martin Mathieson also pointed the contributor to the existing `print_indent()` implementation, which had previously reduced PDML formatting overhead by avoiding repeated `fprintf()` indentation calls.
+
+**Implementation rule:** put cross-frontend formatting/export policy in the common argument/configuration object consumed by the shared output code. Frontends should translate their UI or CLI controls into that shared state, not own separate formatter behavior. Before adding performance-specialized output code, check for an existing shared helper that already implements the same low-level operation efficiently.
+
+**Confidence:** Very high. Merged master feature with explicit architectural review from John Thacker and implementation-performance guidance from Martin Mathieson.
