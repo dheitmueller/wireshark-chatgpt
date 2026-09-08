@@ -51,3 +51,13 @@ Merged MR !26180, authored by Ronnie Sahlberg and approved/merged by John Thacke
 **Implementation rule:** distinguish logical maximum, current length, and initial capacity. For a growable parser buffer, choose a defensible modest initial capacity and let the container grow as data arrives; reserve maximum-sized storage only when the entire allocation is actually required immediately and its failure behavior is acceptable.
 
 **Confidence:** Very high. Merged master resource-usage fix approved and merged by John Thacker with the allocator behavior and constrained-platform failure modes documented in the MR.
+
+## Encode exception-safe tvbuff ownership in parent/child relationships when possible
+
+When temporary real-data tvbuffs are logically owned by another tvbuff, prefer an ownership API that attaches the child's lifetime to the parent rather than relying on every exception path to free the temporary object manually. Wireshark dissectors can throw while parsing malformed input, so cleanup that exists only in ordinary control flow or scattered `CATCH` handlers is fragile.
+
+Merged MR !26287, authored and merged by John Thacker, changes the CIP dissector from `tvb_new_real_data()` to `tvb_new_child_real_data()` specifically so the temporary tvbuff is freed through the parent/child lifecycle even when dissection exits by exception. The MR explicitly contrasts this with having to maintain cleanup in multiple `CATCH` statements or callbacks. Merged !26288 independently reinforces the same exception-lifetime concern for ordinary GLib lists by ensuring temporary `GList` containers are freed even when XMPP dissection throws.
+
+**Implementation rule:** when an API can express ownership structurally, use it. Attach temporary tvbuffs to their logical parent or use scope-managed allocations so exception unwinding performs the cleanup automatically; reserve explicit `CATCH`-path cleanup for resources whose ownership cannot be represented by the existing lifetime mechanisms.
+
+**Confidence:** Very high. Merged master memory-safety fixes authored and merged by John Thacker, with !26287 explicitly selecting the child-tvbuff API to eliminate exception-path cleanup obligations.
