@@ -34,6 +34,14 @@ Merged MR !25977 is a good example of how to communicate validation in the MR de
 
 - When code declares/uses a reassembly table, verify that the table is initialized/registered along every required lifecycle path. Merged MR !25984 fixed an unregistered Bluetooth BR/EDR reassembly table, and maintainers discussed adding a commit check for this class of defect. Include this in manual pre-submit review even if no automated check currently catches it.
 
+## Shared dissector-test infrastructure and refactor baselines
+
+Merged MR !25875 is a strong test-architecture exemplar for shared protocol decoding. When it moved NVMe Admin SQE dispatch into a helper shared by native NVMe transports and NVMe-MI, it added an NVMe/TCP regression baseline with one Admin CapsuleCommand per arm of the relocated opcode switch. The stated purpose was to prove that centralizing dispatch was output-preserving for the existing transports, rather than validating only the new NVMe-MI caller.
+
+That MR also found two near-duplicate local `tshark -Tfields` fixtures that had already drifted in parameter ordering and options. It moved the generic `tshark_fields`, `assert_frame_matches`, and `assert_frames_match` helpers into `test/conftest.py`, making optional behavior such as field separators and two-pass dissection parameters of one shared fixture.
+
+**Durable practice:** when centralizing a decoder or dispatch path used by multiple transports/callers, add regression coverage for the pre-existing callers and exercise the meaningful dispatch arms so the refactor is demonstrably output-preserving. When test helpers are protocol-agnostic and duplicated across suites, prefer one shared `conftest.py` fixture/helper with optional parameters over multiple local copies that can drift.
+
 ## Robustness patterns worth fuzzing
 
 - Reassembly length arithmetic is a recurring hardening target. MR !26365 added checked addition and an expert warning for an overlong AVCTP reassembly; !26382 independently clipped Bluetooth HCI ACL fragment copies to remaining capacity instead of relying on potentially overflowing addition. DICOM MRs !26208 and !26215 add further evidence for `ckd_add()` plus explicit realistic size bounds.
