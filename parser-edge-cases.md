@@ -131,3 +131,13 @@ Merged MR !26126 enables SAP DIAG/RFC decompression using Wireshark's shared SAP
 **Implementation rule:** validate compressed and uncompressed length metadata before allocating; impose a defensible configurable output ceiling; do not decompress incomplete logical units; and retain the original bytes when transformation is unavailable or unsuccessful. Successful decompression should be clearly represented as derived data rather than silently replacing the source bytes.
 
 **Confidence:** Very high. Merged master feature with explicit resource bounds, malformed-input handling, a representative capture, and Anders Broman approval.
+
+## Terminate parser loops with a monotonic bound, not an equality that progress can skip
+
+For a loop that advances an offset/index toward a packet-derived endpoint, the continuation condition should express the valid range and the body must make monotonic progress. Equality-based termination is fragile when an iteration can advance by more than one unit: if the cursor skips past the exact sentinel, the loop may never become false and can spin indefinitely or continue parsing beyond its logical boundary.
+
+Merged MR !26168 fixes a potential endless loop in the IDN dissector. During review, John Thacker explicitly rejected an equality-style test and directed the contributor to continue while the index remains below the limit (`i < ...`); the contributor revised the code accordingly before John merged it.
+
+**Implementation rule:** for packet walkers and repeated-record parsers, prefer `cursor < end` / `remaining > 0` semantics after proving each successful iteration advances the cursor. Do not depend on eventually landing on one exact endpoint value unless the increment is mathematically guaranteed to do so on every path.
+
+**Confidence:** Very high. Merged master correctness fix with explicit loop-condition review from John Thacker and the requested revision incorporated before merge.
