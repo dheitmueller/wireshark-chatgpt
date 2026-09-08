@@ -10,11 +10,15 @@ Merged MR !25993, authored by John Thacker and merged by Anders Broman, raises W
 
 The MR also notes that the website/updater must be changed so unsupported Windows versions are not offered an incompatible Wireshark release, while those systems can remain on the maintained 4.6.x line.
 
-**Architecture rule:** when a platform baseline eliminates compatibility layers, evaluate the simplification against the support cost at the product level. Coordinate installer/updater/download gating and documentation, and identify the supported prior release for users left on the older platform.
+Merged MR !26169 is the corresponding implementation evidence for that policy decision. Authored by John Thacker and approved/merged by Gerald Combs, it removes the now-redundant `cli_main` Windows command-line compatibility layer once the application manifest and supported-Windows baseline guarantee UTF-8 as the active code page. The MR also adds tests that would fail without the manifest/platform guarantee, so the simplification is protected by executable checks rather than only an assumption in build logic.
+
+**Architecture rule:** when a platform baseline eliminates compatibility layers, evaluate the simplification against the support cost at the product level. Coordinate installer/updater/download gating and documentation, identify the supported prior release for users left on the older platform, and then remove compatibility shims whose contracts are genuinely subsumed by the new baseline rather than keeping parallel paths indefinitely.
+
+**Testing rule:** when deleting a platform compatibility shim because a new minimum-platform guarantee replaces it, retain or add tests that exercise the formerly shimmed behavior so the external platform/manifest assumption remains observable.
 
 **Submission/review rule:** a technically correct platform-minimum change is not merge-ready until support-policy consensus exists. Draft status is appropriate while that policy decision is unresolved.
 
-**Confidence:** Very high. Merged platform-policy change authored by John Thacker, held explicitly for consensus, and merged by Anders Broman.
+**Confidence:** Very high. Merged platform-policy change authored by John Thacker and held explicitly for consensus, followed by a merged implementation simplification authored by John and approved/merged by Gerald Combs.
 
 ## External callbacks must respect Qt object thread affinity
 
@@ -25,6 +29,16 @@ Merged MR !25996, authored and merged by John Thacker, fixes Windows software-up
 **Implementation rule:** at boundaries from third-party/native callback threads into Qt UI/application objects, identify the owning thread before touching QObjects, timers, or UI state. Marshal work through a queued Qt invocation/signal when affinity is not guaranteed; do not rely on the callback's current thread.
 
 **Confidence:** Very high. Merged correctness fix authored and merged by John Thacker with an explicit Qt thread-affinity rationale.
+
+## Pair synchronization-object initialization with every clear/destruction lifecycle
+
+Synchronization primitives can have platform-specific resources even when their public C representation looks trivially reusable. If an object is explicitly cleared/destroyed at the end of a session, it must be initialized again before the next session that uses it; conversely, omitting the clear may leak resources on platforms where the primitive owns native state.
+
+Merged MR !26167, authored, approved, and merged by John Thacker, fixes capture-session toolbar locking by initializing its `GMutex` for each capture. The MR explicitly notes that a `GMutex` must be initialized once for each time it is cleared on some platforms, while it also must be cleared on some platforms to avoid a leak. A one-time initialization paired with repeated clears therefore had an invalid lifecycle.
+
+**Implementation rule:** treat mutex/semaphore/condition initialization and clear/destruction as a matched lifecycle. If the enclosing session is reusable, reinitialize the synchronization primitive for every lifecycle after it has been cleared; do not assume zeroed/static storage remains a valid initialized object after explicit destruction.
+
+**Confidence:** Very high. Merged cross-platform lifecycle fix authored and merged by John Thacker with the platform-dependent contract stated directly in the MR.
 
 ## Shared export/print options belong in frontend-independent argument state
 
