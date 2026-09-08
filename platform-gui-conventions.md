@@ -49,3 +49,15 @@ Merged MR !26114 adds compact JSON output. John Thacker specifically requested t
 **Implementation rule:** put cross-frontend formatting/export policy in the common argument/configuration object consumed by the shared output code. Frontends should translate their UI or CLI controls into that shared state, not own separate formatter behavior. Before adding performance-specialized output code, check for an existing shared helper that already implements the same low-level operation efficiently.
 
 **Confidence:** Very high. Merged master feature with explicit architectural review from John Thacker and implementation-performance guidance from Martin Mathieson.
+
+## Drive GUI consumers from the authoritative state transition, not connection order or duplicate proxy signals
+
+When several views depend on shared application state, connect them to the signal that means the authoritative model/manager has actually completed the relevant transition. Do not make correctness depend on the order in which Qt signal connections happened to be created, and do not send a second synthetic signal merely to force downstream refreshes.
+
+Merged MRs !26260, !26262, !26265, !26270, and !26274 form a coherent cleanup authored and merged by John Thacker. `InterfaceFrame` had depended on its slot running after `InterfaceTreeModel` happened to process the same interface-list signal; !26260 instead connects display refreshes to the model's `modelReset`, where the row count is known to be current. !26262 removes redundant dialog signals that caused extra GUI updates, including updates occurring before the actual interface refresh completed. !26265 routes interface-list change notification from the `InterfaceListManager`, described as the single source of that information, through `MainApplication` so consumers can subscribe without depending on a not-yet-visible `MainWindow`. !26270 avoids preference-triggered refreshes until the initial preference value is known, preventing startup work and side effects before initialization is complete. !26274 removes another duplicate refresh path because the manager already listens to the canonical preferences-changed signal.
+
+**Architecture rule:** identify one authoritative owner for shared state and one event that represents completion of each meaningful state transition. Views and secondary controllers should subscribe to that transition or to the model reset it causes, rather than reproducing the refresh decision or relying on QObject construction/connection order.
+
+**Lifecycle rule:** distinguish initialization from later changes. Do not run normal "changed" reactions until the baseline state is known, especially when those reactions trigger expensive interface scans, statistics, UAC prompts, or other externally visible work.
+
+**Confidence:** Very high. Five merged master changes by John Thacker converge on the same event/lifecycle architecture and document concrete failures caused by ordering and duplicate notifications.
