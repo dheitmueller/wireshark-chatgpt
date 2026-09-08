@@ -21,3 +21,13 @@ MR !26302 records whether the initial scan has happened and suppresses non-user-
 **Implementation rule:** represent initialization state explicitly when a preference has startup-only semantics. Do not infer 'initial versus subsequent' behavior solely from old/new preference values; allow deliberate user actions to cross an initialization deferral when the UI contract requires it.
 
 **Confidence:** Very high. Same Gerald-approved merged InterfaceListManager change, with explicit state and control-flow support.
+
+## Do not recover structured extcap identity by blindly splitting a synthetic display/call name
+
+Extcap bookmark call names combine a real interface name with a bookmark name for user-facing selection, but the underlying interface name is externally supplied and may itself contain whatever separator Wireshark chooses. A delimiter can therefore be useful syntax without being a collision-free identity encoding.
+
+Merged MR !26354, authored and merged by Gerald Combs, initially proposed `::` as the separator. Review pointed out that BLF interface names can contain `::`; Gerald changed the separator to `:` but, more importantly, changed parent recovery to look up the complete synthetic interface in the authoritative extcap registry and follow its explicit `parent_call` relationship instead of splitting on the separator. The tests include bookmark names containing Unicode, quotes, and `/`.
+
+**Implementation rule:** when a synthetic identifier contains externally controlled component names, preserve the component relationship explicitly or resolve it through the authoritative object registry. Do not treat the chosen separator as a guaranteed parse boundary unless the component grammar actually excludes it. Test punctuation, Unicode, and separator-like characters in generated names.
+
+**Confidence:** Extremely high. Merged master design authored/approved/merged by project lead Gerald Combs, with the final approach directly shaped by review of a real separator collision.
