@@ -23,3 +23,33 @@ In still-open MR !26280, the contributor reported a clean rebase and green CI fo
 **Submission rule:** after rebases, force-pushes, or history cleanup, review the MR's current diff as a reviewer would. Confirm that all intended files and tests remain, unrelated changes are absent, and existing behavior outside the feature scope has not been silently reverted. Treat pipeline status as validation of that verified diff, not as a substitute for verifying the diff.
 
 **Confidence:** High for the submission/review rule. The implementation MR remained open and unresolved in the reviewed corpus snapshot, so its proposed masking design is not accepted evidence; the diff-integrity correction itself came from Pascal Quantin and is independent of whether that feature ultimately merges.
+
+## Keep capture artifacts out of the repository root
+
+Packet captures used to demonstrate a bug should normally be attached to the issue, and captures that become regression fixtures should live in the repository's established test-data structure. The repository root is not an acceptable dumping ground even when the file is relevant to testing.
+
+Merged MR !26325, authored by John Thacker and merged by Gerald Combs, removes a capture accidentally committed at the repository root. The commit explicitly states that the file should have been attached to the issue and that even a test capture should not have been placed at the root.
+
+**Submission rule:** attach reproducer captures to the issue/MR unless they are intentionally being added as maintained test data; when adding a test fixture, put it in the project's designated test/capture location and wire it into the test suite rather than committing it at top level.
+
+**Confidence:** Very high. Merged repository-hygiene correction accepted by project leader Gerald Combs.
+
+## Keep contribution-policy wording and CI enforcement synchronized
+
+When a contribution trailer or policy keyword changes, update automated checks and their user-facing remediation text in the same change. A stale CI check can otherwise enforce a superseded convention even though the documentation says something else.
+
+Merged MR !26304 updates the GitLab CI check from the former `AI-Assisted` trailer to `Assisted-by` after the contribution policy was renamed, and rewords the reminder to match CONTRIBUTING: disclosure is required when AI assistance was used, not unconditionally. Gerald Combs merged the correction.
+
+**Submission rule:** treat policy docs, commit-trailer spelling, CI detection, and CI error/help text as one interface. When one changes, search for and update all enforcement and guidance consumers.
+
+**Confidence:** Very high. Merged CI/policy synchronization change accepted by Gerald Combs.
+
+## Use closing-keyword issue references when the MR is intended to resolve the issue
+
+A plain textual mention establishes context but does not express the intended repository workflow. When the change is expected to close a tracked issue, use GitLab's supported closing syntax in the commit/MR message.
+
+In open MR !26313, Jaap Keuter explicitly asked the contributor to add `Fixes #21544`, noting that this automatically links and closes the issue and pointing to Wireshark's SubmittingPatches guidance. The implementation itself remained unresolved and is not treated as accepted architectural evidence, but the submission instruction is independent of that outcome.
+
+**Submission rule:** for a change intended to resolve an issue, use `Fixes #NNNN` (or the currently documented equivalent) rather than relying on an informal mention.
+
+**Confidence:** High. Direct maintainer guidance tied to Wireshark's documented submission process; implementation MR remained open in the corpus snapshot.
