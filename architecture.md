@@ -29,9 +29,19 @@ Sequence-based reassembly must also treat the *aggregate* assembled size as host
 
 When changing configuration that invalidates derived dissector/UI state, determine the effects and quiesce the affected consumers *before* exposing the new values. Merged !25841 fixes preference application that previously mutated stashed preferences while simultaneously discovering whether redissection was required; a dissector could therefore observe a new preference value while still holding resources/state from the old value. The corrected sequence first computes the effect flags, freezes the packet list if redissection is required, and only then applies the preference values. The merged release-4.6 backport !25857 corroborates the ordering. Treat multi-step configuration changes as a state transition, not a series of independently safe assignments.
 
+Merged !25862 tightens this ordering further: `rsaKeysFrame->acceptChanges()` itself contributes redissection effects, so it must run while effect discovery is still being accumulated, before the packet list is conditionally frozen and the remaining preferences are applied. When a configuration subsystem has multiple effect-producing sources, enumerate all of them before taking the transition action; a late-discovered effect can invalidate the safety of an otherwise correct two-phase update.
+
+## API mutation contracts and semantic domains
+
+Helpers with separate output and input pointers must be correct for any aliasing their interface permits. Merged !25873 fixes `nstime_delta()` when the destination is the same object as one input: the old implementation wrote through `delta` and then later read `a`, so `delta == a` changed the source data mid-calculation. The corrected implementation computes from the original input members before mutating dependent output state. When designing or modifying such helpers, either preserve correctness under supported output/input aliasing or make a non-aliasing requirement explicit and enforced; do not accidentally depend on distinct storage.
+
+Normalize representation-specific units into semantic units near the parsing boundary, and carry types that match the value domain. Two merged DCT2000 cleanups authored by Guy Harris provide strong evidence: !25876 changes inherently nonnegative size, offset, and timestamp-related variables to unsigned types, while !25877 converts file character counts into record byte counts once and then uses the byte count throughout downstream record sizing/copy logic. Avoid repeatedly carrying ambiguous “length” values whose unit changes by context; name and type values so later arithmetic expresses the protocol/file semantics directly.
+
 ## Wiretap error semantics
 
 Reserve `WTAP_ERR_INTERNAL` for conditions that are impossible if Wireshark's own invariants hold, including when the input file is malformed. Ordinary malformed-file validation belongs under a bad-file error such as `WTAP_ERR_BAD_FILE`; user misconfiguration should likewise not be mislabeled as an internal bug. If one path can fail for both an internal bug and bad input/configuration, distinguish the causes if practical; otherwise prefer the non-internal classification until the code can prove the invariant violation. !25816 first raised this distinction, and the merged !25831 discussion independently corroborated it. GUI-facing wiretap errors should describe the file format/module and user-relevant failure rather than exposing an internal helper-function name.
+
+Merged !25865 supplies direct implementation corroboration: TTL validity states that are impossible at those internal call sites were changed from `WTAP_ERR_BAD_FILE` to `WTAP_ERR_INTERNAL`. This sharpens the rule: classify the condition according to where the violated contract resides, not merely because malformed capture data was involved somewhere earlier in the call chain.
 
 ## Tree visibility versus filterability
 
