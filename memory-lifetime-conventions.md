@@ -41,3 +41,13 @@ Merged MR !26165, authored by Gerald Combs and approved/merged by John Thacker, 
 **Implementation rule:** centralize teardown for an owned state aggregate; free children before their container; route every post-acquisition failure through that teardown; register the matching close hook once ownership passes to the long-lived object; and clear stale owner pointers after final teardown where appropriate.
 
 **Confidence:** Very high. Merged master lifecycle fix authored by Gerald Combs and approved/merged by John Thacker, independently corroborated by John Thacker's merged Coverity cleanup fix.
+
+## Treat initial capacity as an optimization, not as the logical maximum
+
+Growable containers should normally start with a modest reservation that matches expected near-term use and expand through their checked append path. Do not reserve a protocol or implementation maximum up front merely because the container may theoretically grow that large; allocator rounding can make the actual reservation even larger, and allocation failure may be fatal before any input is parsed.
+
+Merged MR !26180, authored by Ronnie Sahlberg and approved/merged by John Thacker, fixes the 3GPP 32.423 nettrace reader. It had passed `INT_MAX` as the initial `GArray` reservation, which GLib rounded to a roughly 2 GiB allocation even though `read_until()` filled the streaming buffer only 1024 bytes at a time. The accepted fix reserves 64 KiB and relies on the normal grow path. The old behavior was especially harmful on 32-bit builds, constrained address spaces, systems without overcommit, and long-lived legitimate traces because the huge reservation was never released during the open lifetime.
+
+**Implementation rule:** distinguish logical maximum, current length, and initial capacity. For a growable parser buffer, choose a defensible modest initial capacity and let the container grow as data arrives; reserve maximum-sized storage only when the entire allocation is actually required immediately and its failure behavior is acceptable.
+
+**Confidence:** Very high. Merged master resource-usage fix approved and merged by John Thacker with the allocator behavior and constrained-platform failure modes documented in the MR.

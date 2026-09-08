@@ -18,9 +18,11 @@ A long-lived extcap loop cannot rely on incoming capture data to regain control.
 
 Merged MR !26131, authored by John Thacker and approved/merged by Anders Broman, changes `sshdump`/`ssh-base` to use `ssh_select()` rather than a blocking channel read and, on non-Windows systems, includes a self-pipe in the same wait set. The graceful-shutdown callback writes to the pipe, waking the loop; teardown can then explicitly signal the remote SSH command instead of depending on data arrival. The MR also documents why allocating a PTY is not an acceptable workaround for binary capture data: it can merge stdout/stderr and transform bytes.
 
-**Implementation rule:** integrate shutdown signaling into the same readiness mechanism used for remote I/O. Do not let an idle producer make an extcap process unkillable, and do not use terminal semantics on a binary capture channel merely to obtain signal behavior.
+Merged !26183 and !26189 extend the same architecture across supported Windows versions. John Thacker added `ws_socketpair()` in wsutil, mapping to native `socketpair()` on POSIX and using supported Windows AF_UNIX sockets otherwise, then switched ssh-base's `select()` wakeup path to that common abstraction. This lets the readiness design remain transportable without falling back to Windows pipes, which `select()` cannot wait on.
 
-**Confidence:** Very high. Merged master lifecycle/architecture change authored by John Thacker and approved/merged by Anders Broman.
+**Implementation rule:** integrate shutdown signaling into the same readiness mechanism used for remote I/O. Do not let an idle producer make an extcap process unkillable, and do not use terminal semantics on a binary capture channel merely to obtain signal behavior. When a platform lacks the exact POSIX primitive but supports equivalent selectable sockets, put the emulation behind a shared wsutil abstraction rather than forking the higher-level extcap loop.
+
+**Confidence:** Very high. Merged master lifecycle/architecture changes led by John Thacker across the generic SSH loop and its cross-platform wakeup primitive.
 
 ## Prime asynchronous I/O before attaching the readiness source
 
@@ -41,3 +43,13 @@ Merged MR !26157, authored, approved, and merged by John Thacker, extends non-Wi
 **Implementation rule:** treat session-owned IPC artifacts as a resource set. Teardown should mirror setup for main and auxiliary channels, including temporary container directories, while retaining platform-specific behavior where required.
 
 **Confidence:** Very high. Merged master lifecycle cleanup authored and merged by John Thacker.
+
+## Prefer protocol-level graceful shutdown over immediate process termination when a control channel exists
+
+When an extcap has an established control protocol, normal shutdown should be represented in that protocol so the helper can unwind its own resources and remote state. A process-kill fallback is still useful when the helper does not respond, but it should not be the first and only shutdown mechanism on platforms where the control channel is available.
+
+Merged MR !26195, authored, approved, and merged by John Thacker, sends `SP_QUIT` over the extcap control pipe and updates the example Python extcap to recognize the quit frame, signal its capture loop, and exit its control thread. Because the interface toolbar and extcap machinery can both write the control-out channel, the accepted implementation also guards writes rather than assuming multiple producers can safely interleave. The Windows path can consequently avoid immediately terminating helpers that can shut down cleanly through control messaging.
+
+**Implementation rule:** send the extcap protocol's quit/control message before escalating to forced termination; make the helper's capture loop observe that shutdown independently of packet arrival; and serialize multiple writers to a shared framed control stream rather than relying on incidental small-write atomicity. Keep example extcaps synchronized with lifecycle protocol changes so they remain executable reference implementations.
+
+**Confidence:** Very high. Merged master lifecycle change authored and merged by John Thacker, with both core and example-helper behavior updated together.

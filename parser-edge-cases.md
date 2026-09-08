@@ -141,3 +141,23 @@ Merged MR !26168 fixes a potential endless loop in the IDN dissector. During rev
 **Implementation rule:** for packet walkers and repeated-record parsers, prefer `cursor < end` / `remaining > 0` semantics after proving each successful iteration advances the cursor. Do not depend on eventually landing on one exact endpoint value unless the increment is mathematically guaranteed to do so on every path.
 
 **Confidence:** Very high. Merged master correctness fix with explicit loop-condition review from John Thacker and the requested revision incorporated before merge.
+
+## Apply safety checks to the normalized effective limit, not the raw preference encoding
+
+A user preference may use a sentinel value such as zero to mean a nonzero implementation default or special maximum. Once that sentinel has been normalized into the effective capacity used for allocation, parser safety checks must use the same normalized value. Conditioning the guard on the raw preference can disable the very bound that allocated the storage.
+
+Merged MR !26181, authored by Ronnie Sahlberg and approved/merged by John Thacker, fixes RTPS DATA_BATCH sample-info arrays. Preference value zero legitimately means "show up to 1024"; the allocation therefore used 1024 entries, but the old write guard ran only when the raw preference was greater than zero. Crafted packets could consequently advance `sample_info_count` beyond the 1024-entry arrays. The accepted code compares against `sample_info_max`, the already-normalized effective bound, in all cases.
+
+**Implementation rule:** normalize configuration sentinels once, then use the resulting effective value consistently for allocation, loop termination, indexing, and diagnostics. Never let a raw sentinel bypass a safety check that protects storage sized from its normalized interpretation.
+
+**Confidence:** Very high. Merged master memory-safety fix approved and merged by John Thacker with a concrete OOB-write mechanism.
+
+## Reject impossible file-wide structure before scanning, and bound recovery that may not perform I/O
+
+A capture-file header can establish invariants required for every later record. Validate those invariants during open/probe rather than allowing every record to enter a recovery path. In particular, do not assume that seeking beyond the physical end will set EOF: an alignment-recovery loop that only seeks and never reads may continue indefinitely.
+
+Merged MR !26191, authored, approved, and merged by John Thacker, hardens the TTL wiretap reader. An entry block size smaller than `sizeof(ttl_entryheader_t)` makes every entry structurally impossible, so the accepted implementation rejects the file in `ttl_open()` instead of repeatedly treating records as corrupt. It also caps consecutive corrupted/out-of-alignment blocks at 1024 as defense in depth, because the recovery path can advance using seeks without causing the underlying file handle's EOF state to be set. Release-4.6 backport !26192 preserves the same behavior.
+
+**Implementation rule:** validate global structural minima as soon as the file header is available; assert or rely on those postconditions later rather than rediscovering them per record. Recovery loops must have an explicit bounded-progress condition independent of EOF when an iteration can advance without a read.
+
+**Confidence:** Very high. Merged master wiretap robustness fix authored and merged by John Thacker and accepted on the stable 4.6 branch.
