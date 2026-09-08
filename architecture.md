@@ -63,6 +63,18 @@ A protocol-tree item need not be visibly rendered to remain useful for display f
 
 Conversely, do not hide raw data merely because a structured decoder was selected in principle. MR !26223 corrected an NVMe-MI path where the raw item disappeared even though the selected decoder rendered nothing. Claim/visibility decisions should reflect what was actually decoded.
 
+## Redissection and allocator-scope lifetime
+
+Containers that survive across dissection passes must not retain references to objects whose allocator scope is reset between those passes. A hash table or map can itself remain allocated while every file-scope value it points at has already been freed; redissection then turns those entries into dangling pointers. Merged MR !26096, authored and merged by Guy Harris, fixes ZigBee Touchlink by clearing the commissioning map in the dissector init callback before a new pass because all of its entries were allocated with file scope. Treat the reset of an allocator scope as a lifetime boundary for every pointer stored elsewhere, and explicitly clear/rebuild any longer-lived indexes or containers that refer into that scope.
+
+This matters even when stale pointers appeared harmless on one allocator/platform. !26096 was exposed by a capture that queued redissection after a later Decryption Secrets Block and crashed on macOS when freed address-space regions became inaccessible. Correct lifetime design must not depend on a particular allocator leaving freed memory mapped.
+
+## Shared extcap control plane
+
+Extcap process-control and structured status handling that must work for Wireshark, tshark, and other frontends belongs in the shared extcap/capture layer rather than a Qt-only UI component. Merged MR !26093, authored and merged by John Thacker, moves control-in pipe handling out of Qt so the same framed protocol can carry toolbar control plus structured log/error/warning commands independent of frontend. Merged !26095 factors the sync-pipe reader into reusable capture-layer code, and merged !26097 builds extcap-base logging and control callbacks on top of that shared channel.
+
+Do not repurpose an extcap's ordinary stdout/stderr as a structured control protocol unless the execution contract guarantees that every byte on the stream is framed accordingly. !26093 notes that arbitrary stderr cannot safely be assumed to contain sync-pipe messages; !26097 further notes that stdout has independent meaning when an extcap is run directly in capture mode from the command line. Prefer a dedicated control pipe whose presence explicitly establishes the structured-message contract, preserving ordinary process streams for their existing CLI/data semantics.
+
 ## Areas of particular interest
 
 - `epan/` dissector APIs and protocol-tree construction.
