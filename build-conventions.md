@@ -31,3 +31,13 @@ Merged MR !26122, authored by John Thacker and approved/merged by Gerald Combs, 
 **Implementation rule:** put per-configuration artifact selection and transitive compile/link requirements on the imported dependency target. If an external dependency is a collection of libraries rather than one importable artifact, an `INTERFACE IMPORTED` target can model the bundle. Scope unavoidable warning suppressions to the dependency target that causes them rather than applying them globally.
 
 **Confidence:** Very high. Two merged master CMake changes authored by John Thacker and approved/merged by Gerald Combs.
+
+## Detect the dependency layout or toolchain contract, not merely the operating system
+
+Platform macros such as `WIN32` describe the target OS, but they do not imply one packaging model, compiler runtime, or Debug/Release library layout. CMake logic should test the condition that actually guarantees the artifact arrangement it expects.
+
+Merged MR !26216, authored and merged by John Thacker, restricts the separate Debug-library search used by several Windows dependency find modules to `USE_REPOSITORY`. The repository/MSVC-style dependency bundles provide distinct configurations; MSYS2 and cross-compilation environments generally provide a single library set and should not be forced through the repository-specific lookup merely because the target is Windows.
+
+**Implementation rule:** when dependency discovery differs by package source, toolchain, CRT model, or repository bundle, condition on that semantic property. Avoid using the target OS as a proxy for a narrower build-environment assumption.
+
+**Confidence:** Very high. Merged master build-system correction authored and merged by John Thacker.
