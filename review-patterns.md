@@ -119,6 +119,14 @@ Before submitting one of our Wireshark MRs, check and, where useful, state in th
 
 **Confidence:** High. Repeated project practice plus documented contribution guidance.
 
+### Keep merge requests small enough to review effectively
+
+**Evidence:** Merged MR !25884 added a large set of NMEA0183 parametric messages. Anders Broman explicitly said the change was too large to review, and Pascal Quantin had to move review feedback out of the normal GitLab diff flow because the diff was too large for the UI. The contributor acknowledged that additional work still remained for future commits.
+
+**Lesson:** Reviewability is a real engineering constraint, not just presentation polish. When a protocol expansion is large, split it into coherent, independently reviewable MRs or commits so reviewers can use the normal diff UI, reason about behavior, and give line-specific feedback. This strengthens the existing scope-discipline rule: even related work can be too large for one effective review unit.
+
+**Confidence:** High for our submission practice. Direct feedback from two established maintainers on a merged MR, with a concrete review-tool limitation observed during the review.
+
 ### Use a feature branch, not the fork's master branch, for merge requests
 
 **Evidence:** MR !22208 (LLRP: Add support for ImpinjRFDopplerFrequency parameter). Alexis La Goutte requested that the contributor create a named branch rather than submit from the fork's `master`; the contributor replaced the MR with !22212.
