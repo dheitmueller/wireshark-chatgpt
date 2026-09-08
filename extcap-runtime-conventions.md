@@ -53,3 +53,23 @@ Merged MR !26195, authored, approved, and merged by John Thacker, sends `SP_QUIT
 **Implementation rule:** send the extcap protocol's quit/control message before escalating to forced termination; make the helper's capture loop observe that shutdown independently of packet arrival; and serialize multiple writers to a shared framed control stream rather than relying on incidental small-write atomicity. Keep example extcaps synchronized with lifecycle protocol changes so they remain executable reference implementations.
 
 **Confidence:** Very high. Merged master lifecycle change authored and merged by John Thacker, with both core and example-helper behavior updated together.
+
+## Negotiate control-protocol capabilities explicitly before using newer lifecycle operations
+
+The existence of a control channel does not prove that an extcap understands every control command added in later Wireshark versions. Protocol evolution should advertise capability levels so the parent can select behavior conservatively and still interoperate with older helpers.
+
+Merged MR !26210, authored, approved, and merged by John Thacker, adds an extcap `control` capability level. Level 0 means no control support, level 1 covers the older toolbar/control channel, and level 2 advertises `SP_QUIT`. Missing information defaults conservatively, while existing toolbar declarations allow backward-compatible inference of level 1. Wireshark only sends the new graceful-quit command when the helper explicitly advertises support; captures containing older helpers still retain the forced-termination fallback.
+
+**Implementation rule:** version or capability-negotiate optional IPC behavior instead of assuming that channel presence implies newest-protocol support. Choose backward-compatible defaults, infer only capabilities that existing declarations prove, and retain a safe fallback for mixed-version participants.
+
+**Confidence:** Very high. Merged master protocol-evolution change authored and merged by John Thacker.
+
+## Give one subsystem ownership of framed control-channel writes and let other producers enqueue
+
+A framed IPC stream is easier to reason about when one runtime component owns its descriptor and write lifecycle. Sharing the same descriptor between UI and capture code, then attempting to coordinate independent writers with an object-owned mutex, creates lifetime coupling and makes teardown races more likely.
+
+Merged MR !26232, authored, approved, and merged by John Thacker, moves Interface Toolbar control-out writes into the shared extcap runtime. The UI pushes ref-counted message buffers to an asynchronous queue and wakes the main context; extcap owns the descriptor and performs the actual writes. The accepted implementation also reference-counts the queue rather than assuming the associated `interface_opts` object outlives every producer, and opens the non-Windows control FIFO nonblocking with retry during startup.
+
+**Implementation rule:** centralize ownership and serialization of a framed control stream in the subsystem responsible for its lifecycle. Other threads/UI components should enqueue immutable/ref-counted messages rather than hold duplicate descriptors. Give the queue its own explicit lifetime, and use nonblocking/retry startup where FIFO peer-open ordering can otherwise deadlock.
+
+**Confidence:** Very high. Merged master concurrency/lifetime redesign authored and merged by John Thacker.
