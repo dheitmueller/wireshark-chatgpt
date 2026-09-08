@@ -31,3 +31,13 @@ Merged MR !26151, authored, approved, and merged by John Thacker, replaces repea
 **Implementation rule:** when text is assembled incrementally, use Wireshark's growable string-buffer API rather than allocating a new full copy for every append. This is especially important inside loops whose iteration count or field multiplicity comes from packet data.
 
 **Confidence:** Very high. Merged master resource-exhaustion fix authored and merged by John Thacker, quantitatively validated, and accepted on two stable branches.
+
+## Give owned parser state one cleanup routine and invoke it on both failure and close paths
+
+When an open/probe routine builds an owned state object with nested allocations, ownership must be closed on every path after acquisition: unsuccessful open paths must unwind it, and successful opens must register the corresponding close callback. Keep the nested deallocation logic in one cleanup routine so the two paths cannot silently diverge.
+
+Merged MR !26165, authored by Gerald Combs and approved/merged by John Thacker, fixes the Procmon wiretap reader by extending `file_info_cleanup()` to free every separately allocated string before freeing the containing array, invoking that cleanup when `procmon_open()` fails after private state has been populated, and registering `procmon_close()` as `wth->subtype_close` for successful opens. The close routine clears `wth->priv` after teardown. Merged !26171, authored and merged by John Thacker after a Coverity report, independently reinforces the same failure-path ownership rule by freeing an extcap buffer on the FIFO-open error return.
+
+**Implementation rule:** centralize teardown for an owned state aggregate; free children before their container; route every post-acquisition failure through that teardown; register the matching close hook once ownership passes to the long-lived object; and clear stale owner pointers after final teardown where appropriate.
+
+**Confidence:** Very high. Merged master lifecycle fix authored by Gerald Combs and approved/merged by John Thacker, independently corroborated by John Thacker's merged Coverity cleanup fix.
