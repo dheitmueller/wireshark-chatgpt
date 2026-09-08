@@ -11,3 +11,13 @@ Merged MR !26062, authored, approved, and merged by John Thacker, updates the ex
 **Implementation rule:** express build dependencies at the target that semantically owns them and let CMake usage requirements propagate. Avoid duplicating transitive include/library dependencies in every final executable merely because an object library is involved.
 
 **Confidence:** Very high. Merged master build-system change authored and merged by John Thacker.
+
+## Remove obsolete configure/probe scaffolding when it no longer performs a check
+
+Build-system code should describe the checks and dependencies Wireshark actually performs today. Legacy setup for a feature test should not remain after the test itself has disappeared: unused `CMAKE_REQUIRED_*` state, push/pop check-state calls, or included check modules make a find module look as though it verifies capabilities that it does not.
+
+Merged MR !26117, authored by John Thacker and approved/merged by Gerald Combs, removes leftover `CMakePushCheckState`, `CheckFunctionExists`, and `CMAKE_REQUIRED_INCLUDES`/`CMAKE_REQUIRED_LIBRARIES` setup from `FindMaxMindDB.cmake`. The code dated from the legacy GeoIP implementation and had become a no-op after the relevant check was removed.
+
+**Implementation rule:** when deleting or replacing a configure-time capability test, remove its setup and state-management scaffolding as well. Keep find modules minimal enough that readers can distinguish actual dependency discovery/validation from historical residue.
+
+**Confidence:** Very high. Merged master build-system cleanup authored by John Thacker and approved/merged by Gerald Combs.
