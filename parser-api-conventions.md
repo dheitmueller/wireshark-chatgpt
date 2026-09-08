@@ -54,11 +54,11 @@ Merged MR !25956, authored and merged by John Thacker, fixes RTPDump where these
 
 When a dissector receives a textual parameter whose grammar requires a fixed minimum width, validate that width before passing raw pointers into helpers or indexing fixed offsets. A malformed short parameter should remain dissectable: mark the field with appropriate expert information and stop parsing the fixed subfields rather than reading beyond the supplied bytes.
 
-Merged MR !25976, authored and merged by John Thacker, checks that the first Bluetooth HFP `AT+XAPL` parameter is at least 14 bytes before extracting several fixed-position hexadecimal substrings. Short values receive an expert warning and the parser returns without attempting those fixed-offset reads.
+Merged MR !25976, authored and merged by John Thacker, checks that the first Bluetooth HFP `AT+XAPL` parameter is at least 14 bytes before extracting several fixed-position hexadecimal substrings. Short values receive an expert warning and the parser returns without attempting those fixed-offset reads. Release backports !25981 and !25983 preserve the same guard.
 
 **Implementation rule:** derive the minimum input width from the format grammar, check it once at the boundary where fixed-position parsing begins, and treat failure as malformed protocol input rather than a process-level fault.
 
-**Confidence:** Very high. Security-motivated merged fix by John Thacker.
+**Confidence:** Very high. Security-motivated merged fix by John Thacker with accepted release backports.
 
 ## Diagnostic previews must respect the actual buffer length
 
@@ -69,3 +69,43 @@ Merged MR !25970, authored and merged by John Thacker, replaced repeated direct 
 **Implementation rule:** never exempt formatting-only code from length safety; compute `min(actual_length, preview_limit)` before reading the preview bytes.
 
 **Confidence:** Very high. Security-motivated merged fix by John Thacker plus two accepted release backports.
+
+## Bound explicit-length nested structures with a subset tvb
+
+When a protocol element carries an explicit length for its own body/record, make that length an actual parser boundary rather than continuing to parse against the enclosing tvbuff and merely carrying the length as metadata. Create a subset tvb that represents the element, then use offsets relative to that subset for all nested reads and tree items.
+
+Merged MR !25978, authored and merged by John Thacker, changes LBMR Topic Management Record parsing to construct a `tvb_new_subset_length()` from the retrieved TMR length before reading its type, flags, string, and subsequent fields. This means a declared-short element naturally fails at the element boundary, and a zero-length record cannot silently walk into following data.
+
+**Implementation rule:** for self-delimiting nested structures, encode the protocol boundary in the tvbuff hierarchy. A bounded subset is preferable to repeatedly trusting callers to compare every inner offset against the outer buffer plus a separate declared length.
+
+**Confidence:** Very high. Merged bounds/security fix authored and merged by John Thacker.
+
+## Pairwise or fixed-unit decoders must prove a complete unit exists per iteration
+
+Loops that decode input in units larger than one byte/character must use a loop bound that guarantees every element read by the iteration exists. An inclusive bound is especially suspicious when the loop body accesses `n + 1`, `n + k`, or emits a smaller number of output units than input units.
+
+Merged MR !25992, authored and merged by John Thacker, fixes the 3GPP log wiretap reader's hex decoder from `n <= data_chars` to `n < (data_chars & ~1)`. The corrected bound processes only complete two-character hex pairs and cannot read the second nibble beyond the validated input. Release-4.6 backport !25995 preserves the fix.
+
+**Implementation rule:** derive the iteration limit from complete input units, not merely the raw input count. For pairwise hex decoding, round the usable character count down to an even boundary before reading `n` and `n+1`.
+
+**Confidence:** Very high. Merged memory-safety fix by John Thacker plus accepted backport.
+
+## Width-specific helper APIs must carry the exact width in their type contract
+
+A helper whose semantic operation is explicitly 8/16/32/64-bit should accept a value type of that width unless there is a deliberate documented reason otherwise. This matters particularly when alternate compiler/architecture paths implement the operation with `memcpy()` or `sizeof(value)`: a wider formal parameter can silently change the number of bytes copied even when arithmetic uses only the low bits.
+
+Merged MR !25994, authored and merged by John Thacker, changes `phtoleu16()` on the memcpy-based path from a `uint32_t` value parameter to `uint16_t`. The old signature could cause out-of-bounds reads/writes because the implementation's storage width followed the incorrectly wide value. Release-4.6 backport !25997 additionally documents that the destination needs at least two bytes.
+
+**Implementation rule:** treat integer width as part of the API's memory-safety contract. Audit compiler-specific and endian-specific implementations together; do not assume a correct generic path implies a correct alternate path.
+
+**Confidence:** Very high. Merged security fix authored and merged by John Thacker plus accepted release backport.
+
+## Checksum and endian helpers have their own byte-order contracts
+
+Do not stack byte swaps, `hton*()`/`ntoh*()` conversions, and checksum-library return values by intuition. Trace what byte order the helper consumes and returns and convert exactly once at the boundary that requires a different representation.
+
+Merged MR !25985 fixes UET CRC verification on big-endian hosts after the CRC32C API was misread: an unnecessary `CRC32C_SWAP()` followed by `htonl()` made the result wrong on s390x while appearing correct on little-endian hosts. Removing the redundant conversions restored the API's intended semantics.
+
+**Implementation rule:** when checksum behavior differs by architecture, inspect the checksum API contract before adding host/network conversions. Include big-endian CI/testing evidence where practical for low-level endian helpers.
+
+**Confidence:** High. Merged portability/correctness fix with a concrete big-endian failure mode.
