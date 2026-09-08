@@ -37,6 +37,10 @@ Helpers with separate output and input pointers must be correct for any aliasing
 
 Normalize representation-specific units into semantic units near the parsing boundary, and carry types that match the value domain. Two merged DCT2000 cleanups authored by Guy Harris provide strong evidence: !25876 changes inherently nonnegative size, offset, and timestamp-related variables to unsigned types, while !25877 converts file character counts into record byte counts once and then uses the byte count throughout downstream record sizing/copy logic. Avoid repeatedly carrying ambiguous “length” values whose unit changes by context; name and type values so later arithmetic expresses the protocol/file semantics directly.
 
+## Per-call scratch state and reentrancy
+
+Mutable working state that has no semantic lifetime across calls should normally be per-call state, not static storage. The merged EAX backports !25932 and !25933 move the `eax_s` decryption workspace from a static object onto the `Eax_Decrypt()` stack and pass it explicitly into helpers. Because no state is intended to persist between decryptions, static storage only creates accidental cross-call coupling and a concurrency risk. Prefer local/per-call scratch objects and explicit context parameters; reserve mutable static/global state for intentionally shared lifetime with appropriate synchronization.
+
 ## Robust text conversion
 
 When converting externally supplied byte streams to text for display, prefer a shared conversion path that preserves as much valid data as possible when the source contains malformed byte sequences. Merged !25886 replaces `g_convert_with_fallback()` in Follow Stream because an illegal source sequence can make it return `NULL` and discard the entire buffer; Wireshark's exported `get_string_enc_iconv()` instead recovers from `EILSEQ`, substitutes U+FFFD for the malformed subpart, and continues conversion. Treat malformed input as a local decoding defect rather than a reason to lose otherwise valid surrounding text, and centralize that behavior in the common charset API rather than duplicating ad-hoc recovery in UI callers.
@@ -50,6 +54,8 @@ Merged !25865 supplies direct implementation corroboration: TTL validity states 
 Malformed capture-file syntax is an ordinary input error, not a reason for a parser/scanner to terminate the Wireshark process. Merged !25907, authored and merged by John Thacker, changes the Busmaster scanner's unterminated-header path from Flex `YY_FATAL_ERROR()` to setting `WTAP_ERR_BAD_FILE`, supplying `err_info`, and terminating only the local scan. Wiretap parsers should translate attacker-controlled malformed input into the normal error-return path and let callers decide how to present or recover from it. The release-4.6 and release-4.4 backports !25915 and !25916 preserve the same behavior.
 
 Reader capability and writer capability are independent contracts. A wiretap dumper must validate each record against the format and buffer limits it can actually emit even when the corresponding reader accepts larger records. Merged !25917, authored and merged by John Thacker, guards the K12 writer against records larger than its backing frame buffer and returns `WTAP_ERR_UNWRITABLE_REC_DATA` with a useful size error instead of copying past the allocation. Do not infer “writable” from “readable”; reject unsupported output records before materializing them.
+
+Merged !25930 applies the same taxonomy and writer-capability rule to BLF: a truncated Ethernet record is real input data, not an internal invariant failure, so the dumper returns `WTAP_ERR_UNWRITABLE_REC_DATA`; it also rejects VLAN frames too short for the fields it must read and rejects payload lengths that do not fit BLF's 16-bit representation. The release-4.6 backport !25936 preserves the behavior.
 
 ## Tree visibility versus filterability
 
