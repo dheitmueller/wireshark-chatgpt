@@ -15,7 +15,7 @@ Recent ST 2110-40 fuzzing work established the following useful checks:
 - Include malformed/truncated input coverage in addition to valid vectors.
 - For dissector changes, build warnings matter because Wireshark commonly treats warnings as errors.
 - When a mature reference implementation exists, consider differential validation against it rather than relying only on expected tshark output written from the same interpretation of the specification. Merged MR !26211 compared the UDX dissector's stateful verdicts packet-by-packet against an instrumented build of libudx over libudx's own test suite; that process found additional state/reassembly errors beyond those reported in review.
-- Treat the project's CI toolchain as authoritative for submission readiness when local lint/static-analysis versions differ. In merged MR !25973, the project pipeline reported Ruff import-order warning I001 even though the author's local Ruff version did not. A local clean run does not override a project-CI failure; match or trust the versions/configuration used upstream.
+- Treat the project's CI toolchain as authoritative for submission readiness when local lint/static-analysis versions differ. In merged MR !25973, the project pipeline reported Ruff import-order warning I001 even though the author's local Ruff version did not. Merged !25991 provides further corroboration: Martin Mathieson noted that he still did not have the same Ruff version locally while the MR was iterated against project CI and ultimately approved by John Thacker. A local clean run does not override a project-CI failure; match or trust the versions/configuration used upstream.
 - Use recent-commit checking modes when available rather than only whole-tree/manual inspection. In merged MR !25766, Martin Mathieson described using `./tools/check_dissector.py --commits 10` to find issues introduced by recent commits, alongside cppcheck/Clang Analyzer warnings. For our own branches, use the current tool's commit-range option when applicable so new warnings are easier to attribute.
 - For a new protocol-validity warning, test both sides of the verdict: a standards-compliant packet must remain quiet and a deliberately invalid packet must raise the expected expert information. Merged MR !25922 does this for ICMPv6 Neighbor Discovery Hop Limit validation and additionally checks that the expert field is registered.
 - If the new validation exposes invalid packets produced by Wireshark's own test/generation tooling, correct the generator narrowly enough to satisfy the protocol rule without changing unrelated generated traffic. In !25922, `text2pcap` changes only the affected ND/IND/SEND ICMPv6 families to Hop Limit 255 while retaining the existing default for unrelated IPv6 traffic, and the existing IPv6 regression suite is rerun to prove that scope.
@@ -34,7 +34,8 @@ Merged MR !25977 is a good example of how to communicate validation in the MR de
 
 ## Structural pre-submit checks
 
-- When code declares/uses a reassembly table, verify that the table is initialized/registered along every required lifecycle path. Merged MR !25984 fixed an unregistered Bluetooth BR/EDR reassembly table, and maintainers discussed adding a commit check for this class of defect. Include this in manual pre-submit review even if no automated check currently catches it.
+- When code declares/uses a reassembly table, verify that the table is initialized/registered along every required lifecycle path. Merged MR !25984 fixed an unregistered Bluetooth BR/EDR reassembly table. The review immediately turned the recurring structural mistake into tooling: merged MR !25986 extended `check_typed_item_calls.py` to detect unregistered reassembly tables. Run the repository checker rather than relying solely on manual review, and treat failures here as structural correctness bugs.
+- More generally, when a review uncovers a syntactically recognizable class of runtime defect, prefer extending an existing Wireshark checker so future instances fail pre-submit. !25984 → !25986 is a strong maintainer-backed example of converting review knowledge into executable project policy.
 
 ## Shared dissector-test infrastructure and refactor baselines
 
@@ -43,6 +44,14 @@ Merged MR !25875 is a strong test-architecture exemplar for shared protocol deco
 That MR also found two near-duplicate local `tshark -Tfields` fixtures that had already drifted in parameter ordering and options. It moved the generic `tshark_fields`, `assert_frame_matches`, and `assert_frames_match` helpers into `test/conftest.py`, making optional behavior such as field separators and two-pass dissection parameters of one shared fixture.
 
 **Durable practice:** when centralizing a decoder or dispatch path used by multiple transports/callers, add regression coverage for the pre-existing callers and exercise the meaningful dispatch arms so the refactor is demonstrably output-preserving. When test helpers are protocol-agnostic and duplicated across suites, prefer one shared `conftest.py` fixture/helper with optional parameters over multiple local copies that can drift.
+
+## Stateful transport dissectors: adverse sequences and redissection stability
+
+Merged MR !25989 is a strong submission/test exemplar for a new stateful UDP transport dissector. Its UDX tests cover stream pairing for multiple multiplexed streams, SACK behavior, loss, duplicate and reordered packets, fast/RTO/spurious retransmissions, keepalive versus zero-window probes, MTU probes, 32-bit sequence wraparound, and Follow Stream reconstruction. Captures were produced by driving the reference implementation through a deterministic relay that can drop, duplicate, and reorder traffic; specialized edge cases were hand-built from the documented wire format.
+
+The MR also asserts that a lossy capture's Follow Stream output is byte-identical to the clean transfer, and its stateful analysis is computed on first pass and cached per packet so revisiting/redissection cannot change the reported result. These are valuable invariants for any stateful dissector: test sequence behavior, not just isolated packets, and test that second-pass display is deterministic.
+
+Reviewer Jaap Keuter additionally challenged the initial UDX heuristic as too weak and likely to cause false positives. For heuristic dissectors, include negative/nonmatching traffic in validation and prefer leaving a weak heuristic disabled by default while Decode As remains available. “It recognizes my capture” is insufficient evidence for enabling a heuristic globally.
 
 ## Robustness patterns worth fuzzing
 
