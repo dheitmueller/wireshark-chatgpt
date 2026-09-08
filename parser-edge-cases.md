@@ -91,3 +91,23 @@ Merged MR !26072 fixes potential heap corruption in UMTS RRC by checking both `r
 **Implementation rule:** guard the actual storage expression immediately before indexing it, and derive bounds from the array itself where practical (`G_N_ELEMENTS`) so the check remains coupled to the allocation.
 
 **Confidence:** High. Merged master memory-safety fix authored and merged by Ronnie Sahlberg.
+
+## Explicit-length byte buffers are not C strings
+
+When an external API returns a pointer plus an explicit byte count, that count is the complete access contract. Text-looking content in the buffer does not make it NUL-terminated, does not establish a minimum width, and does not make string-scanning functions safe.
+
+Merged MR !26099, authored by Ronnie Sahlberg and merged by Anders Broman, fixes LDAP ETW parsing in `etwdump`. The ETW property allocation was exactly `TdhGetPropertySize()` bytes, yet the old code used prefix/string parsing and fixed hexdump offsets as though the property were terminated and at least one full line long. Short but valid final lines could read beyond the allocation, and the in-place decoder could also write beyond it. The accepted fix checks `Length` before every fixed-width access, uses bounded `memcmp()` for prefixes, converts hex digits explicitly with `g_ascii_xdigit_value()`, decodes into a separately sized local output buffer, and rejects the zero-length allocation case.
+
+**Implementation rule:** for pointer-plus-length input, prove `length >= needed` before every fixed-width read; use length-aware comparison/parsing primitives; and do not scan beyond the supplied count looking for a terminator that the producer never promised. If decoding changes representation or density, prefer a separately bounded output buffer unless in-place capacity and overlap semantics are explicitly proven.
+
+**Confidence:** Very high. Merged master memory-safety fix from an experienced maintainer, accepted by Anders Broman, with the failure mechanism and valid-short-input case documented in the MR.
+
+## Enforce schema multiplicity and output bounds structurally, and keep cleanup on error paths
+
+Structured-input parsers should not rely on a well-formed file to prevent repeated writes into one logical output slot. If the format permits exactly one child/value, stop consuming that slot after the first accepted instance (or reject a duplicate). Likewise, an output cursor check should reject values that are already beyond the end, not only the exact end position.
+
+Merged MR !26105, authored and merged by John Thacker, hardens the Gammu DCT3 trace wiretap reader. A valid `<l1>` has only one `<l2>` child; the accepted parser now stops after handling that child rather than allowing another matching element to reuse the same output cursor. Its `hex2bin()` guard changes from `out == out_end` to `out >= out_end`, making the write boundary robust even if earlier state has already advanced past the nominal end. The same patch also changes a direct error return to the common cleanup path so the XML document is freed. Release-4.6 backport !26107 preserves the behavior.
+
+**Implementation rule:** encode one-of/one-child schema constraints in control flow close to the write; use `>=`-style end guards when an output cursor must never reach or pass a one-past-end pointer; and route failures through ownership cleanup whenever an acquired parser resource still needs release.
+
+**Confidence:** Very high. Merged master wiretap memory-safety fix authored and merged by John Thacker and preserved in a stable-branch backport.
