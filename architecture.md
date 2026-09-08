@@ -18,6 +18,14 @@ When changing a subsystem, trace the real call path in the current source before
 
 State/reassembly keys must model the protocol's actual identity tuple, not just whichever field is most obvious. MR !26223 fixed MCTP reassembly where a three-bit tag alone collided between request and response; the tag-owner bit is part of the identity and therefore belongs in the key. When adding stateful analysis, enumerate the complete protocol identity before choosing conversation/reassembly keys.
 
+When a wiretap reader derives packet context only during sequential parsing, do not assume `seek_read()` can reconstruct it from the packet's local byte range. Persist the required per-packet context during the first pass, keyed by the packet's stable `data_offset`, and restore it on random access. Merged !25834 fixes 3GPP nettrace second-pass UE-ID/timestamp corruption with exactly this pattern.
+
+For known-length reassembly, bounds for overlap comparison must be based on bytes that actually exist in the allocated reassembly buffer, not merely on fragment geometry. Merged !25837 clips the overlap end to `datalen` before `memcmp()`, because fragments may legally be recorded beyond the known assembled-data boundary even though no backing buffer exists there.
+
+## Wiretap error semantics
+
+Reserve `WTAP_ERR_INTERNAL` for conditions that are impossible if Wireshark's own invariants hold, including when the input file is malformed. Ordinary malformed-file validation belongs under a bad-file error such as `WTAP_ERR_BAD_FILE`; user misconfiguration should likewise not be mislabeled as an internal bug. If one path can fail for both an internal bug and bad input/configuration, distinguish the causes if practical; otherwise prefer the non-internal classification until the code can prove the invariant violation. !25816 first raised this distinction, and the merged !25831 discussion independently corroborated it. GUI-facing wiretap errors should describe the file format/module and user-relevant failure rather than exposing an internal helper-function name.
+
 ## Tree visibility versus filterability
 
 A protocol-tree item need not be visibly rendered to remain useful for display filtering. MR !26393 demonstrates adding eCPRI fields and calling `proto_item_set_hidden()` when O-RAN FH owns the visible dissection. This is useful when a parent/encapsulation protocol has filter semantics that should remain available without duplicating visible presentation.
