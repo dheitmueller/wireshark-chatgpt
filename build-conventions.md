@@ -21,3 +21,13 @@ Merged MR !26117, authored by John Thacker and approved/merged by Gerald Combs, 
 **Implementation rule:** when deleting or replacing a configure-time capability test, remove its setup and state-management scaffolding as well. Keep find modules minimal enough that readers can distinguish actual dependency discovery/validation from historical residue.
 
 **Confidence:** Very high. Merged master build-system cleanup authored by John Thacker and approved/merged by Gerald Combs.
+
+## Represent external dependencies with imported targets, including configuration-specific usage requirements
+
+CMake find modules should expose an external dependency as a target that carries the dependency's complete usage contract. Consumers should link that target instead of separately repeating raw library lists, include directories, transitive dependencies, and platform-specific link options.
+
+Merged MR !26122, authored by John Thacker and approved/merged by Gerald Combs, adds `MaxMindDB::MaxMindDB` and tracks the Debug and Release MaxMindDB artifacts separately on Windows. That prevents an MSVC Debug executable from accidentally linking the Release library and mixing incompatible CRT variants. Merged MR !26132, also authored by John Thacker and approved/merged by Gerald Combs, applies the same target-oriented design to libsinsp. Because libsinsp is represented by a bundle of libraries rather than one file suitable for `IMPORTED_LOCATION`, the accepted implementation uses an `INTERFACE IMPORTED` target and attaches its include directories, Debug/optimized library sets, and the narrowly scoped MSVC `/IGNORE:4099` option to that target. Consumers then link `sinsp::sinsp` without reproducing those details.
+
+**Implementation rule:** put per-configuration artifact selection and transitive compile/link requirements on the imported dependency target. If an external dependency is a collection of libraries rather than one importable artifact, an `INTERFACE IMPORTED` target can model the bundle. Scope unavoidable warning suppressions to the dependency target that causes them rather than applying them globally.
+
+**Confidence:** Very high. Two merged master CMake changes authored by John Thacker and approved/merged by Gerald Combs.
