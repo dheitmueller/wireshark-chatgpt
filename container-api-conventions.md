@@ -41,3 +41,13 @@ Merged MR !26330 simplifies extcap error handling this way: after stealing an `e
 **Implementation rule:** prefer one canonical destructor plus an explicit ownership-transfer operation over parallel 'free everything except the stolen member' routines. This is appropriate only when the canonical destructor's NULL behavior is part of the API contract.
 
 **Confidence:** Very high. Merged master ownership cleanup authored and merged by John Thacker.
+
+## Make container shape match the API's real cardinality
+
+Do not represent an operation that can return exactly one collection as a list containing one collection merely to preserve hypothetical multiplicity that the call contract does not support. Artificial nesting leaks impossible states into callers and multiplies iteration, ownership, and cleanup code.
+
+Merged MR !26355, authored by John Thacker and approved/merged by Gerald Combs, removes a `GList`-of-`GList` shape from extcap configuration retrieval. The relevant callback is invoked for one extcap binary/interface configuration; there is no valid path in which callers need several matching configuration lists. Returning the argument list directly simplifies the Qt consumer, required-argument checks, capture argument construction, and the corresponding destructor.
+
+**Implementation rule:** encode actual cardinality in APIs and data structures. Use an outer collection only when multiple independent inner collections are semantically possible; otherwise return the collection itself and let its ownership contract be explicit.
+
+**Confidence:** Extremely high. Merged master simplification authored by John Thacker and explicitly approved/merged by project lead Gerald Combs.
