@@ -33,3 +33,30 @@ Corpus commit: `2ed161d19398e620fa89227724ed928d4f5edf27`
 | !25815 | Scanned | 3GPP 32.423 nettrace dispatch refactor replaces hard-coded branching with a declarative mapping table supporting direct dissector names and dissector-table dispatch, with unknown protocols falling through for best-effort handling. Merged; clean extensibility refactor but no substantive human review. |
 | !25816 | Discussion-focused | TTL segmented-message bounds hardening. John Thacker noted that GUI-facing wiretap error text should identify the file format/module rather than internal function names, and that `WTAP_ERR_INTERNAL` should represent a condition impossible even for malformed input—otherwise validation belongs earlier and the module still has a bug. The author proposed a separate master-only cleanup rather than expanding this safety fix. Merged; useful wiretap/error-semantics evidence, retained as contextual guidance pending corroboration. |
 | !25817 | Scanned | Follow-up 3GPP nettrace refactor splits XML attribute parsing and exported-PDU construction out of a monolithic function, leaving a short orchestration path. Merged; maintainability improvement with no substantive review discussion. |
+
+## Corpus commit a67598e5
+
+Corpus commit: `a67598e5dd77b04de676ab8cee5e2754525edf8e`
+
+| MR | Status | Notes |
+|---|---|---|
+| !25818 | Scanned | 3GPP nettrace timestamp and memory-leak cleanup. Merged; uses quotient/remainder carry for millisecond overflow and frees XML resources on all open paths. No substantive human review. |
+| !25819 | Scanned | Replaces fragile raw-buffer `strstr`/pointer parsing of session XML with bounded libxml2 parsing and proper resource cleanup. Merged; good robustness refactor but no substantive human review. |
+| !25820 | Scanned | Deduplicates session-tag lookup shared by sequential and seek reads into one helper. Merged; straightforward maintainability cleanup. |
+| !25821 | Scanned | release-4.6 backport of the TTL segmented-message bounds fix represented by !25816. Merged; no additional lesson. |
+| !25822 | Scanned | Removes a duplicate `nds_data_handle` declaration that newer GCC rejects. Merged; compile-portability cleanup with no review discussion. |
+| !25823 | Scanned | Automatic release-4.6 data/translation update. Merged; no reusable engineering lesson. |
+| !25824 | Scanned | Automatic master data/translation update. Merged; no reusable engineering lesson. |
+| !25825 | Scanned | Automatic release-4.4 data/translation update. Merged; no reusable engineering lesson. |
+| !25826 | Scanned | release-4.6 backport of the RDP bounds hardening already captured from !25813. Merged; no additional lesson. |
+| !25827 | Scanned | release-4.4 backport of the RDP bounds hardening already captured from !25813. Merged; no additional lesson. |
+| !25828 | Scanned | 3GPP nettrace cleanup: data-driven transport mapping, flatter file-open parsing, and thread-safe one-time regex initialization. Merged; solid refactor but no substantive review discussion. |
+| !25829 | Scanned | Reorders display-filter operator documentation so related operator sections are adjacent. Merged; documentation-only. |
+| !25830 | Scanned | CI temporarily installs `aqt` from its GitHub repository to gain Qt 6.11 support unavailable in the published PyPI version. Merged; build-infrastructure maintenance. |
+| !25831 | Discussion-focused | TTL wiretap error-message cleanup. Follow-up discussion distinguishes true internal invariant failures from bad-file/user-misconfiguration cases; Pascal Quantin proposed keeping ambiguous lookup failures as `WTAP_ERR_BAD_FILE`. This independently corroborates !25816, so the wiretap error-semantics rule was promoted into `architecture.md`. |
+| !25832 | Scanned | release-4.6 Asterix fix to fetch values only for field types that use them. Merged; backport with no new review evidence. |
+| !25833 | Scanned | Display-filter Flex rule prevents a trailing backslash from falling through to Flex's default console-printing rule. Merged; lexer-specific fix with no broader convention extracted. |
+| !25834 | Deep | 3GPP nettrace second-pass fix. Sequential read records session context per packet keyed by stable `data_offset`; `seek_read()` restores that context because its local `<msg>` buffer cannot reconstruct the preceding session. Added as a durable wiretap random-access state rule in `architecture.md`. |
+| !25835 | Scanned | Compresses the WCA banner PNG. Merged; resource-only change. |
+| !25836 | Scanned | release-4.6 backport of the WCA Qt welcome-page slide. Merged; no reusable engineering lesson. |
+| !25837 | Deep | Core reassembly bounds fix by John Thacker. Overlap comparison is clipped to the known allocated `datalen` before `memcmp()` because fragments can extend beyond the assembled buffer. Added as a durable reassembly-buffer invariant in `architecture.md`. |
