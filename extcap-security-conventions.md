@@ -20,3 +20,13 @@ The accepted behavior distinguishes the trust states rather than treating all no
 **Implementation rule:** server trust establishment precedes credential transmission. Unknown hosts require explicit user intent to trust/add; changed keys must not be silently replaced. Where the underlying SSH mechanism already cryptographically authenticates the server identity, avoid redundant host-key assumptions that the protocol/library explicitly says may not hold.
 
 **Confidence:** Very high. Merged shared extcap security architecture authored by John Thacker and applied across the SSH-based extcaps.
+
+## Scrub authentication material before releasing its storage
+
+Freeing a password, private-key passphrase, or related SSH parameter does not erase the bytes from process memory. Treat explicit zeroization as part of the teardown contract for structures that own authentication material.
+
+Merged MR !25709, authored by Gerald Combs, changes the common extcap SSH parameter destructor to zero its credential-related strings before `g_free()`. Merged follow-up !25716, authored by John Thacker and approved by Gerald, broadens the portable implementation to prefer primitives whose stores are specified not to be optimized away: C23 `memset_explicit`, Windows `SecureZeroMemory`, `explicit_bzero` on BSD/musl/older glibc, and `memset_s`, with ordinary `memset` only as a last-resort fallback.
+
+**Implementation rule:** when a long-lived structure owns passwords, passphrases, or comparable authentication secrets, explicitly scrub the backing storage before freeing it. Feature-detect and prefer a platform primitive with non-elidable zeroization semantics; do not assume an ordinary `memset()` immediately before `free()` will survive optimization.
+
+**Confidence:** Extremely high. Two merged master security changes, authored by Gerald Combs and John Thacker and converging on the same shared extcap teardown path.
