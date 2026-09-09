@@ -31,3 +31,13 @@ Merged MR !25654 fixes HTTP/3 upgrade state so file-scoped information is not re
 **Implementation rule:** distinguish packet-local, conversation/file-scope, and process/global state explicitly. Use redissection indicators such as the established visited-pass mechanisms for persistent state creation, reset packet-local parser/matcher state at the packet boundary, and scope lookup tables to the same protocol namespace that gives their entries meaning.
 
 **Confidence:** High. Two merged master fixes with concrete stale/cross-scope failure modes.
+
+## Do not gate visible diagnostics on first-pass state
+
+The `visited`/redissection distinction is useful for preventing duplicate mutation of persistent analysis state; it is not a general-purpose guard around tree construction or expert information. Visible diagnostics must be recreated whenever the packet is dissected so that later display/filter passes still contain them.
+
+Merged MR !25595 adds HTTP request-target whitespace diagnostics. During review, Jaap Keuter specifically questioned a `!pinfo->fd->visited` guard around the expert item; the guard was removed before merge so the warning is generated on redissection as well as the first pass.
+
+**Implementation rule:** use first-pass guards around stateful side effects that must happen once, not around protocol-tree fields or expert diagnostics whose presence is part of the current dissection result. If a diagnostic should be visible after redissection, emit it on every applicable dissection pass.
+
+**Confidence:** Very high. Direct maintainer correction incorporated into a merged master MR.
