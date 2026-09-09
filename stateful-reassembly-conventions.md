@@ -31,3 +31,13 @@ Merged MR !26234 first hardened SPDY's custom reassembly against integer overflo
 **Implementation rule:** before maintaining or extending a private fragment accumulator, determine whether Wireshark's standard reassembly API expresses the required protocol semantics. Prefer the standard API when it does; custom reassembly carries responsibility for all overflow, overlap, duplicate, lifetime, dependency, redissection, and presentation behavior that the common framework otherwise supplies.
 
 **Confidence:** Very high. Merged master migration led by John Thacker, preceded and independently corroborated by security-oriented fixes to custom reassembly code.
+
+## Track directional fragment state separately and make redissection independent of traversal order
+
+State used to identify fragments cannot assume that later dissections will revisit packets in the same sequential order as the first pass. Bidirectional protocols also need independent sequence/fragment state in each direction when the same identifiers can advance separately.
+
+Merged MR !25419, authored and merged by John Thacker, fixes COTP TSDU reassembly by moving fragment IDs from global variables into per-flow conversation data, keeping separate IDs for each direction, and retaining enough file-scoped information to recover the correct fragment ID when frames are dissected in an unspecified order on subsequent passes. The motivating case includes multiple reassemblies completing in the same frame, where `fragment_add_seq_next()` otherwise cannot retrieve the right reassembly during redissection.
+
+**Implementation rule:** design reassembly bookkeeping for arbitrary redissection order, not just the first sequential pass. Store any derived identifiers needed to reproduce earlier decisions, and separate state by direction whenever each endpoint can advance its own fragment/sequence namespace.
+
+**Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker, with the redissection and bidirectional failure modes explicitly documented.
