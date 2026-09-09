@@ -14,7 +14,7 @@
 - ST 2110-40 fuzz target brought up with libFuzzer/fuzzshark.
 - Independent test-vector search for ST 2110-40 and related standards.
 - MR !26390 submitted upstream; Anders Broman review findings have been incorporated into notebook conventions and `personal-review-feedback.md`.
-- Current Packet Bytes prototype is in `dheitmueller/wireshark`, branch `djh-10bit`. As of 2026-09-08 the pushed branch head used for this work is `cb138cf01c893dd9d0d0af4eed47926db021e2d4`; refresh the head if Devin pushes again rather than assuming this SHA remains current.
+- Current Packet Bytes prototype is in `dheitmueller/wireshark`, branch `djh-10bit`. As of 2026-09-09 the pushed branch head used for this work is `cb138cf01c893dd9d0d0af4eed47926db021e2d4`; refresh the head if Devin pushes again rather than assuming this SHA remains current.
 
 ## Packet Bytes 10-bit prototype state
 
@@ -28,11 +28,16 @@
 
 ## Source/patch workflow for this active branch
 
-- Treat the connected GitLab repository `dheitmueller/wireshark` and branch `djh-10bit` as authoritative. Pin the branch head once per pushed state and fetch exact full files through the GitLab connector.
-- Do not repeatedly retrieve equivalent Wireshark sources from upstream GitHub/GitLab once the authoritative working branch is known.
-- Connector access can work even when the general-purpose container cannot resolve/reach GitLab. Do not spend extended time debugging container networking when connector reads are functioning.
+- Treat `dheitmueller/wireshark`, branch `djh-10bit`, as authoritative. Refresh/pin its head once at the beginning of a new pushed state.
+- For work requiring a repository checkout, shell Git operations, builds, or patch generation, prefer a **fresh ChatGPT Work task** with `Settings -> Data controls -> Work network access -> Allow public internet access` enabled.
+- Verified 2026-09-09: the regular-Chat execution sandbox in the existing conversation failed DNS resolution for `gitlab.com`, `github.com`, `example.com`, and `openai.com`; HTTPS and `git ls-remote` therefore also failed. In contrast, a newly created Work task successfully ran `curl -I https://gitlab.com/` and `git ls-remote https://gitlab.com/dheitmueller/wireshark.git refs/heads/djh-10bit`, returning branch head `cb138cf01c893dd9d0d0af4eed47926db021e2d4`.
+- In that Work task, `getent hosts gitlab.com` returned no output/status 2 even though `curl` and Git worked. Do not use `getent` alone to decide whether Work has usable network access; test the actual HTTPS/Git operation.
+- Connector access, regular-Chat execution networking, and Work cloud networking are separate. A functioning GitLab connector does not imply a regular Chat sandbox can clone the repository.
+- Moving or associating an existing Chat with Work should not be assumed to replace its existing execution sandbox with a network-enabled Work environment. Start a fresh Work task when networked repository operations are needed.
+- At the start of a Work repository task, run a cheap `git ls-remote` against the authoritative repository/branch. If it succeeds, use a normal clone/fetch/working-tree workflow and stop using connector-to-container reconstruction paths.
 - Search results/snippets are not acceptable substitutes for full source files when generating patches.
-- Never hand-assemble a patch. Establish complete exact before/after files, mechanically generate the diff, and validate it with `git apply --check` against the intended state before delivery.
+- Never hand-assemble a patch. Use the real working tree, edit complete files, mechanically generate the diff, and validate it with `git apply --check` against the intended state before delivery.
+- If a regular Chat sandbox cannot access the repository, do not spend extended time trying DNS/raw-download/mirror workarounds. Move the editing task to Work or use appropriate connector-side repository actions.
 - Keep visible progress updates during lengthy tool operations; ending a response means no work continues in the background.
 
 ## MR corpus state
@@ -83,10 +88,10 @@ Maintain this as a live checklist of **issues in this specific MR**: correctness
 
 ## Immediate next step
 
-Implement the Packet Bytes `data_source`-level 10-bit interpretation metadata on top of the current `dheitmueller/wireshark: djh-10bit` pushed state. Remove the failed field-inference/restore prototype, set explicit metadata on `ST 291 Packed UDW Data`, initialize the Packet Bytes view from it, generate the patch mechanically, and validate applicability before delivery.
+In a fresh network-enabled ChatGPT Work task, clone/fetch `dheitmueller/wireshark`, refresh `djh-10bit`, and implement the Packet Bytes `data_source`-level 10-bit interpretation metadata. Remove the failed field-inference/restore prototype, set explicit metadata on `ST 291 Packed UDW Data`, initialize the Packet Bytes view from it, generate the patch mechanically, and validate applicability before delivery.
 
 ## Access state
 
 - `dheitmueller/wireshark-chatgpt`: GitHub write access confirmed and functioning.
 - `dheitmueller/wireshark-corpus-mrs`: GitHub read access confirmed; use it instead of GitLab web retrieval for MR archaeology.
-- `dheitmueller/wireshark`: GitLab connector read access confirmed and preferred for the active development branch. General-purpose container network access to GitLab may fail independently; do not confuse that with connector availability.
+- `dheitmueller/wireshark`: GitLab connector read access confirmed. For repository editing/patch generation, prefer a fresh Work task with public network access and a normal Git checkout rather than trying to bridge connector files into a regular-Chat execution sandbox.
