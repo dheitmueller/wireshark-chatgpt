@@ -61,3 +61,23 @@ Merged MR !26287, authored and merged by John Thacker, changes the CIP dissector
 **Implementation rule:** when an API can express ownership structurally, use it. Attach temporary tvbuffs to their logical parent or use scope-managed allocations so exception unwinding performs the cleanup automatically; reserve explicit `CATCH`-path cleanup for resources whose ownership cannot be represented by the existing lifetime mechanisms.
 
 **Confidence:** Very high. Merged master memory-safety fixes authored and merged by John Thacker, with !26287 explicitly selecting the child-tvbuff API to eliminate exception-path cleanup obligations.
+
+## Reusable static formatting buffers must be thread-local when calls can overlap
+
+A function that formats into a mutable static buffer and returns a pointer to that storage has hidden shared scratch state. Even when the caller does not retain the pointer long-term, concurrent calls can overwrite one another or race on the buffer.
+
+Merged MR !25662, authored and merged by Guy Harris, changes the static buffers used by `wtap_strerror()`, `file_open_error_message()`, and `file_write_error_message()` to `static WS_THREAD_LOCAL` storage. The semantic lifetime remains “valid until the next call in this thread,” but calls from other threads no longer share the same writable object. Release-branch backports !25663 and !25664 preserve the fix.
+
+**Implementation rule:** prefer caller-owned or scope-owned result storage when practical. When an API intentionally returns a pointer to a reusable internal formatting buffer, make the scratch storage thread-local if the API can be invoked concurrently, and document/retain the per-thread overwrite lifetime rather than relying on process-global mutable static state.
+
+**Confidence:** Extremely high. Merged master concurrency/lifetime correction authored and merged by Guy Harris and carried to supported release branches.
+
+## Separate successful finalization from emergency resource release after an I/O error
+
+Normal close/finalize paths for compressed or structured output may write trailers, flush compression state, or perform other operations that assume the stream is still healthy. After a write or flush error, retrying those semantic finalization operations can be pointless or harmful; the remaining obligation is often only to release memory and the underlying descriptor.
+
+Merged MR !25679, authored and merged by Guy Harris, adds `ws_cwstream_close_after_error()` plus compression-specific error-close helpers. They deliberately skip finishing compression and writing additional output, ignore secondary close errors, free internal buffers/state, and close the underlying file descriptor. `dumpcap` uses this path after an already-reported write error instead of the ordinary successful close path.
+
+**Implementation rule:** distinguish “finish a valid output object” from “abandon a failed output object and release resources.” Once an earlier I/O error has invalidated the stream, use an abort/error-close path that performs only teardown unless the file format/API explicitly requires and can safely perform recovery finalization.
+
+**Confidence:** Extremely high. Merged master error-path lifecycle design authored and merged by Guy Harris.
