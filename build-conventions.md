@@ -51,3 +51,13 @@ Merged MR !25677 initially added `strchrnul` through the usual capability-test/f
 **Implementation rule:** for APIs introduced after the minimum deployment runtime, distinguish header/SDK availability from runtime availability. Keep a fallback reachable at runtime or raise the deployment requirement explicitly; do not let a successful configure probe silently create a binary that links or calls an unavailable runtime symbol on supported older systems.
 
 **Confidence:** Very high. Merged master portability fix authored and merged by John Thacker, directly correcting the earlier compile-time-only capability assumption.
+
+## ABI-affecting build options require ABI agreement from dependencies
+
+A build option that changes the representation of a type exposed in library interfaces is not an isolated compiler choice. Every linked dependency that exchanges that type, or a structure containing it, must be built with a compatible ABI.
+
+Merged MR !25538 adds an experimental option to force 64-bit `time_t` for Y2038 compliance and explicitly warns that libpcap and any other library exposing `time_t` in its API must use the same `time_t` size. The implementation includes a libpcap compatibility check rather than assuming that successfully compiling Wireshark itself proves the resulting binary is ABI-safe. During review Gerald Combs also questioned a Win32-specific branch that was irrelevant to Wireshark's supported 64-bit Windows targets; it was removed.
+
+**Implementation rule:** when a CMake/toolchain option changes fundamental ABI-visible types, validate ABI compatibility at dependency boundaries and limit platform-specific handling to configurations Wireshark actually supports. A successful local compile is not sufficient evidence when externally built libraries participate in the affected ABI.
+
+**Confidence:** Very high. Merged master build-system change by John Thacker with direct Gerald Combs review.
