@@ -5,6 +5,7 @@
 1. Build a persistent Wireshark engineering notebook that improves future code generation and review quality across conversations.
 2. Mine upstream Wireshark merge-request reviews for maintainer conventions and recurring feedback patterns.
 3. Apply accumulated findings to ongoing ST 2110-40, ST 2038, VANC/ANC, media-over-IP, testing, and fuzzing work.
+4. Prototype generalized Packet Bytes support for non-8-bit word interpretations, initially packed 10-bit ST 291 UDW data.
 
 ## Recent development context
 
@@ -13,6 +14,26 @@
 - ST 2110-40 fuzz target brought up with libFuzzer/fuzzshark.
 - Independent test-vector search for ST 2110-40 and related standards.
 - MR !26390 submitted upstream; Anders Broman review findings have been incorporated into notebook conventions and `personal-review-feedback.md`.
+- Current Packet Bytes prototype is in `dheitmueller/wireshark`, branch `djh-10bit`. As of 2026-09-08 the pushed branch head used for this work is `cb138cf01c893dd9d0d0af4eed47926db021e2d4`; refresh the head if Devin pushes again rather than assuming this SHA remains current.
+
+## Packet Bytes 10-bit prototype state
+
+- Goal: allow Packet Bytes to interpret packed data using a word size independently from its numeric presentation. Word interpretation and presentation are separate axes: e.g. 8-bit or 10-bit words versus hexadecimal/decimal/octal/binary presentation.
+- The current prototype successfully renders packed ST 291 UDW data as 10-bit words and permits switching presentation independently. It also uses a subset TVB for the packed UDW region so Packet Bytes need not mix 8-bit packet headers and 10-bit payload interpretation in one view.
+- ST 291 subdissectors should continue receiving logical 10-bit values represented in 16-bit storage words (valid values 0x000-0x3ff); that internal handoff is distinct from how Packet Bytes receives/displays the raw packed TVB.
+- The UI experiment that tries to infer/remember a data-source-wide 10-bit preference from a selected full-source field did not change the desired tab behavior. Do not build further on that inference mechanism.
+- Current design direction: make the natural word interpretation/alignment explicit metadata on the Wireshark `data_source` itself. `ST 291 Packed UDW Data` should carry a 10-bit interpretation, bit offset 6, and the logical word count. `DataSourceTab`/`HexDataSourceView` should initialize from that metadata when the tab is created/selected. The normal packet and 8-bit UDW data sources remain 8-bit.
+- Presentation remains independently user-controlled; selecting a 10-bit data source should not force hexadecimal specifically.
+- Remove/supersede the failed field-to-data-source learn/restore prototype when implementing explicit `data_source` metadata.
+
+## Source/patch workflow for this active branch
+
+- Treat the connected GitLab repository `dheitmueller/wireshark` and branch `djh-10bit` as authoritative. Pin the branch head once per pushed state and fetch exact full files through the GitLab connector.
+- Do not repeatedly retrieve equivalent Wireshark sources from upstream GitHub/GitLab once the authoritative working branch is known.
+- Connector access can work even when the general-purpose container cannot resolve/reach GitLab. Do not spend extended time debugging container networking when connector reads are functioning.
+- Search results/snippets are not acceptable substitutes for full source files when generating patches.
+- Never hand-assemble a patch. Establish complete exact before/after files, mechanically generate the diff, and validate it with `git apply --check` against the intended state before delivery.
+- Keep visible progress updates during lengthy tool operations; ending a response means no work continues in the background.
 
 ## MR corpus state
 
@@ -62,9 +83,10 @@ Maintain this as a live checklist of **issues in this specific MR**: correctness
 
 ## Immediate next step
 
-Continue corpus commit `95ef115d...` from the unreviewed MRs in !25933-!26205, prioritizing merged MRs with substantive human review, especially dissector/libwireshark/reassembly/testing/API work. Update the ledger per MR rather than declaring the whole batch complete until every file has been accounted for.
+Implement the Packet Bytes `data_source`-level 10-bit interpretation metadata on top of the current `dheitmueller/wireshark: djh-10bit` pushed state. Remove the failed field-inference/restore prototype, set explicit metadata on `ST 291 Packed UDW Data`, initialize the Packet Bytes view from it, generate the patch mechanically, and validate applicability before delivery.
 
 ## Access state
 
 - `dheitmueller/wireshark-chatgpt`: GitHub write access confirmed and functioning.
 - `dheitmueller/wireshark-corpus-mrs`: GitHub read access confirmed; use it instead of GitLab web retrieval for MR archaeology.
+- `dheitmueller/wireshark`: GitLab connector read access confirmed and preferred for the active development branch. General-purpose container network access to GitLab may fail independently; do not confuse that with connector availability.
