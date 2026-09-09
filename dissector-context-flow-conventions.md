@@ -41,3 +41,23 @@ Merged MR !25595 adds HTTP request-target whitespace diagnostics. During review,
 **Implementation rule:** use first-pass guards around stateful side effects that must happen once, not around protocol-tree fields or expert diagnostics whose presence is part of the current dissection result. If a diagnostic should be visible after redissection, emit it on every applicable dissection pass.
 
 **Confidence:** Very high. Direct maintainer correction incorporated into a merged master MR.
+
+## Restore shared metadata after a nested call that needs temporary context
+
+Sometimes a nested dissector legitimately needs a different view of shared packet/record metadata than the enclosing layer. If the caller temporarily changes that shared metadata, the change must be scoped to the child call and the original value restored before control returns to the enclosing path.
+
+Merged MR !25541 temporarily changes a pcap record's `pkt_encap` so an inner dissector such as Bluetooth can see the encapsulation it expects. The value is then restored after the child call; without restoration, later wiretap output can reject the packet because the packet encapsulation no longer matches the IDB/outer frame encapsulation.
+
+**Implementation rule:** treat temporary changes to shared `packet_info`, record, or dissector-context metadata as push/pop state. Save the outer value, establish the child-specific value only for the nested call, and restore it on every return path before unrelated consumers observe the object.
+
+**Confidence:** Very high. Merged master correctness fix authored by John Thacker and merged by Anders Broman, with a concrete fuzz reproducer showing the leaked-state failure.
+
+## Attach diagnostics only when their packet/session association is justified
+
+Expert information in a protocol tree implies that the diagnostic belongs to the packet/session being displayed. Errors discovered while parsing an external configuration source, key-log file, or Decryption Secrets Block should not be attached to an arbitrary protocol tree merely because that protocol eventually consumes the data.
+
+During review of merged MR !25557, Guy Harris asked whether malformed SSH key-log entries could be exposed as SSH expert information. John Thacker pointed out that the bad entry may come from a configured file or a DSB and cannot necessarily be tied to the packet currently being dissected; attaching it would require evidence that the key is intended for that particular session.
+
+**Implementation rule:** keep configuration/input-source diagnostics in their own reporting path unless there is a defensible identity mapping to the packet or conversation. If a protocol-tree expert item is used, ensure the error is actually attributable to that packet/session rather than merely to globally supplied auxiliary data.
+
+**Confidence:** Very high. Direct Guy Harris review question and John Thacker design reasoning on a merged master MR.
