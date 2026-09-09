@@ -15,3 +15,13 @@ During !17606 review, Gerald Combs suggested an even narrower ownership model: a
 **Review rule:** when changing an allocation API or allocator scope, audit the entire ownership path—including cleanup, containers, exceptional exits, and redissection lifetime—not just the allocation line.
 
 **Confidence:** Very high. Merged correctness fix plus direct review from Gerald Combs and agreement from John Thacker; the same lifetime principle is independently represented elsewhere in the notebook.
+
+## Pass short-lived borrowed data explicitly instead of hiding it in broader context state
+
+A pointer can be technically valid for the duration of a call and still be a poor member of a longer-lived context structure. If a value is produced for one immediate operation and its lifetime does not match the context object, make that borrowed lifetime visible in the function signature.
+
+Merged MR !25579, authored and merged by Guy Harris, repaired an IEEE 802.15.4 decryption crash by temporarily pointing `decrypt_info->key` at a stack key whose use was confined to the called decryption routines. Guy's later merged MR !25593 improved the interface by removing that key pointer from the broader context and passing the key directly to the decryption helper.
+
+**Implementation rule:** do not stash short-lived borrowed pointers in a context struct merely because all current callees happen to use them synchronously. Prefer an explicit parameter when the data belongs to one operation; reserve context members for values whose ownership and lifetime genuinely match the context.
+
+**Confidence:** Extremely high. Two merged master changes authored by Guy Harris, with the later change representing the preferred evolved interface.
