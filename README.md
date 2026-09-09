@@ -18,6 +18,20 @@ When preparing, reviewing, or generating code that Devin is likely to submit ups
 
 When generating a patch for Devin, **never hand-assemble a unified diff**. Generate the patch mechanically from actual before/after file contents using `git diff`, `diff -u`, or an equivalent tool. Before delivering the patch, validate its syntax and applicability with `git apply --check` (or an equivalent dry-run against the intended target tree when available). Do not describe a patch as ready or provide it for use unless this validation succeeds. If the exact target tree is unavailable, at minimum validate that the diff is structurally well-formed and clearly state that full applicability could not be checked.
 
+### Source-access and patch-workflow requirement
+
+For active Wireshark development, avoid repeatedly rediscovering or re-fetching the same source state. When Devin identifies a working repository and branch, treat that repository/branch as authoritative for the task. Resolve and record the branch head commit once, and continue using that exact commit until Devin says or indicates that he has pushed a new state; then refresh the head once.
+
+When a connected repository integration (for example GitLab) can read the authoritative repository, prefer it over public web search and over repeatedly fetching equivalent upstream sources. Use full-file fetch/read operations for files that will be modified; search/snippet results are for locating code, not for reconstructing source files or patch context.
+
+Do not spend extended time trying to force `git clone`, `git fetch`, raw HTTP downloads, or container networking to work when the repository connector is already functioning. Container network access and connector access are independent capabilities. If direct container networking fails, use the connector as the source of truth and choose the shortest available path to materialize exact full-file contents for mechanical patch generation.
+
+Before editing, establish exact before-file contents for every file the patch will touch. Never reconstruct a source file from search excerpts or manually synthesized context. Make edits to those complete files, then generate the patch mechanically. If exact files cannot be materialized into a diff-capable environment, stop and report that limitation rather than falling back to a hand-assembled patch.
+
+Keep source-state verification proportional to the task. Pinning the authoritative commit plus fetching the exact touched files is normally sufficient; do not repeatedly cross-check unchanged files against multiple mirrors unless there is concrete evidence of a mismatch. Correctness checks should reduce risk, not dominate the implementation time.
+
+For long tool-heavy operations, keep the user-visible turn active and provide concise progress updates at meaningful stages (for example: pinned branch head, fetching exact files, editing, generating diff, running `git apply --check`). Do not say work is continuing after ending the turn: no tool execution occurs between turns.
+
 ### Model-quality requirement for MR analysis
 
 MR mining is intended to build a high-confidence long-term knowledge base, so do not knowingly perform it using a fallback/downgraded model caused by exhaustion of the user's normal higher-capability usage allowance. If the runtime/product explicitly indicates that the requested MR analysis is being downgraded or routed to an older/lower-capability fallback because of usage limits, **abort the MR analysis rather than updating the notebook with lower-quality conclusions**. Tell the user that the run was stopped because the preferred model was unavailable. Do not claim to detect a downgrade unless the runtime actually exposes that information; model routing may not always be visible to the assistant.
