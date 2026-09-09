@@ -51,3 +51,13 @@ Merged MR !26355, authored by John Thacker and approved/merged by Gerald Combs, 
 **Implementation rule:** encode actual cardinality in APIs and data structures. Use an outer collection only when multiple independent inner collections are semantically possible; otherwise return the collection itself and let its ownership contract be explicit.
 
 **Confidence:** Extremely high. Merged master simplification authored by John Thacker and explicitly approved/merged by project lead Gerald Combs.
+
+## Bound archive/container parsing by construction
+
+For attacker-controlled archive-like input, prefer parsing strategies that do not require trusting a distant end-of-file structure and avoid automatic recursive expansion when recursion is not necessary to the feature. This both fits streaming/subdissector contexts and limits amplification attacks.
+
+Merged MR !25738 adds ZIP support to Fileshark using a forward streaming parser rather than scanning backward from the end for the Central Directory, because an enclosing media-type dissector may not provide arbitrary end-of-file access. It also deliberately declines recursive dissection of files contained inside the ZIP as a ZIP-bomb mitigation. During review, Martin Mathieson caught a separate field-width mismatch (`FT_UINT16` displayed with length 4), reinforcing that archive record widths still need ordinary dissector field-contract checks.
+
+**Implementation rule:** where the format permits it, parse untrusted containers incrementally from available framing rather than assuming random EOF access. Do not recursively auto-expand nested containers unless the product requirement justifies the resource-amplification risk and explicit bounds are in place.
+
+**Confidence:** Very high. Merged master implementation by John Thacker with focused maintainer review.
