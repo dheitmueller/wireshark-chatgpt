@@ -105,11 +105,11 @@ Before submitting one of our Wireshark MRs, check and, where useful, state in th
 
 ### Present review branches as clean, focused commits
 
-**Evidence:** MR !26390 contained three commits for the initial implementation/tests. Anders Broman requested that all commits be squashed into one.
+**Evidence:** MR !26390 contained three commits for the initial implementation/tests. Anders Broman requested that all commits be squashed into one. Merged MR !25705 independently corroborates the practice: Jaap Keuter explicitly asked the HiSLIP 2.0 contributors to squash their development series, and they did so before merge.
 
 **Lesson:** For a focused Wireshark MR, reviewers may expect fixup/development-history commits to be squashed into a clean logical commit before merge. Preserve meaningful independent commits only when they represent genuinely separable changes.
 
-**Confidence:** Medium. Direct review feedback, but commit structure can be context-dependent.
+**Confidence:** High for focused single-change MRs. Two independent review examples, including one merged first-contribution protocol feature.
 
 ### Keep unrelated cleanup out of a focused MR
 
@@ -174,6 +174,14 @@ Before submitting one of our Wireshark MRs, check and, where useful, state in th
 **Lesson:** Wireshark UI translations should be contributed through the project's Transifex workflow rather than by directly editing generated/synchronized translation files in a normal MR.
 
 **Confidence:** High for translation contributions; direct maintainer workflow guidance.
+
+### Check historical-capture compatibility when updating a dissector to a newer specification
+
+**Evidence:** Merged MR !25704 removed a withdrawn PROFINET security operation and updated other definitions to a newer specification. Jaap Keuter explicitly asked how old capture files would be dissected. The contributor investigated the versioning question and, after checking with a PROFINET architect, established that the affected forms had existed only in unreleased developer specifications and therefore did not require compatibility decoding for shipped traffic.
+
+**Lesson:** When a specification revision removes, renames, or changes wire semantics, review the change against historical captures rather than assuming the newest specification is the only contract that matters. If an older wire form was actually released/deployed, preserve a version-aware path or other compatible decode strategy where practical; if it never shipped, record that evidence so removal is an informed compatibility decision.
+
+**Confidence:** High as a review requirement. Direct maintainer review on a merged protocol-specification update, with the compatibility question investigated before merge.
 
 ## Review-access note
 
