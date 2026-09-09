@@ -25,3 +25,13 @@ Merged MR !17612 (`DOF: Use a flexible array`) replaces `uint8_t oid[1]` with `u
 **Implementation rule:** prefer standard C flexible arrays for variable-length trailing storage. Avoid fake one-element arrays that obscure the object's real bounds and can confuse static analysis.
 
 **Confidence:** High. The reviewed MR is a merged stable-branch backport of an accepted master implementation.
+
+## Do not cast byte buffers to wider integer pointers unless alignment is guaranteed by the representation contract
+
+A byte buffer can be correctly sized yet insufficiently aligned for a wider native load. Casting a `uint8_t *` to `unsigned int *`, `uint32_t *`, or another wider pointer and dereferencing it is undefined behavior when the source allocation or offset does not guarantee the required alignment.
+
+Merged MR !25451, authored by John Thacker, removes an XOR hash optimization in TLS that cast `StringInfo` byte data to `unsigned int *`. Clang UBSan reported a real misaligned load. The MR deliberately chooses a simpler alignment-safe hash because the path is not performance-critical enough to justify depending on special allocation alignment.
+
+**Implementation rule:** treat arbitrary packet/string byte storage as byte-aligned unless its API explicitly promises stronger alignment. Use byte-wise operations, `memcpy()` into an aligned local, or an existing endian/load helper rather than dereferencing a wider cast pointer. Optimize only after preserving the representation's actual alignment contract.
+
+**Confidence:** Extremely high. Merged master UB fix authored by John Thacker and demonstrated by UBSan with a concrete misaligned access.
