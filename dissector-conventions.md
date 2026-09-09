@@ -9,6 +9,8 @@ Before implementing new functionality, locate several analogous dissectors in th
 ## Naming
 
 - Prefix internal header-field (`hf_`) and subtree (`ett_`) identifiers with the protocol name. For example, prefer `hf_op47_sdp_identifier` over `hf_sdp_identifier`, and `ett_op47_wst` over `ett_wst`. This was explicitly requested by Anders Broman in MR !26390 as the expected naming pattern and should be applied throughout new dissector code.
+- Keep `hf_` declarations unambiguous and remove unused declarations rather than leaving a scalar name that collides with an `hf_` array or another registration object. In merged MR !25529, Guy Harris identified an unused `static int hf_macip;` that collided with the protocol's `hf_macip` array and required it to be removed before merge.
+- A header-field blurb should add information beyond the displayed field name. If the blurb would merely repeat the field description, use `NULL`; otherwise make it genuinely more descriptive. Guy Harris explicitly required this in merged MR !25529.
 
 ## Bit-field parsing
 
