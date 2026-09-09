@@ -71,3 +71,13 @@ Merged MR !25691, authored and merged by John Thacker, fixes the Z39.50 MARC dir
 **Implementation rule:** when record count is genuinely data-dependent, append to a growable container and derive cardinality from what was actually parsed. If a fixed allocation is preferable, prove and enforce the exact parser invariant that makes the capacity formula an upper bound before writing any entry.
 
 **Confidence:** Very high. Merged master memory-safety fix authored and merged by John Thacker, with the failure mode and PoC provenance documented in the MR.
+
+## Sort unordered container keys before producing stable external output
+
+Hash-table iteration order is an implementation detail and may be deliberately randomized. If traversal order feeds user-visible diagnostics, serialized output, or regression-test text, impose an explicit ordering rather than letting the container choose it.
+
+Merged MR !25598, authored and merged by John Thacker, adds `wmem_map_get_keys_sorted()` and uses it for DNS resolver-state diagnostics. The motivating bug was nondeterministic output caused by randomized map iteration, which made the same capture produce unstable regression-test results.
+
+**Implementation rule:** unordered containers are appropriate for lookup, but not as an ordering contract. Before emitting order-sensitive external results, materialize the relevant keys/items and sort them with a comparator that reflects the semantic output order.
+
+**Confidence:** Very high. Merged master API and deterministic-output fix authored and merged by John Thacker.
