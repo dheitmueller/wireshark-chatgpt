@@ -21,3 +21,23 @@ Merged MR !17591 (`bt-dht: flag duplicate and unordered keys`) detects duplicate
 **Diagnostic rule:** choose expert severity according to the likely operational consequence and diagnostic value. A safely decoded, commonly tolerated noncanonical form may merit CHAT/low-severity information even when it violates a canonical specification rule; reserve stronger severity for conditions that indicate malformed structure, likely interoperability failure, data loss, or unsafe parsing.
 
 **Confidence:** High. Merged master implementation explicitly calibrates severity to observed real-world behavior.
+
+## Distinguish undecoded extension data from malformed structure
+
+Unknown input is not automatically malformed input. If the parser can safely skip an unrecognized field and continue processing the surrounding structure, classify the condition according to what Wireshark failed to decode rather than implying that the wire representation is structurally invalid.
+
+Merged MR !25717 changes BER expert categories for extra unknown SEQUENCE/SET fields from `PI_MALFORMED` to `PI_UNDECODED`. The fields can be skipped while the remainder of the ASN.1 object is processed, and the change deliberately aligns BER with similar BER/PER diagnostics.
+
+**Diagnostic rule:** use malformed/error categories for violated structural contracts that compromise parsing or validity. Use undecoded/unsupported categories when the data is structurally consumable but Wireshark lacks semantic knowledge of that extension or field.
+
+**Confidence:** Very high. Merged master diagnostic correction authored by John Thacker and merged by Anders Broman.
+
+## Put malformed-representation enforcement in the shared parser helper when the contract is universal
+
+When a reusable parser API has one universally invalid representation, make the helper enforce that invariant and provide the standard diagnostic/exception behavior. Requiring every caller to rediscover and check the same invalid return value creates inconsistent handling and unnecessary branches.
+
+Merged MR !25734, authored by Gerald Combs and approved by John Thacker, makes `proto_tree_add_item_ret_varint()` treat a zero-length varint as malformed: the helper adds the expert item and throws the normal bounds/malformed exception. The LTP and TCPCL dissectors then remove their duplicate zero-length checks because the helper contract now guarantees the failure semantics.
+
+**Implementation rule:** centralize invariant validation at the lowest shared API layer that has enough information to classify the error correctly. Once that contract is established, remove redundant caller checks unless a caller genuinely needs different semantics.
+
+**Confidence:** Extremely high. Merged core-API change authored by project lead Gerald Combs and approved by John Thacker.
