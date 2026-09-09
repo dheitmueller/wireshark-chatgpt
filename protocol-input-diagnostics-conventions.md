@@ -41,3 +41,13 @@ Merged MR !25734, authored by Gerald Combs and approved by John Thacker, makes `
 **Implementation rule:** centralize invariant validation at the lowest shared API layer that has enough information to classify the error correctly. Once that contract is established, remove redundant caller checks unless a caller genuinely needs different semantics.
 
 **Confidence:** Extremely high. Merged core-API change authored by project lead Gerald Combs and approved by John Thacker.
+
+## Use PI_PROTOCOL for specification violations that remain safely dissectable; reserve PI_MALFORMED for parse-stopping malformed data
+
+Wireshark's expert categories communicate more than the fact that bytes violate a specification. `PI_MALFORMED` has a narrower operational meaning: the malformed structure prevents the dissector from continuing normally. A protocol violation that can still be parsed should be classified as a protocol problem instead.
+
+In merged MR !25453, which adds HTTP diagnostics for whitespace before a header colon and embedded NULs in header values, John Thacker explicitly requested changing the expert group from `PI_MALFORMED` to `PI_PROTOCOL`. His rationale was that Wireshark uses `PI_MALFORMED` when the dissector has to give up, while `PI_PROTOCOL` covers data that violates the specification but can still be dissected. The MR was updated accordingly and merged.
+
+**Diagnostic rule:** classify a standards violation as `PI_PROTOCOL` when the dissector can identify the violation and continue parsing safely. Use `PI_MALFORMED` when structural corruption prevents normal dissection or forces the parser to abandon the affected structure. Treat expert group and expert severity as separate decisions.
+
+**Confidence:** Extremely high. Direct merged-review guidance from John Thacker, followed by an accepted implementation change.
