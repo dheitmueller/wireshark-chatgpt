@@ -21,3 +21,13 @@ Merged MR !25713, also authored and merged by Guy Harris, changes `cap_pipe_open
 **Implementation rule:** expose the semantic result directly in the helper's return contract when it is universally meaningful. Keep detailed error text/state as supplemental diagnostics rather than making callers reconstruct the primary success/failure result from implementation details.
 
 **Confidence:** Extremely high. Merged master cleanup authored and merged by Guy Harris.
+
+## Preserve the semantic layer that actually failed
+
+Error codes and user-facing diagnostics should identify the operation that failed rather than collapsing a lower-layer failure into a nearby but different action. This lets callers make correct decisions and prevents misleading messages such as reporting an encoding/compression failure as a raw file-write failure.
+
+Merged MR !25509, authored and merged by Guy Harris, renames `FILE_ERR_CANT_WRITE` to `FILE_ERR_CANT_COMPRESS` for errors returned by compression libraries and uses that value consistently for compression-library failures. The output path may ultimately be writing a file, but the failed operation is compression, and the error domain records that distinction.
+
+**Implementation rule:** translate errors at abstraction boundaries without erasing their semantic cause. Use a write error for an actual write failure, a compression error for compressor failure, and equivalent layer-specific statuses elsewhere; carry supplemental library/OS details separately when useful.
+
+**Confidence:** Extremely high. Merged master file-wrapper error handling authored and merged by Guy Harris.
