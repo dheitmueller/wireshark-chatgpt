@@ -41,3 +41,13 @@ Merged MR !26216, authored and merged by John Thacker, restricts the separate De
 **Implementation rule:** when dependency discovery differs by package source, toolchain, CRT model, or repository bundle, condition on that semantic property. Avoid using the target OS as a proxy for a narrower build-environment assumption.
 
 **Confidence:** Very high. Merged master build-system correction authored and merged by John Thacker.
+
+## Compile-time API availability does not guarantee deployment-runtime availability
+
+A configure or compile-time symbol probe can prove that the SDK exposes an API without proving that every runtime supported by the resulting binary implements it. This matters on platforms where Wireshark is intentionally built against a newer SDK while retaining an older deployment target.
+
+Merged MR !25677 initially added `strchrnul` through the usual capability-test/fallback pattern. Merged follow-up !25680, authored and merged by John Thacker, corrects the macOS case: `strchrnul` is present in newer SDKs but only exists at runtime starting with macOS 15.4, so `ws_strchrnul()` uses `__builtin_available(macOS 15.4, *)` before calling it and otherwise executes the generic fallback.
+
+**Implementation rule:** for APIs introduced after the minimum deployment runtime, distinguish header/SDK availability from runtime availability. Keep a fallback reachable at runtime or raise the deployment requirement explicitly; do not let a successful configure probe silently create a binary that links or calls an unavailable runtime symbol on supported older systems.
+
+**Confidence:** Very high. Merged master portability fix authored and merged by John Thacker, directly correcting the earlier compile-time-only capability assumption.
