@@ -61,3 +61,13 @@ Merged MR !25738 adds ZIP support to Fileshark using a forward streaming parser 
 **Implementation rule:** where the format permits it, parse untrusted containers incrementally from available framing rather than assuming random EOF access. Do not recursively auto-expand nested containers unless the product requirement justifies the resource-amplification risk and explicit bounds are in place.
 
 **Confidence:** Very high. Merged master implementation by John Thacker with focused maintainer review.
+
+## Use growable containers when parsed cardinality cannot be predicted exactly
+
+Do not preallocate a fixed array from a mathematical estimate when malformed or partial records can make the parser produce more logical entries than that estimate predicts. A floor-divided byte count is only a safe capacity calculation if the parser is guaranteed to reject every incomplete trailing record before appending an entry.
+
+Merged MR !25691, authored and merged by John Thacker, fixes the Z39.50 MARC directory parser. It had sized a raw directory array from `(directory_bytes / entry_size)`, but the loop could still append an entry for a partial directory record, making the allocated capacity one entry too small. The accepted implementation replaces the predicted fixed array with `wmem_array_t`, appends each successfully encountered logical entry, and obtains the final count from the container.
+
+**Implementation rule:** when record count is genuinely data-dependent, append to a growable container and derive cardinality from what was actually parsed. If a fixed allocation is preferable, prove and enforce the exact parser invariant that makes the capacity formula an upper bound before writing any entry.
+
+**Confidence:** Very high. Merged master memory-safety fix authored and merged by John Thacker, with the failure mode and PoC provenance documented in the MR.
