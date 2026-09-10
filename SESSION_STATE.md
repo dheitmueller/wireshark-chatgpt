@@ -18,6 +18,8 @@
 
 ## Packet Bytes 10-bit prototype state
 
+- RTP/L16 continuation on local branch `codex/10bit-submission`: 16-bit big-/little-endian UI choices and explicit source byte-order metadata were added; RTP L16 hints big-endian. Scoped-source byte clicks now fall back to their owner field, and selecting the owner field itself activates the first associated scoped source in tab order rather than defaulting to the Packet tab. Full Wireshark/TShark builds and the RTP L16/ST 2110-40 decoding checks passed. Current local tip is `3aa40a6ea5`; the branch remains unpushed.
+
 - Goal: allow Packet Bytes to interpret packed data using a word size independently from its numeric presentation. Word interpretation and presentation are separate axes: e.g. 8-bit or 10-bit words versus hexadecimal/decimal/octal/binary presentation.
 - The current prototype successfully renders packed ST 291 UDW data as 10-bit words and permits switching presentation independently. It also uses a subset TVB for the packed UDW region so Packet Bytes need not mix 8-bit packet headers and 10-bit payload interpretation in one view.
 - ST 291 subdissectors should continue receiving logical 10-bit values represented in 16-bit storage words (valid values 0x000-0x3ff); that internal handoff is distinct from how Packet Bytes receives/displays the raw packed TVB.
