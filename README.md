@@ -15,6 +15,7 @@ Updates should be selective rather than transcript-like. Preserve knowledge that
 The following are hard limits for all Wireshark work, regardless of available credentials, connectors, network access, or tool permissions:
 
 - Local Git operations are allowed when they are within the requested task, including creating local branches, editing files, applying patches, running tests, and creating local commits.
+- Use the authenticated GitHub connector for all reads, synchronization, and updates involving `dheitmueller/wireshark-chatgpt`. Do not use the local checkout's Git remote for notebook access or publication, even if shell credentials later become available. Re-fetch the affected remote files through the connector immediately before updating them so concurrent scheduled-task changes are preserved.
 - **Never push commits, branches, tags, or other refs to any remote repository except `dheitmueller/wireshark-chatgpt`.** That notebook repository is the sole permitted push target. Technical write access to any other repository is not authorization to use it.
 - **Never create or submit a merge request or pull request on Devin's behalf.** Drafting submission text or preparing local commits/patches is allowed when requested, but Devin performs the submission.
 - **Never post or respond to merge-request, pull-request, or code-review comments on Devin's behalf.** Review discussions may be read and analyzed, and a proposed response may be drafted when requested, but Devin sends it.
