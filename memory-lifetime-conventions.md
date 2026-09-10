@@ -81,3 +81,13 @@ Merged MR !25679, authored and merged by Guy Harris, adds `ws_cwstream_close_aft
 **Implementation rule:** distinguish “finish a valid output object” from “abandon a failed output object and release resources.” Once an earlier I/O error has invalidated the stream, use an abort/error-close path that performs only teardown unless the file format/API explicitly requires and can safely perform recovery finalization.
 
 **Confidence:** Extremely high. Merged master error-path lifecycle design authored and merged by Guy Harris.
+
+## Initialize every byte of a derived buffer before exposing it as packet data
+
+A derived tvbuff or byte field may outlive the narrow code that populated only selected members of its backing allocation. If any byte of that allocation can be displayed, copied, hashed, or passed to another dissector, unwritten bytes must have a defined value rather than containing allocator residue.
+
+Merged MR !25246 fixes the WoW World dissector by changing a partially populated GUID allocation to zero-initialized storage before wrapping it with `tvb_new_child_real_data()`. Without initialization, absent GUID bytes exposed uninitialized heap contents and made derived packet data nondeterministic.
+
+**Implementation rule:** when constructing synthetic/derived byte sequences sparsely, either initialize the complete destination first or explicitly write every exposed byte. The logical absence of a field is not permission to leave its backing bytes indeterminate.
+
+**Confidence:** Very high. Merged master memory-correctness fix with a direct uninitialized-data mechanism.
