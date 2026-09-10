@@ -91,3 +91,13 @@ Merged MR !25201, authored by Guy Harris and merged after John Thacker review, r
 **Implementation rule:** if a Wireshark header or API exposes a dependency-owned type, obtain that type from the dependency's authoritative public header (and propagate that dependency appropriately), or redesign the interface so the external type stays private. Never duplicate an opaque typedef based on one implementation's internal tag name merely to avoid including its defining public header.
 
 **Confidence:** Extremely high. Merged master portability fix authored by Guy Harris and merged by John Thacker.
+
+## Preserve dependency-defined scalar types at API call boundaries
+
+Internal type modernization does not justify changing the scalar type required by an external C API. Types that appear semantically equivalent can differ in representation, width, calling convention, or how a dependency reads their storage; use the dependency's declared type where values cross that boundary.
+
+Merged MR !24981 converted many internal GLib `gboolean` uses to C99 `bool`, but review by Pascal Quantin and Jaap Keuter identified GLib calls whose API contract specifically requires `gboolean`. Jaap noted that `gboolean` and `bool` are not interchangeable and that inappropriate substitution can produce wrong behavior on big-endian systems. Those API-boundary cases were restored before the MR merged.
+
+**Implementation rule:** use modern project-native types for internal state where appropriate, but preserve the exact dependency-defined scalar type for arguments, outputs, callbacks, or storage passed through an external API. Do not perform mechanical `gboolean`/`bool`-style substitution across library boundaries merely because both represent truth values.
+
+**Confidence:** Very high. Merged master cleanup corrected during maintainer review specifically to preserve the GLib API contract.
