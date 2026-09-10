@@ -101,3 +101,13 @@ Merged MR !24981 converted many internal GLib `gboolean` uses to C99 `bool`, but
 **Implementation rule:** use modern project-native types for internal state where appropriate, but preserve the exact dependency-defined scalar type for arguments, outputs, callbacks, or storage passed through an external API. Do not perform mechanical `gboolean`/`bool`-style substitution across library boundaries merely because both represent truth values.
 
 **Confidence:** Very high. Merged master cleanup corrected during maintainer review specifically to preserve the GLib API contract.
+
+## Let compiler diagnostics enforce linkage intent where they can
+
+A file-scope object with external linkage should be externally visible intentionally, with an appropriate prior declaration in a header or shared interface. Otherwise it should normally be `static`. Prefer compiler diagnostics that encode this C/C++ language rule over maintaining a parallel source parser when the compiler can check it directly.
+
+Merged MR !24941, authored and merged by John Thacker after maintainer discussion, enables Clang/GCC `-Wmissing-variable-declarations` across applicable Wireshark targets. The discussion explicitly favors the compiler diagnostic over duplicating the check in `check_static.py`, while acknowledging architectural exceptions such as generated dissector-registration functions and plugin version symbols. Merged !24938 then uses the warning to find and make truly translation-unit-local globals `static`; Guy Harris approved and merged that cleanup.
+
+**Implementation rule:** use compiler diagnostics as executable checks for language/linkage invariants when available. For a global definition, either provide the declaration that makes its external contract explicit or give it internal linkage; scope warning exceptions narrowly to architecture-generated symbols that cannot satisfy the normal rule.
+
+**Confidence:** Very high. Merged master warning and cleanup series authored by John Thacker, with Guy Harris approval/merge of the cleanup and maintainer discussion supporting the compiler-based approach.
