@@ -41,3 +41,13 @@ Merged MR !25419, authored and merged by John Thacker, fixes COTP TSDU reassembl
 **Implementation rule:** design reassembly bookkeeping for arbitrary redissection order, not just the first sequential pass. Store any derived identifiers needed to reproduce earlier decisions, and separate state by direction whenever each endpoint can advance its own fragment/sequence namespace.
 
 **Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker, with the redissection and bidirectional failure modes explicitly documented.
+
+## Snapshot sequentially derived wiretap context for random-access reads
+
+Wiretap readers that learn context while scanning a file sequentially cannot assume that the same ambient parser state will be available when Wireshark later requests an individual record by offset. A second-pass or GUI `seek_read` may begin directly at the record body and therefore never revisit the enclosing metadata that established session-specific state during the first pass.
+
+Merged MR !25834 fixes the 3GPP 32.423 nettrace reader after second-pass reads inherited the final session's UE ID and potentially its timestamp. During the sequential read, the accepted implementation records the per-packet session context keyed by the packet's `data_offset`; `seek_read` restores that snapshot before constructing the packet. This makes random access reproduce the context that applied when the record was first encountered rather than relying on mutable last-seen state.
+
+**Implementation rule:** when record interpretation depends on metadata encountered earlier in a sequential file scan, persist the resolved per-record context under a stable record identity such as file offset or record key. Random-access/second-pass reads must restore that context explicitly; do not rely on traversal order or whatever session state a previous read happened to leave behind.
+
+**Confidence:** Very high. Merged master wiretap correctness fix with the first-pass/second-pass failure mode and restoration strategy documented directly in the MR.
