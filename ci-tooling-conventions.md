@@ -31,3 +31,13 @@ Merged MR !25259, authored by Martin Mathieson and merged by Anders Broman, exte
 **Implementation rule:** automate deterministic, inexpensive review checks in the closest existing project checker. Keep generated code on an explicit path: either teach the generator to satisfy the invariant or exempt generated output when applying the source-level rule directly would create huge low-value noise.
 
 **Confidence:** High. Merged master tooling change by a long-time Wireshark maintainer, with the generated-versus-hand-written distinction discussed explicitly before merge.
+
+## CI must install the dependencies needed for tests it intends to count
+
+A green job is not meaningful coverage if the relevant tests silently self-skip because an optional test-only module is absent. When a CI configuration is intended to exercise a test family, its environment must provide that family's dependencies or otherwise make the missing coverage visible.
+
+Merged MR !25222 adds `jsonschema` to Linux and Windows CI environments because the theme schema tests self-skipped without it; those jobs had therefore appeared successful while not executing the intended schema validation. The fix was merged by Anders Broman.
+
+**Implementation rule:** audit conditional skips in test suites against each CI image. If a job is supposed to validate a feature, install the required test dependency and prefer CI output that distinguishes intentional platform exclusions from accidental missing-dependency skips.
+
+**Confidence:** Very high. Merged master CI correction with the silent-skip failure mode stated explicitly and Anders Broman approval.
