@@ -83,3 +83,12 @@ ST 2110-40 associates the packed source and sources created during each payload'
 The Qt view retains all registered sources/widgets and only changes tab visibility. Selecting a decoded source selects its owner group; original transport fields resolve by the smallest containing owner range on the same TVB. Ungrouped sources stay visible; deselection or selection outside any payload hides grouped tabs. Retaining widgets preserves manual word-interpretation state. The four-payload case should therefore expose only the selected payload's packed/byte views and any further derived views, alongside the original packet.
 
 Validation: full local build and existing ST 2110-40 decode-as/timecode regression passed. A temporary offscreen Qt harness compiled the actual visibility methods and exercised four owners, transport roots/children, decoded fields, OP-47, unrelated selection, deselection, and retained widgets. Full interactive GUI validation remains pending. This design is experimental and not upstream-approved.
+
+
+## Isolate personal configuration during GUI development tests
+
+Never launch a development Wireshark or Stratoshark build against the user's normal personal configuration during automated or exploratory GUI testing. Use a dedicated temporary directory via `-P persconf:<temporary-path>`. This isolates `recent`, `recent_common`, preferences, geometry, and other mutable profile state.
+
+On 2026-09-10, an automated development-build launch used the normal profile. Qt temporarily resized seven packet-list columns to its 21-pixel minimum while the final Info column stretched to 1576 pixels. `PacketList::sectionResized()` records any resize received while the packet list is visible, including programmatic layout changes; the source explicitly notes that it cannot distinguish stretched values from manual changes. A later profile-state save persisted those transient widths. The development build's accessibility crash occurred earlier than the file write, so the crash itself was not the writer.
+
+This was not caused by the Packet Bytes/data-source patch: that patch series changes only dissector, data-source, DataSourceTab, and HexDataSourceView files, with no packet-list, header, layout, or recent-settings changes. The persistence behavior exists in upstream packet-list code and can affect other developers or automated runs that share a real profile, although normal interactive use should not ordinarily enter the transient minimum-width state.
