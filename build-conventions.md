@@ -81,3 +81,13 @@ Merged MR !25224, authored and merged by Guy Harris, handles Solaris's `/usr/lib
 **Implementation rule:** make library/package lookup architecture-aware whenever host installations contain multiple ABIs. For true platform system libraries, prefer the platform's stable linker contract when generic filesystem discovery can select an architecture-specific artifact incorrectly.
 
 **Confidence:** Extremely high for the Solaris rule (Guy Harris authored/merged); high corroboration from merged Windows build work.
+
+## External API types belong to the external API
+
+Do not locally recreate or forward-declare an external library's public typedef by assuming the library's private representation. Different implementations of the same API can legally map an opaque/public type to different structure tags, and a hand-written replacement can therefore compile against one provider while conflicting with another.
+
+Merged MR !25201, authored by Guy Harris and merged after John Thacker review, removes Wireshark's attempted local typedef of `krb5_context`. The assumption matched one Kerberos implementation but conflicted with Heimdal as shipped by NetBSD 10, where the public typedef names a different structure type. The discussion explicitly considered including the Kerberos header at the interface that exposes the type instead of reconstructing the typedef locally.
+
+**Implementation rule:** if a Wireshark header or API exposes a dependency-owned type, obtain that type from the dependency's authoritative public header (and propagate that dependency appropriately), or redesign the interface so the external type stays private. Never duplicate an opaque typedef based on one implementation's internal tag name merely to avoid including its defining public header.
+
+**Confidence:** Extremely high. Merged master portability fix authored by Guy Harris and merged by John Thacker.
