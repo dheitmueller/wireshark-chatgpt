@@ -27,6 +27,8 @@ Representative pcaps are a strong upstream expectation for protocol/dissector wo
 
 When preparing a protocol MR, plan to provide small capture(s) that exercise the new behavior and, where practical, edge/error paths. Treat the capture as review/test material rather than waiting for a reviewer to request it.
 
+Merged MR !25075 adds an additional practical reason to provide those captures. During review of the FreeBSD USB refactor, John Thacker requested the sample capture used to validate the change and explicitly explained that captures attached to Wireshark MRs and issues go into automatic fuzz testing. A small reproducer or representative capture therefore has value beyond the immediate human review: it can become input to the project's continuing fuzzing infrastructure even when it is not committed as a permanent regression fixture.
+
 Merged MR !26218 is a useful current exemplar for a new dissector submission: the GUE change included a five-packet generated capture covering multiple variants/payloads, four dissector-suite tests, expert-info cases for invalid input, and reported clean runs of `tools/check_dissector.py` and `tools/fuzz-test.sh`. Use that combination as a starting checklist for future new dissectors rather than treating a successful compile as sufficient validation.
 
 Merged MR !26211 similarly added five captures and six tests targeted at distinct stateful-analysis/reassembly failure modes. Prefer one or more focused captures/tests that isolate meaningful behaviors over a single broad happy-path capture.
