@@ -41,3 +41,33 @@ Merged MR !25222 adds `jsonschema` to Linux and Windows CI environments because 
 **Implementation rule:** audit conditional skips in test suites against each CI image. If a job is supposed to validate a feature, install the required test dependency and prefer CI output that distinguishes intentional platform exclusions from accidental missing-dependency skips.
 
 **Confidence:** Very high. Merged master CI correction with the silent-skip failure mode stated explicitly and Anders Broman approval.
+
+## Sanitizer builds must not enable hardening that masks sanitizer findings
+
+Security hardening and sanitizer instrumentation are both useful, but they are not automatically compatible. A sanitizer CI configuration should be optimized for exposing the class of bugs that sanitizer is intended to find; compiler or libc hardening that intercepts the same failure first can make the sanitizer job less useful.
+
+Merged MR !25005, authored and merged by John Thacker and approved by Gerald Combs, stops defining `_FORTIFY_SOURCE` in AddressSanitizer and ThreadSanitizer builds. The MR explains that fortified libc checks can terminate first and prevent ASan from reporting the underlying memory error with its more useful diagnostics.
+
+**Implementation rule:** evaluate hardening flags separately for sanitizer configurations. If a hardening mechanism masks or preempts the sanitizer's diagnostic path, disable it for that sanitizer build rather than assuming that more instrumentation is always better.
+
+**Confidence:** Very high. Merged master CI/build correction authored and merged by John Thacker with Gerald Combs approval.
+
+## Fuzz-only guardrails should fail in a form the fuzz harness can classify
+
+A defensive parser guard that merely throws a recoverable dissector exception may protect an interactive dissection without producing a useful fuzzing finding. When a guard exists specifically to detect pathological non-progress or resource behavior under the fuzz configuration, it should terminate in the failure mode expected by the fuzz harness so the input is retained and triaged.
+
+Merged MR !24991, authored and merged by John Thacker, changes the too-many-idle-items guard to call `ws_error()` when `WIRESHARK_ABORT_ON_TOO_MANY_ITEMS` is enabled. In normal operation the softer dissector exception remains appropriate; under fuzzing, the hard abort turns the suspected infinite-loop/resource pathology into an actionable fuzz failure.
+
+**Implementation rule:** distinguish user-facing recovery behavior from fuzz-oracle behavior. Keep ordinary malformed-packet handling recoverable where appropriate, but make fuzz-specific non-progress/resource guards fail strongly enough for the harness to detect, preserve, and report the triggering input.
+
+**Confidence:** Very high. Merged master fuzzing behavior authored and merged by John Thacker.
+
+## Do not suppress the diagnostic severity that makes a CI tool fail
+
+A CI job that is configured to fail on warnings must still print those warnings. Logging options are part of the failure contract: suppressing the same severity that drives the exit status produces opaque failures and wastes review/debugging time.
+
+Merged MR !24983, authored by John Thacker, removes Asciidoctor's `--quiet` option because Wireshark also uses a warning failure level. A documentation job had failed for days on an unsupported GIF while the warning explaining the failure was hidden from the job log.
+
+**Implementation rule:** whenever a tool uses a warning/error threshold to decide job success, ensure the configured verbosity leaves that threshold visible. Prefer concise logs, but never silence the diagnostic class that can make the job red.
+
+**Confidence:** Very high. Merged master CI diagnosis fix authored by John Thacker with a concrete multi-day failure example.
