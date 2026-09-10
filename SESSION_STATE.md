@@ -94,6 +94,13 @@ The seventh proposed cleanup (removing converted-byte data-source registration) 
 
 Local Codex operates directly on the user's authoritative checkout; there is no need to reconstruct it through a connector or create a cloud Work task. Initial local build dependencies were missing; Devin has since fixed them. Do not assume historical cloud-network limitations describe the local build environment.
 
+
+### Selection-scoped ANC tabs experiment (2026-09-09)
+
+Devin requested trying tabs scoped to the selected ANC packet without fundamental API changes. The current uncommitted local prototype adds only an optional owner-field hint on data sources (setter/getter); existing data-source creation and ST 291 dispatch contracts remain intact. ST 2110-40 tags each packet's packed source and any sources created by its payload dissector. Qt keeps every registered buffer/view but shows only the selected owner's tabs plus ungrouped sources. Original transport fields use containing owner ranges; decoded fields use their source's owner. Selecting outside ANC or deselecting hides the grouped tabs. OP-47-derived views follow the same group.
+
+The full build, existing ST 2110-40 decode-as regression, and a focused offscreen Qt test of the actual visibility methods passed. API checking reports the existing `index` shadow warning in `data_source_tab.cpp`; diff whitespace checks pass. Next: Devin tests the rebuilt GUI with the four-ANC frame, switches among ANC roots and decoded fields, and verifies packed/byte tab selection plus manual 8/10-bit interpretation persistence. Do not mark the experiment accepted or submission-ready until this GUI validation is complete. See `platform-gui-conventions.md` for rationale and API scope.
+
 ## Access state
 
 - `dheitmueller/wireshark-chatgpt`: GitHub write access confirmed and functioning.
