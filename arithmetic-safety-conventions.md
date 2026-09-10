@@ -43,3 +43,13 @@ Merged master MR !24809, authored by John Thacker and approved and merged by And
 **Implementation rule:** distinguish a field's encoded width from the narrower range accepted by the operation that uses it. Normalize or reject out-of-range values before multiplication, offset derivation, indexing, allocation sizing, or another growth-producing transform; do not rely on a clamp performed afterward.
 
 **Confidence:** Very high. Merged master fuzz-found arithmetic fix authored by John Thacker with Anders Broman approval.
+
+## Do not negate the minimum value of a signed integer type
+
+Two's-complement signed integer ranges are asymmetric: the most-negative value has no corresponding positive value in the same type. Code that computes an absolute magnitude with `-value` therefore overflows for `INT_MIN`/`INT32_MIN`, even if every other negative input works.
+
+Merged master MR !24740, authored by John Thacker and approved/merged by Anders Broman after OSS-Fuzz finding 494034581, fixes `signed_time_msecs_to_str()` without ever negating the full negative input. It relies on the C99/C++11 rule that signed division and remainder truncate toward zero: the code computes the remainder while the value is still negative, negates only that small bounded remainder, and divides the original signed value directly. Merged stable-branch backports !24744 and !24745 carry the same correction.
+
+**Implementation rule:** when an input may span the entire signed type, never obtain its magnitude by negating it in that type. Restructure the calculation so each negated quantity is provably representable, or convert through a deliberately chosen unsigned/wider representation with well-defined semantics.
+
+**Confidence:** Extremely high. Merged OSS-Fuzz-found master fix authored by John Thacker and propagated to two maintained branches.
