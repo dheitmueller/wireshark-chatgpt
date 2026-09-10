@@ -71,3 +71,13 @@ Merged MR !24983, authored by John Thacker, removes Asciidoctor's `--quiet` opti
 **Implementation rule:** whenever a tool uses a warning/error threshold to decide job success, ensure the configured verbosity leaves that threshold visible. Prefer concise logs, but never silence the diagnostic class that can make the job red.
 
 **Confidence:** Very high. Merged master CI diagnosis fix authored by John Thacker with a concrete multi-day failure example.
+
+## Pin unreleased VCS tooling to an immutable revision
+
+When CI needs a capability that has landed in a tool's upstream repository but is not yet available in its published package, installing directly from version control can be appropriate, but the repository reference must itself be reproducible. Tracking a moving branch would make identical Wireshark commits consume different tooling over time.
+
+Merged MR !25830, authored by Gerald Combs and approved and merged by John Thacker, updates the Windows Qt-installation path because the PyPI release of `aqtinstall` did not yet support Qt 6.11. The accepted configuration points `WS_AQTINSTALL_LOCATION` at the upstream Git repository pinned to the exact commit `5be32a75a81513792d95f13065b72cac3381c612` and installs that revision in the CI virtual environment.
+
+**Implementation rule:** if CI temporarily consumes unreleased tooling directly from version control, pin it to an immutable commit or equivalently immutable artifact and centralize the reference so it can be audited and replaced when an appropriate packaged release appears. Do not replace a missing release with nondeterministic branch-tip installation.
+
+**Confidence:** Very high. Merged build-infrastructure change authored by Gerald Combs and approved/merged by John Thacker.
