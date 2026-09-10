@@ -53,3 +53,13 @@ In open MR !26313, Jaap Keuter explicitly asked the contributor to add `Fixes #2
 **Submission rule:** for a change intended to resolve an issue, use `Fixes #NNNN` (or the currently documented equivalent) rather than relying on an informal mention.
 
 **Confidence:** High. Direct maintainer guidance tied to Wireshark's documented submission process; implementation MR remained open in the corpus snapshot.
+
+## Prefer reverting an incomplete feature over a narrow band-aid at a release boundary
+
+A patch that prevents the most obvious crash does not necessarily make an incomplete feature release-ready. Near a test release or final release, evaluate the feature as a whole—including every supported application that exposes it—rather than treating a localized crash fix as sufficient evidence that it should remain enabled.
+
+MR !25157 proposed a narrow Stratoshark initialization fix for the new Find in Packet feature while explicitly acknowledging that the feature remained incomplete there. John Thacker recommended reverting the feature until after the 4.7.0 test release. The author agreed, !25157 was closed, and merged MR !25158 reverted the feature because of the known Stratoshark problems and proximity to the release.
+
+**Review/submission rule:** when a newly added feature has known incomplete or broken behavior across supported applications close to a release boundary, prefer restoring the last known-good feature set over shipping a minimal crash-only repair that leaves the incomplete feature exposed. Reintroduce the feature after its cross-application behavior is complete and reviewable.
+
+**Confidence:** Very high. The proposed partial repair was explicitly superseded after John Thacker's review, and the full revert was the merged project outcome.
