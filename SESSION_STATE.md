@@ -104,10 +104,11 @@ Next chat: work from `codex/10bit-submission` in the separate worktree, consult 
 
 ### Notebook concurrency and local access
 
-Scheduled jobs in ChatGPT also update this notebook. Always fetch the latest affected files immediately before writing, reconcile edits, and use current content SHAs. On conflict, fetch and merge again. GitHub connector authentication works in this Codex task; local HTTPS `git push` lacks credentials, so use the connector for notebook writes. Local Codex can use the existing Wireshark checkout and build; historical cloud/regular-Chat networking limitations are not a reason to reconstruct or relocate it.
+Scheduled jobs in ChatGPT also update this notebook. Always fetch the latest affected files immediately before writing, reconcile edits, and use current content SHAs. Immediately before publishing notebook changes, pull and rebase onto the latest remote `main`, resolve any concurrent updates without discarding either session's durable findings, and only then push. Local Codex can use the existing Wireshark checkout and build; historical cloud/regular-Chat networking limitations are not a reason to reconstruct or relocate it.
 
 ## Access state
 
-- `dheitmueller/wireshark-chatgpt`: GitHub write access confirmed and functioning.
+- `dheitmueller/wireshark-chatgpt`: GitHub write access confirmed. This notebook is the sole repository to which Codex may push; permission to push does not extend to any other remote.
 - `dheitmueller/wireshark-corpus-mrs`: GitHub read access confirmed; use it instead of GitLab web retrieval for MR archaeology.
 - `dheitmueller/wireshark`: GitLab connector read access confirmed. For repository editing/patch generation, prefer a fresh Work task with public network access and a normal Git checkout rather than trying to bridge connector files into a regular-Chat execution sandbox.
+- Global authority restriction: never push to any remote except `dheitmueller/wireshark-chatgpt`, create/submit an MR or PR, or post/respond to review comments on Devin's behalf. Local branches, commits, patches, and validation are permitted within the requested task.
