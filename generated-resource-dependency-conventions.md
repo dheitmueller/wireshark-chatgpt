@@ -11,3 +11,13 @@ In merged master MR !24425, review identified a latent race in `ui/qt/CMakeLists
 **Implementation rule:** whenever a generated file is consumed by another generated resource, represent producer-before-consumer ordering in the CMake dependency graph. Do not rely on configure-time file presence, source-list order, or a neighboring comment that describes the intended ordering without creating it.
 
 **Confidence:** High. The race was identified and resolved in review of a merged master build-system MR; the general dependency-graph rule is independent of the specific QRC helper implementation.
+
+## A generated output should have one owning generation rule
+
+Do not list the same generated output in multiple independent CMake targets that can build in parallel. Multiple rules claiming the same output create a race and may be rejected by stricter generators even when a Make/Ninja build happens to work. Give the generation command one owning custom target, then make every consumer depend on that target.
+
+Merged master MR !24378, authored and merged by John Thacker, applies the CMake-documented one-producer pattern throughout Wireshark after Xcode's new build system exposed duplicate-output rules. The same change also makes `autogen` depend on the target producing translation `.qm` files, extending !24425's producer-before-consumer lesson from one resource manifest to the build graph generally.
+
+**Implementation rule:** model generated artifacts as one producer with explicit downstream dependencies. If several targets consume the same generated source/resource, they should converge on the producer target rather than each independently declaring the output. Apply the same reasoning to generated directories where multiple commands could otherwise claim the same filesystem output.
+
+**Confidence:** Very high. Merged master build-system repair authored and merged by John Thacker and explicitly based on CMake's documented parallel-build contract.
