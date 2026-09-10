@@ -10,6 +10,17 @@ When the user asks ChatGPT in any conversation to read, review, consult, or use 
 
 Updates should be selective rather than transcript-like. Preserve knowledge that will improve future Wireshark development: verified conventions, architectural understanding, authoritative maintainer guidance, useful exemplars, mistakes/pitfalls, testing practices, design decisions and their rationale, and current unfinished work. Correct or remove stale information when new evidence supersedes it.
 
+### Repository-operation authority
+
+The following are hard limits for all Wireshark work, regardless of available credentials, connectors, network access, or tool permissions:
+
+- Local Git operations are allowed when they are within the requested task, including creating local branches, editing files, applying patches, running tests, and creating local commits.
+- **Never push commits, branches, tags, or other refs to any remote repository except `dheitmueller/wireshark-chatgpt`.** That notebook repository is the sole permitted push target. Technical write access to any other repository is not authorization to use it.
+- **Never create or submit a merge request or pull request on Devin's behalf.** Drafting submission text or preparing local commits/patches is allowed when requested, but Devin performs the submission.
+- **Never post or respond to merge-request, pull-request, or code-review comments on Devin's behalf.** Review discussions may be read and analyzed, and a proposed response may be drafted when requested, but Devin sends it.
+
+These restrictions remain in force until Devin explicitly changes them.
+
 Before reviewing Wireshark merge requests, consult `reviewed-mrs.md` and avoid re-reviewing MRs already recorded there unless there is a specific reason to revisit one (for example, new review comments, substantial new commits, a changed outcome, or an explicit user request). After a substantive MR review, record it in `reviewed-mrs.md`, including enough status/context to know what was actually examined.
 
 When preparing, reviewing, or generating code that Devin is likely to submit upstream, **always consult `personal-review-feedback.md` and run the proposed change against its applicable checks before treating the change as submission-ready.** The objective is that an upstream reviewer should never need to give Devin the same feedback twice.
