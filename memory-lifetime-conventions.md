@@ -91,3 +91,13 @@ Merged MR !25246 fixes the WoW World dissector by changing a partially populated
 **Implementation rule:** when constructing synthetic/derived byte sequences sparsely, either initialize the complete destination first or explicitly write every exposed byte. The logical absence of a field is not permission to leave its backing bytes indeterminate.
 
 **Confidence:** Very high. Merged master memory-correctness fix with a direct uninitialized-data mechanism.
+
+## Run teardown at the lifecycle callback that is guaranteed to occur after asynchronous work finishes
+
+Cleanup tied to a retap, worker, signal, or other asynchronous lifecycle must run at the callback that semantically marks completion, not merely immediately after starting or requesting the operation. Code that assumes a synchronous return can free UI/model state while callbacks are still able to use it.
+
+Merged MR !24913, authored and merged by John Thacker, moves Export Objects post-retap cleanup from `show()` into `endRetapPackets()`. The MR documents the concrete failure mode: closing the dialog before tapping finished could leave the ongoing callback path accessing already-freed memory and segfaulting. Merged stable-branch counterparts !24915 and !24916 carry the same fix.
+
+**Implementation rule:** identify the framework event that guarantees the last consumer has finished and attach cleanup there. Starting an asynchronous operation and subsequently returning from the initiating function is not a lifetime boundary; teardown belongs after completion notification unless the API explicitly guarantees synchronous execution.
+
+**Confidence:** Very high. Merged master lifecycle fix authored and merged by John Thacker and independently carried to supported release branches.
