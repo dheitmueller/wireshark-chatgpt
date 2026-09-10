@@ -51,3 +51,13 @@ In merged MR !25453, which adds HTTP diagnostics for whitespace before a header 
 **Diagnostic rule:** classify a standards violation as `PI_PROTOCOL` when the dissector can identify the violation and continue parsing safely. Use `PI_MALFORMED` when structural corruption prevents normal dissection or forces the parser to abandon the affected structure. Treat expert group and expert severity as separate decisions.
 
 **Confidence:** Extremely high. Direct merged-review guidance from John Thacker, followed by an accepted implementation change.
+
+## Decode known real-world noncompliance when useful, but do not silently bless it
+
+Interoperability-oriented dissectors may need to recognize a known vendor or implementation encoding that violates the formal specification. Supporting that traffic is compatible with strict diagnostics: decode the observed representation when it can be identified safely, while still telling the user that the wire encoding is noncompliant.
+
+Merged MR !25238 extends HI2Operations decoding for APN and ULI encodings emitted by real implementations. During review Anders Broman explicitly requested expert information for the noncompliant forms; the author added it before merge.
+
+**Diagnostic rule:** compatibility decoding and standards validation are separate concerns. A dissector may recover and display a known nonstandard encoding, but should attach an appropriate expert indication rather than silently normalizing it into an apparently conforming packet.
+
+**Confidence:** Very high. Merged master compatibility change with explicit Anders Broman review and requested diagnostic added before merge.
