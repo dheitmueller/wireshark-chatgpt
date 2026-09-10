@@ -14,7 +14,7 @@
 - ST 2110-40 fuzz target brought up with libFuzzer/fuzzshark.
 - Independent test-vector search for ST 2110-40 and related standards.
 - MR !26390 submitted upstream; Anders Broman review findings have been incorporated into notebook conventions and `personal-review-feedback.md`.
-- Current Packet Bytes prototype is in `dheitmueller/wireshark`, branch `djh-10bit`. As of 2026-09-09 the pushed branch head used for this work is `cb138cf01c893dd9d0d0af4eed47926db021e2d4`; refresh the head if Devin pushes again rather than assuming this SHA remains current.
+- Current Packet Bytes prototype is in `dheitmueller/wireshark`, branch `djh-10bit`. The authoritative local checkout is `/Users/dheitmueller/wireshark`, branch `djh-10bit`, verified at `0e2f87ad739b06c12cbd60ed25ff656c527e5ac1` on 2026-09-09, with uncommitted cleanup changes. Earlier `cb138cf0` notes below describe historical access tests, not the current source baseline.
 
 ## Packet Bytes 10-bit prototype state
 
@@ -22,7 +22,7 @@
 - The current prototype successfully renders packed ST 291 UDW data as 10-bit words and permits switching presentation independently. It also uses a subset TVB for the packed UDW region so Packet Bytes need not mix 8-bit packet headers and 10-bit payload interpretation in one view.
 - ST 291 subdissectors should continue receiving logical 10-bit values represented in 16-bit storage words (valid values 0x000-0x3ff); that internal handoff is distinct from how Packet Bytes receives/displays the raw packed TVB.
 - The UI experiment that tries to infer/remember a data-source-wide 10-bit preference from a selected full-source field did not change the desired tab behavior. Do not build further on that inference mechanism.
-- Current design direction: make the natural word interpretation/alignment explicit metadata on the Wireshark `data_source` itself. `ST 291 Packed UDW Data` should carry a 10-bit interpretation, bit offset 6, and the logical word count. `DataSourceTab`/`HexDataSourceView` should initialize from that metadata when the tab is created/selected. The normal packet and 8-bit UDW data sources remain 8-bit.
+- Current design direction: make the natural word interpretation/alignment explicit metadata on the Wireshark `data_source` itself. `ST 291 Packed UDW Data` should carry a 10-bit interpretation, bit offset 6, and the logical word count. `DataSourceTab`/`HexDataSourceView` initialize from that metadata when the view is created. Later tree selections and tab changes must preserve manual interpretation choices. The normal packet and 8-bit UDW data sources remain 8-bit.
 - Presentation remains independently user-controlled; selecting a 10-bit data source should not force hexadecimal specifically.
 - Remove/supersede the failed field-to-data-source learn/restore prototype when implementing explicit `data_source` metadata.
 
@@ -88,7 +88,11 @@ Maintain this as a live checklist of **issues in this specific MR**: correctness
 
 ## Immediate next step
 
-In a fresh network-enabled ChatGPT Work task, clone/fetch `dheitmueller/wireshark`, refresh `djh-10bit`, and implement the Packet Bytes `data_source`-level 10-bit interpretation metadata. Remove the failed field-inference/restore prototype, set explicit metadata on `ST 291 Packed UDW Data`, initialize the Packet Bytes view from it, generate the patch mechanically, and validate applicability before delivery.
+The explicit data-source metadata implementation is already present in the local `0e2f87ad` baseline. Six cleanup changes remain applied and uncommitted: remove the two automatic restore calls, fold initialization into `setSourceWordInterpretation()`, remove `source_word_info_`, remove `word_10_start_`, make the byte-conversion helper static/remove its header declaration, and remove the stale ST 2031 `pinfo` unused annotation.
+
+The seventh proposed cleanup (removing converted-byte data-source registration) caused a user-observed GUI regression and has been reversed. Selecting an ST 12-2/VANC tree item needs the registered converted-byte TVB for Packet Bytes lookup. The correction restores `ST 291 UDW Bytes (bits 7..0)` and documents why; see `platform-gui-conventions.md`. Rebuild and validate protocol/child-field selection plus manual 8/10-bit interpretation persistence before squashing. The full local CMake build and the existing ST 2110-40 decode-as regression (including ST 12-2 timecodes) passed after the correction. API and diff-whitespace checks passed. GUI retesting of the correction is pending.
+
+Local Codex operates directly on the user's authoritative checkout; there is no need to reconstruct it through a connector or create a cloud Work task. Initial local build dependencies were missing; Devin has since fixed them. Do not assume historical cloud-network limitations describe the local build environment.
 
 ## Access state
 
