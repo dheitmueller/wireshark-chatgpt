@@ -63,3 +63,13 @@ MR !25157 proposed a narrow Stratoshark initialization fix for the new Find in P
 **Review/submission rule:** when a newly added feature has known incomplete or broken behavior across supported applications close to a release boundary, prefer restoring the last known-good feature set over shipping a minimal crash-only repair that leaves the incomplete feature exposed. Reintroduce the feature after its cross-application behavior is complete and reviewable.
 
 **Confidence:** Very high. The proposed partial repair was explicitly superseded after John Thacker's review, and the full revert was the merged project outcome.
+
+## Record real MR prerequisites with GitLab dependency metadata
+
+When one merge request cannot be meaningfully reviewed or merged until another MR lands, a prose note is useful context but is not the authoritative representation of that relationship. Use GitLab's explicit dependency/blocking relationship so the prerequisite is visible to reviewers and enforced by the workflow.
+
+Merged MR !25085 depended on !25084. The author initially called that out in a discussion note; Michael Mann pointed out GitLab's explicit MR dependency field and added !25084 there, causing the prerequisite MR to be recorded as blocking !25085. Both changes later merged in dependency order.
+
+**Submission rule:** use GitLab's dependency/blocking metadata for true MR prerequisites, in addition to any explanatory prose. This makes ordering machine-visible and prevents the relationship from being lost in discussion history.
+
+**Confidence:** Very high. Direct maintainer review guidance on two merged MRs, followed by use of the repository's dependency mechanism before merge.
