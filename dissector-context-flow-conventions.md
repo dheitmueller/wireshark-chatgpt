@@ -61,3 +61,13 @@ During review of merged MR !25557, Guy Harris asked whether malformed SSH key-lo
 **Implementation rule:** keep configuration/input-source diagnostics in their own reporting path unless there is a defensible identity mapping to the packet or conversation. If a protocol-tree expert item is used, ensure the error is actually attributable to that packet/session rather than merely to globally supplied auxiliary data.
 
 **Confidence:** Very high. Direct Guy Harris review question and John Thacker design reasoning on a merged master MR.
+
+## Treat conversation-selection metadata as layer-scoped state
+
+Conversation lookup metadata established by an encapsulating layer may be correct for that layer's subdissectors but wrong after crossing into a new logical network/transport layer. Do not let exact/circuit conversation selectors silently leak upward and redirect heuristics around the layer that now owns packet identity.
+
+Merged master MR !24476 fixes IP over X.25 by clearing inherited `pinfo->conv_elements` once IP establishes its own address-based context. Otherwise heuristics above IP can retrieve the X.25 circuit conversation and attach themselves to the wrong layer. The same correction was accepted on stable branches in !24484 and !24485. The MR explicitly describes the concrete clearing operation as a workaround for a broader conversation-API problem, so the durable lesson is the scoping invariant rather than that particular assignment.
+
+**Implementation rule:** when a nested protocol changes the identity domain used for conversation lookup, ensure lower-layer conversation selectors no longer participate in upper-layer lookup unless they are explicitly part of the new layer's identity. Prefer an API that models this scope transition; if a workaround is necessary, document why and do not generalize the mechanism beyond the proven case.
+
+**Confidence:** Very high for the scoping invariant. Merged master fix authored by John Thacker plus two stable backports; the implementation itself is explicitly documented as provisional.

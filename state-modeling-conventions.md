@@ -21,3 +21,13 @@ Merged MR !24543, authored and merged by John Thacker, fixes sharkd cumulative-b
 **Implementation rule:** classify mutable state by semantic lifetime before choosing storage: packet, conversation, capture/session, or process. If opening/reloading a capture logically starts the value over, put it on the capture/session object and reset it where that object's lifecycle starts rather than relying on static storage.
 
 **Confidence:** Very high. Merged master lifecycle correction authored and merged by John Thacker.
+
+## Acquire a replacement successfully before tearing down the current session resource
+
+Replacing a loaded resource is a state transition, not merely an assignment. When failure to acquire the replacement should leave the current object usable, perform the fallible acquisition first; only after it succeeds should the old resource and its derived state be closed/reset and the replacement installed.
+
+Merged master MR !24462 implements sharkd's `cf_close()` and changes `cf_open()` so the new wiretap handle is opened first. A failed open returns without destroying the existing capture; a successful open then closes/frees the old capture state before installing the new handle. The same lifecycle ordering was accepted in release-4.6 and release-4.4 backports !24464 and !24465. Merged !24473 separately clears cached filter results only after a new file has opened successfully, reinforcing the same commit-point boundary for derived session state.
+
+**Implementation rule:** structure reload/replacement operations transactionally where practical: acquire/validate the new resource, cross the success commit point, then tear down old state and invalidate caches tied to it. Do not destroy the user's current usable state merely because a replacement attempt was made.
+
+**Confidence:** Very high. John Thacker-authored merged master change with two stable backports and a companion merged cache-invalidation fix.

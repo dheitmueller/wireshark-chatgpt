@@ -41,3 +41,13 @@ Merged MR !25506 replaces SMB2 expressions such as `smb2_cmd_vals[si->opcode].st
 **Implementation rule:** when rendering or branching on a packet-derived enum/table key, search for an existing `val_to_str*`, protocol-specific decode/name helper, or other bounded lookup API before indexing the backing array directly. Treat display-only paths as security-relevant parsing paths too.
 
 **Confidence:** Very high. Merged master memory-safety fix explicitly following Gerald Combs's recommendation.
+
+## Bound recursive or backtracking work driven by user configuration
+
+Configuration syntax can become an algorithmic input just as packet bytes can. A recursive wildcard/pattern matcher must not permit an otherwise valid user-supplied rule to create unbounded recursion or pathological search work.
+
+Merged MR !24502 limits Protobuf URI-pattern recursion to 16 levels and adds a UAT update callback that rejects excessive wildcards and performs basic pattern validation before the matcher is used. The fix also removes repeated `strlen()` work from the recursive path.
+
+**Implementation rule:** when a preference/UAT/configuration value controls recursive matching, validate structural complexity when the configuration is accepted and retain an explicit execution-time recursion/work bound as defense in depth. Do not assume configuration input is harmless merely because it is not packet-controlled.
+
+**Confidence:** Very high. Merged master denial-of-service fix, merged by John Thacker, with validation at both configuration and execution boundaries.
