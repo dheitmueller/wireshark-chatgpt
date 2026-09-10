@@ -21,3 +21,13 @@ Merged MR !25426, authored and merged by John Thacker, changes TCP Follow Stream
 **Implementation rule:** when a tap, reassembly helper, or deferred consumer needs the identity of a particular protocol layer, capture that identity when the layer is being dissected and carry it with the event/state. Do not later infer it from mutable frame-global `packet_info` fields whose values may have been changed by inner or outer dissectors.
 
 **Confidence:** Extremely high. Two independent merged master fixes authored by John Thacker, covering TCP and UDP/DCCP and documenting the same tunneling failure mode.
+
+## Emit Follow Stream payload only from the layer that owns the stream identity
+
+Nested dispatch helpers can decode the same bytes without creating a new logical stream. In that situation they must not independently emit those bytes to the Follow Stream tap, because the outer transport and helper will attribute duplicate payload to the same stream ID.
+
+Merged MR !25106, authored by John Thacker and merged by Anders Broman, fixes UDP handling for proxy protocols. Proxy dissectors call `decode_udp_ports()` after rewriting transport context, but that helper does not create a second UDP stream identity. UDP previously queued Follow Stream data both before proxy dispatch and again inside `decode_udp_ports()`, so the same payload appeared twice under one stream. The accepted fix mirrors TCP: queue the UDP follow payload at the transport layer and remove follow-tap emission from the nested port-dispatch helper.
+
+**Implementation rule:** tie tap/follow emission to the semantic layer that creates and owns the corresponding stream identity. A helper that merely performs nested port/protocol dispatch under the same stream ID should not re-emit the payload. If a nested layer genuinely represents a distinct followable stream, establish a distinct identity and carry that explicitly rather than relying on duplicate tap calls.
+
+**Confidence:** Very high. Merged master correctness fix authored by John Thacker and accepted by Anders Broman, with a concrete duplicate-data failure mode in proxy-protocol captures.
