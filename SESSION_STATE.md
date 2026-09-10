@@ -14,7 +14,7 @@
 - ST 2110-40 fuzz target brought up with libFuzzer/fuzzshark.
 - Independent test-vector search for ST 2110-40 and related standards.
 - MR !26390 submitted upstream; Anders Broman review findings have been incorporated into notebook conventions and `personal-review-feedback.md`.
-- Current Packet Bytes prototype is in `dheitmueller/wireshark`, branch `djh-10bit`. The authoritative local checkout is `/Users/dheitmueller/wireshark`, branch `djh-10bit`, verified at `0e2f87ad739b06c12cbd60ed25ff656c527e5ac1` on 2026-09-09, with uncommitted cleanup changes. Earlier `cb138cf0` notes below describe historical access tests, not the current source baseline.
+- Current Packet Bytes prototype is in `dheitmueller/wireshark`, branch `djh-10bit`. The authoritative local checkout is `/Users/dheitmueller/wireshark`, branch `djh-10bit`, saved at `a339ebbf8381f5f210457a02233c02c5d4842745` with a clean working tree; the split submission branch is recorded below. Earlier `cb138cf0` notes below describe historical access tests, not the current source baseline.
 
 ## Packet Bytes 10-bit prototype state
 
@@ -86,20 +86,25 @@ Maintain this as a live checklist of **issues in this specific MR**: correctness
 - **Lua extensibility regression check — resolved mechanically.** Final consolidated source still registers the public `st291.did_sdid` dissector table and built-in payload dissectors continue to attach through that table.
 - **Compile/test gate — nearly complete.** User reported the corrected pre-final sources build and pass functional testing. The only source change after that test was removal of `st291_word_data8()` and replacement of its three uses with explicit `word & 0xff` assignments. Run one final local rebuild/test against the exact final fileset before submitting the replacement MR.
 
-## Immediate next step
+## Current handoff: two-patch submission series (2026-09-10)
 
-The explicit data-source metadata implementation is already present in the local `0e2f87ad` baseline. Six cleanup changes remain applied and uncommitted: remove the two automatic restore calls, fold initialization into `setSourceWordInterpretation()`, remove `source_word_info_`, remove `word_10_start_`, make the byte-conversion helper static/remove its header declaration, and remove the stale ST 2031 `pinfo` unused annotation.
+Devin requested splitting the prototype into a standalone full-width VANC handoff and a following GUI patch, then moving further work to another chat/model. This split is complete.
 
-The seventh proposed cleanup (removing converted-byte data-source registration) caused a user-observed GUI regression and has been reversed. Selecting an ST 12-2/VANC tree item needs the registered converted-byte TVB for Packet Bytes lookup. The correction restores `ST 291 UDW Bytes (bits 7..0)` and documents why; see `platform-gui-conventions.md`. Rebuild and validate protocol/child-field selection plus manual 8/10-bit interpretation persistence before squashing. The full local CMake build and the existing ST 2110-40 decode-as regression (including ST 12-2 timecodes) passed after the correction. API and diff-whitespace checks passed. GUI retesting of the correction is pending.
+- Original checkout: `/Users/dheitmueller/wireshark`, branch `djh-10bit`, clean at saved local commit `a339ebbf8381f5f210457a02233c02c5d4842745`. Devin reported pushing, but the subsequent fetch returned remote `0e2f87ad739b06c12cbd60ed25ff656c527e5ac1`; do not claim a339ebbf is confirmed on the remote. The local saved commit was the source of truth.
+- New branch: `codex/10bit-submission`, separate worktree `/private/tmp/wireshark-10bit-submission`, based on `857d9b98e9d70c0f0666bea18c3b2b060e5bd93b`.
+- Commit 1: `5f46d0b815`, “ST 2110-40: Preserve all ten UDW bits for VANC subdissectors”. Only `packet-smpte-2110-40.c`, `packet-smpte-291-vanc.c`, and their shared ST 291 header change. The transport passes BE16 logical UDWs with all ten bits; existing byte-oriented built-ins project bits 7..0 internally and register the converted data sources. The existing renderer can show the BE16 array. No new core data-source hints or Qt code are required. Direct `st291.did_sdid` consumers now receive two bytes per UDW; `st2010.payload_type` remains byte-oriented.
+- Commit 2: `4db750343e`, “Qt: Render packed 10-bit data and scope tabs to the selected payload”. Adds source interpretation/owner hints, packed subset TVBs, independent numeric presentation, and selection-scoped payload tabs. Includes the six cleanup changes and retains converted-byte data-source registration.
+- Combined final tree is exactly identical to a339ebbf: no feature changes were introduced by the split.
+- Exported patches: `/private/tmp/wireshark-10bit-patches/0001-ST-2110-40-Preserve-all-ten-UDW-bits-for-VANC-subdis.patch` and `0002-Qt-Render-packed-10-bit-data-and-scope-tabs-to-the-s.patch`. Apply in that order on the base above. They were generated with `git format-patch`, checked with `git apply --cached --check`, applied to a temporary index, and verified to reconstruct the saved tree exactly.
+- Validation of commit 1: independent CMake build with `BUILD_wireshark=OFF` in `/private/tmp/wireshark-10bit-build`; existing ST 2110-40 decode-as/timecode regression passed; all 11 ANC handoff buffers in the fixture matched independently extracted packed bits, including bits 8/9. The build lacks Lua support, so no Lua execution test was claimed. Temporary validation script: `/private/tmp/verify-10bit-handoff.py`. Dissector API checks passed without warnings.
+- Validation of the combined saved tree was already performed: full GUI build, existing decoding test, and focused offscreen Qt visibility test passed. Devin reported “Looks pretty good” after trying the grouped-tab GUI; this is a positive smoke test, not an exhaustive GUI regression.
+- Neither branch was pushed by Codex. `djh-10bit` was preserved; the new worktree is on the two-commit series.
 
-Local Codex operates directly on the user's authoritative checkout; there is no need to reconstruct it through a connector or create a cloud Work task. Initial local build dependencies were missing; Devin has since fixed them. Do not assume historical cloud-network limitations describe the local build environment.
+Next chat: work from `codex/10bit-submission` in the separate worktree, consult personal-review feedback and the unresolved ST 2010 checklist above, and review/test the series before upstream submission. Do not re-split or re-create the earlier iterative patches. The converted-byte data sources are required for tree-field selection; hide unrelated tabs rather than unregistering their buffers.
 
+### Notebook concurrency and local access
 
-### Selection-scoped ANC tabs experiment (2026-09-09)
-
-Devin requested trying tabs scoped to the selected ANC packet without fundamental API changes. The current uncommitted local prototype adds only an optional owner-field hint on data sources (setter/getter); existing data-source creation and ST 291 dispatch contracts remain intact. ST 2110-40 tags each packet's packed source and any sources created by its payload dissector. Qt keeps every registered buffer/view but shows only the selected owner's tabs plus ungrouped sources. Original transport fields use containing owner ranges; decoded fields use their source's owner. Selecting outside ANC or deselecting hides the grouped tabs. OP-47-derived views follow the same group.
-
-The full build, existing ST 2110-40 decode-as regression, and a focused offscreen Qt test of the actual visibility methods passed. API checking reports the existing `index` shadow warning in `data_source_tab.cpp`; diff whitespace checks pass. Next: Devin tests the rebuilt GUI with the four-ANC frame, switches among ANC roots and decoded fields, and verifies packed/byte tab selection plus manual 8/10-bit interpretation persistence. Do not mark the experiment accepted or submission-ready until this GUI validation is complete. See `platform-gui-conventions.md` for rationale and API scope.
+Scheduled jobs in ChatGPT also update this notebook. Always fetch the latest affected files immediately before writing, reconcile edits, and use current content SHAs. On conflict, fetch and merge again. GitHub connector authentication works in this Codex task; local HTTPS `git push` lacks credentials, so use the connector for notebook writes. Local Codex can use the existing Wireshark checkout and build; historical cloud/regular-Chat networking limitations are not a reason to reconstruct or relocate it.
 
 ## Access state
 
