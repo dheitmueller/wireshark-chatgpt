@@ -61,3 +61,23 @@ Merged MR !25538 adds an experimental option to force 64-bit `time_t` for Y2038 
 **Implementation rule:** when a CMake/toolchain option changes fundamental ABI-visible types, validate ABI compatibility at dependency boundaries and limit platform-specific handling to configurations Wireshark actually supports. A successful local compile is not sufficient evidence when externally built libraries participate in the affected ABI.
 
 **Confidence:** Very high. Merged master build-system change by John Thacker with direct Gerald Combs review.
+
+## Validate required toolchain capabilities before downstream feature probes
+
+When the project has a non-negotiable language or compiler requirement, check that requirement explicitly near configuration startup. Do not wait for an unrelated feature probe or package check to fail later with an obscure symptom caused by an incapable compiler.
+
+Merged MR !25231, authored and merged by Guy Harris, adds explicit C17 and C++17 capability checks and emits actionable fatal diagnostics on Solaris rather than allowing later checks to fail mysteriously with the vendor compiler. The surrounding change documents why supported GCC/Clang toolchains satisfy the requirement while the Sun/Oracle compiler does not.
+
+**Implementation rule:** test mandatory compiler/language capabilities before dependent configure logic and diagnose the actual prerequisite that is missing. A later feature-test failure should not be the first indication that the selected compiler cannot meet Wireshark's baseline language contract.
+
+**Confidence:** Extremely high. Merged master build-system design authored and merged by Guy Harris.
+
+## Dependency discovery must follow the target ABI, not the host's default search layout
+
+On multi-architecture systems, a generic package/library search can locate an installed artifact for the wrong architecture and produce failures that look like missing packages or inexplicable link incompatibilities. Discovery logic must search the layout that corresponds to the binary being built.
+
+Merged MR !25224, authored and merged by Guy Harris, handles Solaris's `/usr/lib/${isa}` arrangement by deriving the target ISA for 64-bit builds and setting `CMAKE_LIBRARY_ARCHITECTURE`, so CMake and pkg-config do not accidentally select 32-bit metadata/libraries. Merged MR !25256 provides a related Windows example: for the platform `bcrypt` system library, using the canonical linker name avoids a generic `find_library()` result tied to an inappropriate SDK architecture.
+
+**Implementation rule:** make library/package lookup architecture-aware whenever host installations contain multiple ABIs. For true platform system libraries, prefer the platform's stable linker contract when generic filesystem discovery can select an architecture-specific artifact incorrectly.
+
+**Confidence:** Extremely high for the Solaris rule (Guy Harris authored/merged); high corroboration from merged Windows build work.
