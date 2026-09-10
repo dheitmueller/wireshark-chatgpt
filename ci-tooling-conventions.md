@@ -21,3 +21,13 @@ Merged MR !26197, authored, approved, and merged by John Thacker, documents that
 **Implementation rule:** treat stdout/stderr routing as part of a tool adapter's API contract. Preserve both the report stream and diagnostic stream intentionally; do not collapse them with `2>&1` when downstream processing needs to distinguish them.
 
 **Confidence:** Very high. Merged master tooling fix authored and merged by John Thacker, with the counterintuitive upstream stream behavior explained in the commit.
+
+## Encode cheap structural conventions in repository checkers
+
+When a recurring code-quality issue can be recognized mechanically with low ambiguity, prefer extending Wireshark's existing source checker so new instances are caught during normal development and CI rather than relying on reviewers to remember the convention manually.
+
+Merged MR !25259, authored by Martin Mathieson and merged by Anders Broman, extends `check_typed_item_calls.py` to detect duplicated hand-written `value_string` definitions. The discussion notes an important scope distinction: there were only hundreds of such duplicates in hand-written files but nearly two million occurrences in generated files, where deduplication belongs in the generator and may require a naming strategy rather than applying the hand-written-source check blindly.
+
+**Implementation rule:** automate deterministic, inexpensive review checks in the closest existing project checker. Keep generated code on an explicit path: either teach the generator to satisfy the invariant or exempt generated output when applying the source-level rule directly would create huge low-value noise.
+
+**Confidence:** High. Merged master tooling change by a long-time Wireshark maintainer, with the generated-versus-hand-written distinction discussed explicitly before merge.
