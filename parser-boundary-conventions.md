@@ -31,3 +31,13 @@ Merged MR !24942 applies this pattern to DNS SVCB/HTTPS `SvcParam` parsing. It f
 **Implementation rule:** distinguish "this element is malformed" from "the enclosing sequence can no longer be located." If the outer framing still provides a trustworthy declared boundary, keep all reads inside it and resume from that boundary after reporting the defect rather than letting inner parsing consume bytes belonging to the next element.
 
 **Confidence:** Very high. Merged master parser-hardening change with explicit malformed-input validation and a reproducer.
+
+## Give independently length-delimited subrecords their own bounded TVBs
+
+When an outer dissector already knows the exact extent of a nested message or submessage, prefer constructing a subset TVB for that extent and letting the nested parser use offsets relative to zero. This moves the framing invariant into the TVB itself: an inner parser cannot silently consume bytes belonging to the next sibling, and offset arithmetic no longer has to repeatedly combine an outer base offset with an inner offset.
+
+Merged MR !24758, authored by John Thacker and approved/merged by Anders Broman, converts RTPS submessage dissectors to operate on per-submessage TVB subsets. The stated goals are to reduce signed-integer-overflow risk and prevent malformed parsing from leaking from one submessage into the next. Merged MR !24737, also authored by John Thacker, independently applies the same approach to OCP. It combines a bounded message TVB with `proto_tree_add_item_ret_*` helpers so values needed for control flow are fetched once rather than re-reading at base-plus-inner offsets.
+
+**Implementation rule:** once a trustworthy parent length identifies a nested record, create a TVB limited to that record and parse it in its own coordinate space. Prefer that structural boundary over carrying `(tvb, base_offset, length)` through every child helper and relying on each helper to repeat overflow-safe end arithmetic correctly.
+
+**Confidence:** Extremely high. Two independent merged master fixes authored by John Thacker, one directly addressing an OSS-Fuzz finding and the other explicitly preventing cross-submessage leakage.
