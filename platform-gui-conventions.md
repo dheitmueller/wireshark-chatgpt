@@ -72,3 +72,14 @@ Restoring registration of `ST 291 UDW Bytes (bits 7..0)` is the targeted correct
 **Regression check:** select both the VANC protocol root and its child fields and verify the appropriate payload view and byte highlighting. Separately verify that manual word interpretation survives tree selection and tab changes.
 
 **Evidence/scope:** user-observed regression and local source tracing; this is a prototype-specific finding, not an upstream-reviewed design rule. GUI confirmation of the correction is pending.
+
+
+## Prototype: show data sources for the selected payload
+
+On 2026-09-09, Devin requested trying selection-scoped tabs because an ST 2110-40 frame containing four ANC packets produced many repeated/truncated tab labels. The local `djh-10bit` prototype now adds an optional owner-field hint to `data_source`, via `set_data_source_owner()` / `get_data_source_owner()`. Existing sources default to no owner and retain their usual visibility. This is an additive API extension; the ST 291 subdissector context and dispatch contract are unchanged.
+
+ST 2110-40 associates the packed source and sources created during each payload's subdissection with that ANC packet's tree field. A TRY/FINALLY also assigns the hint if payload decoding throws, and captures additional native/Lua decoded sources such as OP-47 without protocol-specific GUI code. The owner is borrowed from the same dissection; it does not transfer buffer ownership.
+
+The Qt view retains all registered sources/widgets and only changes tab visibility. Selecting a decoded source selects its owner group; original transport fields resolve by the smallest containing owner range on the same TVB. Ungrouped sources stay visible; deselection or selection outside any payload hides grouped tabs. Retaining widgets preserves manual word-interpretation state. The four-payload case should therefore expose only the selected payload's packed/byte views and any further derived views, alongside the original packet.
+
+Validation: full local build and existing ST 2110-40 decode-as/timecode regression passed. A temporary offscreen Qt harness compiled the actual visibility methods and exercised four owners, transport roots/children, decoded fields, OP-47, unrelated selection, deselection, and retained widgets. Full interactive GUI validation remains pending. This design is experimental and not upstream-approved.
