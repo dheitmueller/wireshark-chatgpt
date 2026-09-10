@@ -21,3 +21,13 @@ Merged MR !25230 corrects BSSMAP LE parsing after a two-byte length field had be
 **Implementation rule:** review field width and encoding against the normative format and include boundary values that distinguish plausible alternative interpretations. Small-value captures are insufficient evidence for choosing a narrower or variable-length decoder.
 
 **Confidence:** Very high. Merged master protocol-correctness fix authored by John Thacker.
+
+## Keep malformed length-delimited elements synchronized to their declared boundary
+
+When a container is a sequence of independently length-delimited elements, a malformed element should not normally cause its decoder to drift into the next element. Validate the fixed header before reading it, compute the element's declared end once, constrain key/type-specific parsing to that extent, report semantic length/value violations with Expert Info, and resume at the declared element boundary when doing so is safe.
+
+Merged MR !24942 applies this pattern to DNS SVCB/HTTPS `SvcParam` parsing. It first rejects a truncated parameter header, calculates `param_end` from the declared parameter length, adds key-specific checks for parameters such as `mandatory`, `port`, IPv4/IPv6 hints, ALPN, and zero-length flags, and then explicitly resynchronizes so one malformed parameter does not misalign all following parameters. The MR included a crafted malformed capture and was approved/merged by Alexis La Goutte.
+
+**Implementation rule:** distinguish "this element is malformed" from "the enclosing sequence can no longer be located." If the outer framing still provides a trustworthy declared boundary, keep all reads inside it and resume from that boundary after reporting the defect rather than letting inner parsing consume bytes belonging to the next element.
+
+**Confidence:** Very high. Merged master parser-hardening change with explicit malformed-input validation and a reproducer.
