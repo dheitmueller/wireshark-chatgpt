@@ -31,3 +31,13 @@ Merged MR !24867, authored and merged by John Thacker, adds a Qt 5 build job to 
 **Implementation rule:** when backporting or changing code on a maintained release branch, identify the compatibility matrix of that branch rather than inheriting master's assumptions. Trigger legacy-variant jobs automatically for changes that can affect them, with manual fallback coverage where appropriate.
 
 **Confidence:** Very high. Merged stable-branch CI change authored and merged by John Thacker specifically to preserve supported compatibility coverage.
+
+## Do not package build-host system DLLs as application-private dependencies
+
+On Windows, a deployment tool may discover a DLL used by the build host and copy it beside the application even when that DLL is fundamentally supplied and versioned by the target operating system. Because application-local DLL lookup can take precedence over the system copy, doing so can accidentally bind the package to the build host's OS revision and break supported older targets.
+
+Merged master MR !24709, authored by John Thacker, fixes exactly this problem for Qt's handling of Windows ICU. `windeployqt` copied the build machine's `icuuc.dll`, whose newer wrapper expected `icu.dll` that does not exist on still-supported Windows 10 1809/Windows Server 2019 systems. The accepted packaging change excludes that build-host DLL and lets the target operating system supply its compatible system implementation. Merged MR !24712 propagates the exclusion to PortableApps packaging.
+
+**Implementation rule:** distinguish redistributable application dependencies from OS-owned system libraries during packaging. Do not blindly ship a build-host copy merely because deployment tooling discovers it; account for loader precedence and verify that packaged binaries do not create a dependency on a newer build-host OS ABI than the supported target matrix.
+
+**Confidence:** Very high. Merged master portability fix with a merged second-package backport and a concrete supported-target runtime failure.
