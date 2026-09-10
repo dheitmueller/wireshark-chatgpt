@@ -31,3 +31,13 @@ Merged MR !25873, authored and merged by John Thacker, fixes `nstime_delta()` wh
 **Implementation rule:** for in-place-capable helpers, explicitly reason about every supported alias combination. Compute from temporaries or order reads before writes so output mutation cannot change an input value that remains semantically live. Add an aliasing regression test when the API contract permits in-place operation.
 
 **Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker for a concrete output/input-aliasing failure.
+
+## Normalize representation units at the boundary where their semantic meaning changes
+
+A count should have one unambiguous unit once it enters a semantic layer. Carrying a textual representation count as though it were a packet byte count invites inconsistent arithmetic, especially when comments and encoded packet records use different relationships between source characters and output bytes.
+
+Merged MR !25877, authored and merged by Guy Harris, changes the DCT2000 reader to convert the input character count into a record byte count at the point where packet-record sizing is established. Comment records remain one character per byte, while non-comment packet data uses two ASCII hexadecimal characters per byte. The change then carries the byte-oriented value through the record-length logic instead of repeatedly interpreting a mixed-unit variable.
+
+**Implementation rule:** name and normalize length/count variables according to the unit consumed by the layer that owns them. When parsing textual encodings, convert character/nibble/word counts to byte counts once at a clear boundary and keep subsequent allocation, bounds, and record-length arithmetic in that normalized unit unless a later conversion is explicit.
+
+**Confidence:** Extremely high. Merged master wiretap cleanup authored and merged by Guy Harris, directly clarifying the unit contract of packet-record sizing.
