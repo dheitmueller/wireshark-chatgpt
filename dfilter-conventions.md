@@ -41,3 +41,13 @@ Merged MR !26314, authored and merged by John Thacker, corrects inaccurate AI-ge
 **Review rule:** AI assistance does not reduce the evidence required for comments or documentation. Verify semantic claims against the implementation, specification, tests, or authoritative maintainer knowledge before merging them.
 
 **Confidence:** High. Merged corrective change authored and merged by John Thacker with the specific documentation failure identified.
+
+## Keep lexer case rules and reserved-name validation in lockstep
+
+Changing whether language keywords or operators are case-sensitive also changes the namespace that user-registered identifiers are allowed to occupy. Parser/lexer recognition and registration-time collision checks must use the same normalization rules, or an identifier can be accepted as ordinary during registration but later tokenized as a reserved operator.
+
+Merged MR !25845, authored and merged by John Thacker, makes display-filter operators case-insensitive and updates the checks for registered filter names so reserved operator names are rejected case-insensitively as well. The change deliberately excludes the `\x`, `\u`, and `\U` escape introducers from case folding because their case is semantically significant, and it updates the tests alongside the lexer behavior.
+
+**Implementation rule:** whenever token matching changes case or normalization semantics, audit every other layer that recognizes or reserves those tokens—identifier registration, validation, documentation, and tests. Preserve explicit syntax-level exceptions rather than applying global case folding to constructs whose spelling itself carries meaning.
+
+**Confidence:** Extremely high. Merged display-filter language change authored and merged by John Thacker with matching lexer, registration, and test updates.
