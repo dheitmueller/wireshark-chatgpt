@@ -61,3 +61,14 @@ Merged MRs !26260, !26262, !26265, !26270, and !26274 form a coherent cleanup au
 **Lifecycle rule:** distinguish initialization from later changes. Do not run normal "changed" reactions until the baseline state is known, especially when those reactions trigger expensive interface scans, statistics, UAC prompts, or other externally visible work.
 
 **Confidence:** Very high. Five merged master changes by John Thacker converge on the same event/lifecycle architecture and document concrete failures caused by ordering and duplicate notifications.
+
+
+## Register transformed payload buffers used by selectable tree fields
+
+In the local `djh-10bit` cleanup based on `0e2f87ad739b06c12cbd60ed25ff656c527e5ac1` (2026-09-09), removing `add_new_data_source()` from `st291_get_8bit_payload_tvb()` caused a user-observed regression: selecting a VANC protocol such as ST 12-2 no longer displayed its payload in Packet Bytes. The byte-oriented payload dissectors construct tree items against the converted child TVB. `DataSourceTab::selectedFieldChanged()` looks up `fi->ds_tvb`, and `findDataSourceViewForTvb()` matches that TVB against registered data-source views by pointer identity. Merely attaching real data as a child TVB does not create a Packet Bytes view for it.
+
+Restoring registration of `ST 291 UDW Bytes (bits 7..0)` is the targeted correction. Keep the packed 10-bit source and converted byte source distinct: their offsets and representations differ. Do not remove the converted source as a redundant tab without implementing and validating a mapping for tree selection/highlighting.
+
+**Regression check:** select both the VANC protocol root and its child fields and verify the appropriate payload view and byte highlighting. Separately verify that manual word interpretation survives tree selection and tab changes.
+
+**Evidence/scope:** user-observed regression and local source tracing; this is a prototype-specific finding, not an upstream-reviewed design rule. GUI confirmation of the correction is pending.
