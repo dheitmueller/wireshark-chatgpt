@@ -25,3 +25,13 @@ Merged MR !25579, authored and merged by Guy Harris, repaired an IEEE 802.15.4 d
 **Implementation rule:** do not stash short-lived borrowed pointers in a context struct merely because all current callees happen to use them synchronously. Prefer an explicit parameter when the data belongs to one operation; reserve context members for values whose ownership and lifetime genuinely match the context.
 
 **Confidence:** Extremely high. Two merged master changes authored by Guy Harris, with the later change representing the preferred evolved interface.
+
+## Prefer scope-managed ownership across exception-capable dissection paths
+
+Manual cleanup at the end of a dissector is not exception-safe when bounds checks or nested dissection can throw before the cleanup point. For temporary data whose lifetime naturally matches a Wireshark allocator scope, use scope-managed allocation so exceptional exits do not leak it.
+
+Merged master MR !24823, authored and merged by John Thacker after an OSS-Fuzz report, replaces `g_strsplit()` with `wmem_strsplit()` in ISAKMP parsing. The GLib allocation could leak whenever a later TVB operation raised an exception before the explicit free; tying the split result to wmem lifetime removes that exceptional cleanup obligation.
+
+**Implementation rule:** when allocating temporary data in dissectors, audit every operation between allocation and manual free for exception-capable TVB access or nested dissection. Prefer `wmem_*` ownership at the narrowest suitable scope when it makes cleanup automatic. If manual ownership is unavoidable, the cleanup mechanism must remain correct on exceptional exits rather than only on the normal return path.
+
+**Confidence:** Very high. Merged master leak fix authored and merged by John Thacker with a concrete OSS-Fuzz trigger.
