@@ -55,3 +55,15 @@ Merged release-4.6 MR !24613 fixes a pcapng Darwin PIB use-after-free/double-unr
 **Implementation rule:** audit every ownership edge when a reference-counted object is inserted into persistent state. If both the existing path and the new container can independently outlive/release the object, acquire a reference for the new owner at insertion time; do not rely on the success path to hide an under-counted ownership graph.
 
 **Confidence:** Very high. Merged memory-safety backport by John Thacker with the two independent release paths explicitly documented.
+
+## Container migrations must preserve key/value ownership semantics
+
+Replacing one container with another can silently change whether keys or values are copied or merely referenced. A caller pattern that was safe with a copying container can become a use-after-return if the replacement stores the caller's pointer.
+
+Merged master MR !23646, authored by John Thacker and accepted by Gerald Combs after OSS-Fuzz found a stack-use-after-return, fixes exactly this during a GUID lookup migration. The old `wmem_tree_insert32_array()` path copied the GUID key, so callers could pass an `e_guid_t` on the stack. The newer `wmem_map` path retained the key pointer; the accepted fix explicitly copies the GUID into `wmem_epan_scope()` before insertion.
+
+**Implementation rule:** when changing a container type or insertion API, audit its copy/borrow/ownership contract for both keys and values. If the container retains a pointer, copy borrowed or stack-backed data into storage whose lifetime covers the container; do not assume the old container's copy semantics carry across the refactor.
+
+**Review rule:** treat data-structure migrations as ownership/lifetime changes even when the visible lookup API is unchanged. Fuzz-detected lifetime failures are a strong signal to inspect every analogous insertion site.
+
+**Confidence:** Very high. Merged master memory-safety fix authored by John Thacker, with a concrete OSS-Fuzz stack-use-after-return trigger and senior-maintainer acceptance.
