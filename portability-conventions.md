@@ -41,3 +41,13 @@ Merged master MR !24709, authored by John Thacker, fixes exactly this problem fo
 **Implementation rule:** distinguish redistributable application dependencies from OS-owned system libraries during packaging. Do not blindly ship a build-host copy merely because deployment tooling discovers it; account for loader precedence and verify that packaged binaries do not create a dependency on a newer build-host OS ABI than the supported target matrix.
 
 **Confidence:** Very high. Merged master portability fix with a merged second-package backport and a concrete supported-target runtime failure.
+
+## Keep Debian packaging recipes compatible with their declared shell
+
+`debian/rules` and helper commands execute in the shell selected by the packaging environment, which is normally `/bin/sh`; do not rely on Bash-only parameter expansion merely because it works on a developer's system. Either express the transformation portably or deliberately invoke the shell whose syntax is required.
+
+Merged master MR !23490 initially derived Debian package names with Bash `${var//pattern/replacement}` syntax. John Thacker's merged follow-up !23493 replaces that bashism with a portable `sed` transformation specifically because the rules file is not a Bash script.
+
+**Implementation rule:** treat packaging recipes as constrained by the shell they actually declare/use. In Debian rules and similar `/bin/sh` contexts, prefer POSIX shell syntax and portable utilities; use Bash-specific expansion only when Bash is explicitly part of the execution contract.
+
+**Confidence:** Very high. Corrective master change authored and merged by John Thacker immediately after the nonportable form was introduced.

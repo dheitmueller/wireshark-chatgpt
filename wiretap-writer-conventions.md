@@ -23,3 +23,13 @@ Merged master MR !23608 changes the BLF writer so closing a log container pads t
 **Review rule:** do not accept “padding is harmless” as an assumption when the padding lies inside a recorded object length. Review both the container framing and the nested record's own length semantics.
 
 **Confidence:** Very high. Merged master format-correctness change with broad record-type validation and an accepted stable-branch counterpart.
+
+## Refresh writer mappings when interface metadata can grow during a dump
+
+Capture-writer state derived from interface description blocks is not necessarily fixed at writer initialization. If the wiretap layer can notify a writer that a new IDB has appeared while dumping, any cached interface-to-format mapping must incorporate that IDB before later packets are serialized.
+
+Merged master MR !23488, authored and merged by Guy Harris, expands the BLF interface mapping when a new IDB is supplied to the dumper. The existing implementation built the mapping only from the initial interface set, so packets associated with later IDBs could not be mapped correctly. Stable-branch counterpart !23511 independently carries the accepted fix.
+
+**Implementation rule:** when a capture format writer caches metadata derived from IDBs or another collection that wiretap permits to grow during output, handle the writer's metadata-update callback by extending or rebuilding that derived state. Do not assume the interface set observed at open time is complete.
+
+**Confidence:** Extremely high. Merged master architecture fix authored and merged by Guy Harris, with an accepted stable-branch backport.
