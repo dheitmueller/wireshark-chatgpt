@@ -29,3 +29,13 @@ Merged master MR !23728, authored and merged by John Thacker, removes `G_GNUC_MA
 **Implementation rule:** before adding or preserving a compiler/analyzer attribute, verify the semantic guarantees the tool is entitled to infer from it. If an object retains or aliases existing state, do not claim a stronger allocation/non-aliasing contract merely because the top-level object itself is newly allocated.
 
 **Confidence:** High. Merged master maintainer-authored change with accepted stable backports and explicit compiler-contract rationale.
+
+## Assert low-level programmer preconditions without silently narrowing a higher-level API contract
+
+A low-level primitive may legitimately require a non-NULL object and use `DISSECTOR_ASSERT` to document that programmer invariant, while a higher-level wrapper may intentionally support a nullable argument for historical or semantic reasons. Tightening the primitive must not accidentally narrow the wrapper's established contract; guard the call at the wrapper boundary and assert only where the invariant truly applies.
+
+Merged MRs !23427 and !23428, both authored and merged by John Thacker, illustrate the two sides of this rule. !23427 restores the established `proto_tree_add_bytes*` behavior for a NULL tvb by avoiding `tvb_get_ptr()` when no tvb is present. !23428 then adds a `DISSECTOR_ASSERT(tvb)` inside `tvb_get_ptr()` itself, matching other tvb APIs and replacing an otherwise uncontrolled NULL dereference with an explicit programmer-invariant failure.
+
+**Implementation rule:** when strengthening an internal API's preconditions, audit its wrappers and callers for intentionally broader contracts. Preserve supported nullable/sentinel behavior at the appropriate layer, and place assertions only at the layer where violating the precondition is necessarily a programming error.
+
+**Confidence:** Very high. Two adjacent merged maintainer-authored fixes explicitly separate the public/wrapper compatibility contract from the low-level primitive invariant.

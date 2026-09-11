@@ -33,3 +33,13 @@ Merged master MR !23488, authored and merged by Guy Harris, expands the BLF inte
 **Implementation rule:** when a capture format writer caches metadata derived from IDBs or another collection that wiretap permits to grow during output, handle the writer's metadata-update callback by extending or rebuilding that derived state. Do not assume the interface set observed at open time is complete.
 
 **Confidence:** Extremely high. Merged master architecture fix authored and merged by Guy Harris, with an accepted stable-branch backport.
+
+## Keep defensive result checks even after repairing the invariant that normally prevents failure
+
+Fixing the root cause of an impossible-state failure does not make a nearby fallible-operation check redundant. If a writer/helper can report failure, keep checking that result when doing so converts an unexpected invariant violation into a controlled internal error instead of a process crash. This gives future regressions a diagnosable failure path rather than relying on the invariant remaining perfect forever.
+
+Merged MR !23455 adds the missing success check around BLF interface mapping. Guy Harris explicitly stated that this check should still be committed even with the underlying !23488 interface-mapping fix, because the check turns the condition into an internal error rather than a crash. The MR was subsequently merged by Guy.
+
+**Implementation rule:** distinguish root-cause prevention from defensive containment. Repair the state/invariant bug, but retain inexpensive checks on fallible writer operations when they provide a defined error path for unexpected future violations.
+
+**Confidence:** Extremely high. Direct Guy Harris guidance on a merged wiretap crash fix, with the root-cause fix independently merged.

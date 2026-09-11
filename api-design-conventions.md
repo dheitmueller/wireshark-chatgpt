@@ -31,3 +31,13 @@ In merged MR !23934, Michael Mann adjusted a contribution that exported the DNS 
 **Implementation rule:** mark exported declarations through the established Wireshark export annotation/tooling path and avoid redundant public-header bookkeeping. Public dissector headers should include only the declarations needed to make their own API self-contained, not broad implementation headers by habit.
 
 **Confidence:** Very high. Direct maintainer correction by Michael Mann on a merged public-API change.
+
+## Public C headers that support C++ must avoid C++-reserved identifiers
+
+If a public C header is deliberately usable from C++ (for example, it contains `#ifdef __cplusplus` compatibility machinery), its exported identifiers must also be valid C++ identifiers. A name that is legal C but reserved by C++ can make an otherwise compatible public header uncompilable for downstream C++ consumers.
+
+Merged MR !23452, authored by John Thacker, fixes `wiretap/pcapng_module.h` after a callback member named `new` caused C++ compilation failures. The accepted change renames the member and updates its call sites; Guy Harris additionally reviewed the replacement name for semantic clarity.
+
+**Implementation rule:** review public/header-visible names against every language the header claims to support, not only the language used to build Wireshark itself. In C headers intended for C++ inclusion, avoid C++ keywords and other C++-reserved identifiers in fields, callbacks, parameters, macros, and exported declarations.
+
+**Confidence:** Very high. Merged public-header compatibility fix authored by John Thacker, with direct Guy Harris naming review.
