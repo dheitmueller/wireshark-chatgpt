@@ -17,5 +17,6 @@ This file is a cumulative index of SMPTE ST 291/VANC types encountered while rev
 
 | DID | SDID | Type / standard | Wireshark dissector | Capture files | Notes |
 | --- | --- | --- | --- | --- | --- |
-
-No capture filenames have been added yet. Populate this table opportunistically as captures are analyzed; do not reconstruct historical filenames from memory unless they can be verified.
+| `0x41` | `0x07` | SMPTE ST 2010 / SCTE-104 | Yes | `fc104.dtsdi` | Event-driven SCTE-104 messages in a DekTec DTSDI full-frame 10-bit sample. |
+| `0x43` | `0x02` | SMPTE RDD 8 / OP-47 subtitle distribution packet | Yes | `ttext_line10.dtsdi`, `ttext_line12.dtsdi`, `ttext_sencore.dtsdi` | Continuous teletext/subtitle data in DekTec DTSDI full-frame 10-bit samples. |
+| `0x61` | `0x01` | SMPTE ST 334-2 / CEA-708 caption distribution packet | Yes | `ttext_sencore.dtsdi` | Continuous caption data in a DekTec DTSDI full-frame 10-bit sample. |
