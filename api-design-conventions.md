@@ -21,3 +21,13 @@ Merged MR !24342, authored and merged by Guy Harris, simplifies interface-listin
 **Implementation rule:** periodically re-evaluate helper signatures after refactoring. A parameter is useful only when callers have a meaningful supported choice; dead configurability obscures invariants and makes maintenance harder.
 
 **Confidence:** Very high. Merged cleanup authored and merged by Guy Harris, with the simplification directly reflected in the accepted code.
+
+## Use the project's export mechanism as the source of truth for public dissector APIs
+
+When a dissector header exposes an API, do not duplicate that public/private decision in ad-hoc header lists if Wireshark's existing export annotations and tooling already derive the public surface. Keep the public header's dependencies as narrow as the declarations actually require rather than pulling in broad implementation headers.
+
+In merged MR !23934, Michael Mann adjusted a contribution that exported the DNS tap structure. He explicitly noted that `WS_DLL_PUBLIC` is enough for Wireshark's scripts to identify the header as public, so the header did not need to be manually added to a separate public-header list; he also removed an unnecessary `packet.h` include from the dissector header.
+
+**Implementation rule:** mark exported declarations through the established Wireshark export annotation/tooling path and avoid redundant public-header bookkeeping. Public dissector headers should include only the declarations needed to make their own API self-contained, not broad implementation headers by habit.
+
+**Confidence:** Very high. Direct maintainer correction by Michael Mann on a merged public-API change.
