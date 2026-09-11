@@ -53,3 +53,13 @@ Merged master MR !24740, authored by John Thacker and approved/merged by Anders 
 **Implementation rule:** when an input may span the entire signed type, never obtain its magnitude by negating it in that type. Restructure the calculation so each negated quantity is provably representable, or convert through a deliberately chosen unsigned/wider representation with well-defined semantics.
 
 **Confidence:** Extremely high. Merged OSS-Fuzz-found master fix authored by John Thacker and propagated to two maintained branches.
+
+## Do not use `FLT_MIN` as the most-negative floating-point sentinel
+
+The floating-point `*_MIN` constants are not analogous to integer `INT_MIN`: for ordinary IEEE-style floating types, `FLT_MIN` is the smallest positive normalized `float`, not the most-negative representable value. Initializing a running maximum to `FLT_MIN` therefore fails for a data set whose values are all negative. Use `-FLT_MAX` (or the language/library equivalent of `lowest()`) when a most-negative finite sentinel is required.
+
+Merged master MR !23220 fixes the stats-tree floating maximum accumulator from `FLT_MIN` to `-FLT_MAX`, specifically because statistics containing only negative values were otherwise reported incorrectly. The change was merged by John Thacker.
+
+**Implementation rule:** when initializing floating min/max accumulators, choose an extremum whose semantics match the direction of the reduction. Do not assume integer-style meanings for `FLT_MIN`, `DBL_MIN`, or their equivalents.
+
+**Confidence:** High. Direct merged correctness fix with an explicit explanation of the C floating-point constant semantics.
