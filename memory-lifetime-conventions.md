@@ -111,3 +111,17 @@ In merged MR !23708, John Thacker identified a QCDIAG helper that wrapped stack-
 **Implementation rule:** when constructing a real-data or derived tvbuff, give its backing bytes a lifetime at least as long as the tvbuff's packet-processing lifetime. Use `pinfo->pool`, an appropriate wmem scope, or an ownership-aware tvbuff API; never point a tvbuff at an automatic local array that disappears on function return.
 
 **Confidence:** Very high. Merged master change with direct, specific review from John Thacker explaining the lifetime contract.
+
+## Tear down state-owned helpers before resetting their owner
+
+Objects that are stored directly in a reusable interpreter, parser, or other state owner must be destroyed at that owner's reset/reinitialization boundary. A nearby broader lifecycle, such as end-of-packet cleanup, is not interchangeable when the owner can be reset first: references retained by the owner can become invalid before the later cleanup runs.
+
+Merged master MR !23294, authored and merged by John Thacker, fixes WSLua FuncSaver handling. Unlike neighboring outstanding allocations cleared with packet-oriented cleanup, FuncSavers are stored directly in the `lua_State`. They therefore must be freed before the Lua thread/state is reset, not deferred until the end of `packet_info`. The accepted implementation also uses `g_ptr_array_new_with_free_func()` so the container expresses element teardown directly.
+
+The MR notes that the code had already been performing an illegal access while tests happened to pass; garbage-collection and allocation details masked the bug until later changes increased memory use in each Lua state. That is a useful warning that allocator behavior or a stable test run cannot override the semantic lifetime contract.
+
+**Implementation rule:** identify the object that actually owns or retains each helper. If that owner can be reset, recycled, or reinitialized, release its dependent helpers before the reset and use container destroy callbacks or other ownership-aware mechanisms where practical. Do not postpone cleanup merely because another surrounding scope will eventually end.
+
+**Testing rule:** treat apparently harmless lifetime violations as real bugs even when current allocator/GC behavior masks them. Perturbations in allocation size, collection timing, or object layout can expose the invalid access later.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker with the ownership mismatch and previously masked illegal access documented explicitly.
