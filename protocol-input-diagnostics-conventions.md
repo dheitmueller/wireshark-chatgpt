@@ -61,3 +61,13 @@ Merged MR !25238 extends HI2Operations decoding for APN and ULI encodings emitte
 **Diagnostic rule:** compatibility decoding and standards validation are separate concerns. A dissector may recover and display a known nonstandard encoding, but should attach an appropriate expert indication rather than silently normalizing it into an apparently conforming packet.
 
 **Confidence:** Very high. Merged master compatibility change with explicit Anders Broman review and requested diagnostic added before merge.
+
+## Return parse/conversion failure details explicitly when callers need to classify malformed values
+
+A low-level decoder that can produce a useful value while also detecting invalid, overflow, or underflow conditions should expose that status through its API rather than turning packet-controlled failures into assertions or forcing callers to infer a process-global side channel. The protocol-facing caller can then map the result to expert information appropriate to its encoding context.
+
+Merged MR !24143 rewrote ASN.1 REAL conversion so illegal encodings and range conditions are reported with normal error status and expert items instead of `DISSECTOR_ASSERT`. During review Guy Harris specifically proposed changing `asn1_get_real()` so the errno-style result is returned through an output pointer; John Thacker adopted the API change and resolved the thread. The MR also accounts for platform differences in floating-point error reporting instead of assuming a single C-library behavior.
+
+**Implementation rule:** when a shared conversion helper needs to return both a decoded value and a diagnostic classification, make both parts explicit in the function contract. Keep packet-controlled malformed/range errors recoverable and let the dissector layer decide how to present them.
+
+**Confidence:** Extremely high. Merged master parser change by John Thacker with a concrete API-contract correction from Guy Harris incorporated before merge.
