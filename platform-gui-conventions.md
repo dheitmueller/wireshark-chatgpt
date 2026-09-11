@@ -62,6 +62,16 @@ Merged MRs !26260, !26262, !26265, !26270, and !26274 form a coherent cleanup au
 
 **Confidence:** Very high. Five merged master changes by John Thacker converge on the same event/lifecycle architecture and document concrete failures caused by ordering and duplicate notifications.
 
+## Prefer explicit Qt signal connections over name-based auto-connect slots
+
+For application code maintained in C++, connect widget signals explicitly in the owning class rather than depending on Qt Designer's `on_<object>_<signal>()` naming convention. Explicit `connect()` calls make the relationship visible to readers and tooling and are less fragile when widgets, object names, or slot names are refactored.
+
+Merged MR !23875, authored and merged by Roland Knall, replaces the auto-connect slot naming convention in `WelcomePagePreferencesFrame` with explicit constructor `connect()` calls. The MR cites Qt documentation recommending explicit connections and notes that they match patterns already used elsewhere in Wireshark.
+
+**Implementation rule:** when adding or modernizing Qt preference/UI classes, prefer explicit typed signal/slot connections. Do not rely on a magic slot name as the only expression of a behaviorally important connection.
+
+**Confidence:** High. Merged master GUI cleanup by an authoritative Wireshark Qt maintainer, aligned with upstream Qt guidance and existing project practice.
+
 
 ## Register transformed payload buffers used by selectable tree fields
 

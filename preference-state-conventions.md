@@ -13,3 +13,13 @@ Merged follow-up !25862 exposes an important extension of the rule: `rsaKeysFram
 **Implementation rule:** structure preference application as a staged transition: first determine the complete set of effects, including auxiliary preference panels; next quiesce/freeze any consumers that must not observe an intermediate state; then commit the mutations and perform the required redissection/reload. Avoid helpers that hide both effect discovery and externally visible mutation when ordering matters.
 
 **Confidence:** Very high. Merged master correctness fix, stable-branch propagation, and a merged follow-up correcting an omitted effect source.
+
+## Preserve the allocator and lifetime of persistent preference storage
+
+When preference storage is owned by a Wireshark memory scope, replacement code must use the same allocator family and lifetime. Do not free a `wmem`-owned pointer with GLib `g_free()` or replace it with a `g_`-allocated string merely because the value is exposed through a plain `char *`.
+
+Merged MR !23898, authored and merged by Michael Mann, fixes the Manage Interfaces cache after global preference strings moved to `wmem_epan_scope()`: the old code still called `g_free()` and `qstring_strdup()`, while the accepted fix uses `wmem_free(wmem_epan_scope(), ...)` and `wmem_strdup(wmem_epan_scope(), ...)`.
+
+**Implementation rule:** treat the allocator/scope as part of a preference value's ownership contract. When persistent preference memory changes allocator or scope, audit every mutation and replacement path—not just initial allocation—and keep free/duplicate operations paired with that owner.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by Michael Mann with the ownership mismatch stated directly in the MR.
