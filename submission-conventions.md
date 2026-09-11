@@ -73,3 +73,13 @@ Merged MR !25085 depended on !25084. The author initially called that out in a d
 **Submission rule:** use GitLab's dependency/blocking metadata for true MR prerequisites, in addition to any explanatory prose. This makes ordering machine-visible and prevents the relationship from being lost in discussion history.
 
 **Confidence:** Very high. Direct maintainer review guidance on two merged MRs, followed by use of the repository's dependency mechanism before merge.
+
+## Commit-message validators must honor Git's scissors boundary
+
+A commit-message checker that reads Git's editable message buffer must validate the message Git will actually commit, not temporary editor content that Git itself strips. In particular, `git commit -v` appends a diff below Git's scissors marker rather than representing that content as ordinary comment lines.
+
+Merged master MR !23374 updates Wireshark's commit-message validation tooling to recognize the `# -- >8 --` scissors boundary. The MR notes that everything below that line is removed from the eventual commit message, so validation should not treat the verbose diff as message text. Martin Nyhus authored the change and Jaap Keuter approved and merged it.
+
+**Submission/tooling rule:** validators operating on an editable commit-message file should mirror Git's semantic message extraction: honor the scissors boundary and ignore content Git will discard before creating the commit. Do not report style violations from a `commit -v` diff that cannot appear in the final commit message.
+
+**Confidence:** Very high. Merged master tooling correction accepted by Jaap Keuter, with the Git behavior and failure mode stated directly in the MR.
