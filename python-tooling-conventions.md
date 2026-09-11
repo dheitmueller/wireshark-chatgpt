@@ -21,3 +21,13 @@ Merged master MR !23460 fixes `tools/check_spelling.py` on Windows after spawned
 **Implementation rule:** when a Python checker uses `multiprocessing` or `ProcessPoolExecutor`, audit worker-visible module state under `spawn` semantics. Give referenced globals safe import-time definitions or initialize workers explicitly, and avoid relying on state that exists only because a forked child inherited the parent process image.
 
 **Confidence:** Very high. Merged Windows portability fix with direct maintainer review and a concrete platform-specific failure.
+
+## Keep repository-local tool configuration relocatable
+
+Developer setup tools that write repository-local configuration should avoid baking the checkout's current absolute location into settings when the underlying tool can express the relationship relative to the repository. Absolute paths make otherwise valid workspaces fragile when a checkout or containing workspace is moved.
+
+Merged master MR !23392 changes Wireshark's developer-environment setup to configure Git using relative paths so the workspace can be moved without invalidating the repository configuration. Jaap Keuter authored the change and John Thacker approved and merged it.
+
+**Implementation rule:** when project tooling configures hooks, helper paths, worktrees, or other repository-owned resources, prefer paths relative to a stable repository/configuration anchor whenever the consumer supports them. Use absolute paths only when the external interface genuinely requires them or when the target is intentionally outside the movable workspace.
+
+**Confidence:** Very high. Merged master developer-tooling fix approved and merged by John Thacker.
