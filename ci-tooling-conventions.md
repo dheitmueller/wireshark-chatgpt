@@ -81,3 +81,13 @@ Merged MR !25830, authored by Gerald Combs and approved and merged by John Thack
 **Implementation rule:** if CI temporarily consumes unreleased tooling directly from version control, pin it to an immutable commit or equivalently immutable artifact and centralize the reference so it can be audited and replaced when an appropriate packaged release appears. Do not replace a missing release with nondeterministic branch-tip installation.
 
 **Confidence:** Very high. Merged build-infrastructure change authored by Gerald Combs and approved/merged by John Thacker.
+
+## A repository checker that reports violations must also return failure
+
+A source checker used for pre-submit validation or CI has two outputs: diagnostics for humans and process status for automation. Printing an error without setting a failing exit status turns a real violation into a green check and makes the checker advisory even when the project intends it to be a gate.
+
+Merged master MR !23098, authored and merged by Martin Mathieson, fixes `check_common` because it was detecting source errors without failing. The same MR cleans up recent violations exposed once the failure path works again.
+
+**Implementation rule:** aggregate checker findings into the command's final status and return nonzero whenever a violation classified as an error was found. Test both halves of the contract: a bad fixture should emit the expected diagnostic **and** fail, while a clean fixture should return success.
+
+**Confidence:** High. Merged master checker correction by a long-time maintainer, with the broken failure semantics stated directly in the MR title and repaired alongside the newly surfaced errors.

@@ -39,3 +39,13 @@ Merged MRs !23427 and !23428, both authored and merged by John Thacker, illustra
 **Implementation rule:** when strengthening an internal API's preconditions, audit its wrappers and callers for intentionally broader contracts. Preserve supported nullable/sentinel behavior at the appropriate layer, and place assertions only at the layer where violating the precondition is necessarily a programming error.
 
 **Confidence:** Very high. Two adjacent merged maintainer-authored fixes explicitly separate the public/wrapper compatibility contract from the low-level primitive invariant.
+
+## Unsupported field/encoding combinations supplied by code are programmer bugs, not silent fallback cases
+
+When a core proto-tree/string API receives an encoding argument selected by the dissector implementation itself, an encoding that the API does not support is a programming-contract violation. Silently decoding it as a convenient default can hide a broken caller and produce plausible but incorrect output.
+
+Merged master MR !23106, authored and merged by John Thacker, changes unsupported `FT_STRINGZ` encoding combinations from silent ASCII treatment to `DISSECTOR_BUG` reporting. During review Martin Mathieson noted that `check_type_item_calls.py` could be taught to flag these combinations statically, aligning runtime contract enforcement with repository source checking.
+
+**Implementation rule:** distinguish packet-controlled malformed encodings from code-controlled API arguments. Packet data should be diagnosed as input; an impossible or unsupported encoding constant passed by dissector code should fail visibly as a programmer bug rather than being silently reinterpreted. When the invalid combination is mechanically recognizable, add it to the appropriate source checker as well.
+
+**Confidence:** Very high. Merged core-API change authored by John Thacker plus explicit maintainer discussion about adding static checker coverage.
