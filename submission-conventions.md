@@ -83,3 +83,13 @@ Merged master MR !23374 updates Wireshark's commit-message validation tooling to
 **Submission/tooling rule:** validators operating on an editable commit-message file should mirror Git's semantic message extraction: honor the scissors boundary and ignore content Git will discard before creating the commit. Do not report style violations from a `commit -v` diff that cannot appear in the final commit message.
 
 **Confidence:** Very high. Merged master tooling correction accepted by Jaap Keuter, with the Git behavior and failure mode stated directly in the MR.
+
+## Amend an existing MR when responding to review instead of replacing its review history
+
+Review discussion is part of the engineering record. Opening serial replacement MRs for revisions to the same proposed change can strand unresolved questions and make it difficult for reviewers to tell which concerns were addressed.
+
+The JSON dictionary-dissection work went through several early submissions, including closed !23008 and !23015, before merged !23053. In !23053, Michael Mann explicitly told the first-time contributor to keep the same MR when making changes so the review remains coherent and outstanding questions are not lost, and pointed to Wireshark's documented "amending a change" workflow. The implementation was eventually reworked into the existing JSON dissector and merged, but the review-process lesson is independent of that architectural outcome.
+
+**Submission rule:** when reviewer feedback asks for revisions to the same logical change, amend/force-push the topic branch backing the existing MR rather than closing it and opening another MR. If a genuinely distinct successor is necessary, explicitly carry forward unresolved review context and link the superseded MR so reviewers do not have to reconstruct the discussion.
+
+**Confidence:** Very high. Direct Michael Mann maintainer guidance during a first-contribution series whose final revision merged.
