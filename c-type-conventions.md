@@ -21,3 +21,13 @@ Merged MR !23925, authored and merged by John Thacker, fixes TRDP formatting tha
 **Implementation rule:** when formatting platform-dependent typedefs, either convert to a known-width/max-width C type and use its matching format specifier or use the project's semantic formatting helper. Never infer a printf format solely from how the typedef happens to be defined on the development platform.
 
 **Confidence:** Very high. Merged portability fix authored and merged by John Thacker.
+
+## Do not collapse status-code return values into booleans
+
+An API return value whose domain is an enum or status code is not a truth value merely because it is integer-valued in C. In particular, success is often represented by zero; assigning such a result directly to `bool` silently reverses the intended sense and also discards error distinctions that may matter to callers or future maintenance.
+
+Merged MR !23846 fixes BLF interface mapping after code stored the result of `wtap_block_get_string_option_value()` directly in a `bool`. `WTAP_OPTTYPE_SUCCESS` is zero, so a successful lookup became `false`. During review Guy Harris explicitly called out the status domain and suggested preserving the `wtap_opttype_return_val` result and testing it against `WTAP_OPTTYPE_SUCCESS`; the accepted change uses an explicit `== WTAP_OPTTYPE_SUCCESS` comparison where a boolean predicate is needed.
+
+**Implementation rule:** preserve enum/status returns in their declared semantic domain, or convert them to a predicate only with an explicit comparison to the named success/failure value. Never rely on generic C truthiness for an errno-style or enum-style status API unless that API explicitly defines boolean semantics.
+
+**Confidence:** Extremely high. Merged master correctness fix with direct Guy Harris review identifying the semantic error and the correct comparison model.
