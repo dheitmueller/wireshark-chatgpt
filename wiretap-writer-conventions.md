@@ -43,3 +43,15 @@ Merged MR !23455 adds the missing success check around BLF interface mapping. Gu
 **Implementation rule:** distinguish root-cause prevention from defensive containment. Repair the state/invariant bug, but retain inexpensive checks on fallible writer operations when they provide a defined error path for unexpected future violations.
 
 **Confidence:** Extremely high. Direct Guy Harris guidance on a merged wiretap crash fix, with the root-cause fix independently merged.
+
+## Declare required seeking before a writer is allowed to start
+
+A file format that must seek while finalizing output must advertise that requirement in its file-type metadata. The framework should reject incompatible destinations up front rather than letting a write progress until a later seek/tell operation fails.
+
+Merged MR !23045 fixes the BLF writer by setting `writing_must_seek` because BLF must seek back to update its file header with the final file size. Without that declaration, compressed output could begin successfully and fail only when the writer eventually attempted a seek or tell. Merged follow-up !23049 documents the contract explicitly: modules using `wtap_dump_file_seek()` should set `writing_must_seek`, and wiretap does not support seeking while writing compressed streams.
+
+Merged !23047 additionally checks the return from `wtap_dump_file_tell()` even though the corrected `writing_must_seek` invariant should make failure unlikely. That independently corroborates the defensive-result-check rule above.
+
+**Implementation rule:** if correct serialization requires random access, declare that requirement in the writer's file-type metadata and let wiretap reject unsupported/non-seekable destinations before output begins. Still check individual seek/tell operations for failure rather than treating the capability declaration as proof that every operation must succeed.
+
+**Confidence:** Very high. The capability fix and its documentation were merged master changes authored by John Thacker and accepted by maintainers.
