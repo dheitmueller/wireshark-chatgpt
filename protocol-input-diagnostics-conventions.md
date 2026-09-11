@@ -18,9 +18,11 @@ A packet can violate canonical ordering or encoding recommendations while remain
 
 Merged MR !17591 (`bt-dht: flag duplicate and unordered keys`) detects duplicate and noncanonical dictionary-key ordering in BitTorrent DHT bencoding but deliberately uses CHAT severity. The implementation notes that noncanonical messages occur in real traffic and are generally tolerated.
 
-**Diagnostic rule:** choose expert severity according to the likely operational consequence and diagnostic value. A safely decoded, commonly tolerated noncanonical form may merit CHAT/low-severity information even when it violates a canonical specification rule; reserve stronger severity for conditions that indicate malformed structure, likely interoperability failure, data loss, or unsafe parsing.
+Merged MR !24064 independently reinforces the same distinction in TCP reset analysis. Jaap Keuter pointed out during review that an actual TCP reset is warning-worthy, while the derived information describing which endpoint sent the first reset is informational and belongs at NOTE/CHAT severity. The accepted implementation was adjusted accordingly before merge.
 
-**Confidence:** High. Merged master implementation explicitly calibrates severity to observed real-world behavior.
+**Diagnostic rule:** choose expert severity according to the likely operational consequence and diagnostic value. A safely decoded, commonly tolerated noncanonical form or derived explanatory fact may merit CHAT/NOTE severity even when related to a warning-worthy event; reserve stronger severity for conditions that indicate malformed structure, likely interoperability failure, data loss, or unsafe parsing.
+
+**Confidence:** Very high. Independent merged evidence now covers both tolerated protocol nonconformance and derived troubleshooting metadata, including direct reviewer correction in !24064.
 
 ## Distinguish undecoded extension data from malformed structure
 
