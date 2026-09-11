@@ -101,3 +101,13 @@ Merged MR !24913, authored and merged by John Thacker, moves Export Objects post
 **Implementation rule:** identify the framework event that guarantees the last consumer has finished and attach cleanup there. Starting an asynchronous operation and subsequently returning from the initiating function is not a lifetime boundary; teardown belongs after completion notification unless the API explicitly guarantees synchronous execution.
 
 **Confidence:** Very high. Merged master lifecycle fix authored and merged by John Thacker and independently carried to supported release branches.
+
+## Backing storage for a derived tvbuff must live through packet processing
+
+A tvbuff may continue to expose its backing bytes after the dissector that created it has returned. The bytes can still be consumed by downstream dissection, tshark output, or the GUI packet-bytes view, so stack storage is not a valid backing store merely because the tvbuff is constructed and initially used inside one call frame.
+
+In merged MR !23708, John Thacker identified a QCDIAG helper that wrapped stack-allocated synthetic data in a tvbuff. His review explicitly notes that the real data cannot be declared on the stack and should be allocated from `pinfo->pool`, because the tvbuff's data must remain valid until frame processing is complete and can be used after the creating dissector returns. The accepted change moved the backing allocation into packet scope.
+
+**Implementation rule:** when constructing a real-data or derived tvbuff, give its backing bytes a lifetime at least as long as the tvbuff's packet-processing lifetime. Use `pinfo->pool`, an appropriate wmem scope, or an ownership-aware tvbuff API; never point a tvbuff at an automatic local array that disappears on function return.
+
+**Confidence:** Very high. Merged master change with direct, specific review from John Thacker explaining the lifetime contract.
