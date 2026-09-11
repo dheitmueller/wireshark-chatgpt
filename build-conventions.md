@@ -111,3 +111,13 @@ Merged MR !24941, authored and merged by John Thacker after maintainer discussio
 **Implementation rule:** use compiler diagnostics as executable checks for language/linkage invariants when available. For a global definition, either provide the declaration that makes its external contract explicit or give it internal linkage; scope warning exceptions narrowly to architecture-generated symbols that cannot satisfy the normal rule.
 
 **Confidence:** Very high. Merged master warning and cleanup series authored by John Thacker, with Guy Harris approval/merge of the cleanup and maintainer discussion supporting the compiler-based approach.
+
+## Centralize repeated configure choices in CMake presets
+
+When developers and CI repeatedly invoke CMake with the same generator and baseline options, encode that shared configuration in a version-controlled preset and have automation consume it. This makes the supported build shape explicit and avoids drift between duplicated command lines while still allowing jobs to add genuinely job-specific cache variables.
+
+Merged MR !23816, authored by Gerald Combs, introduces `CMakePresets.json` and changes GitLab CI jobs from repeated `-G Ninja -DENABLE_CCACHE=ON` spellings to `cmake --preset=ninja_ccache` plus each job's additional options. The MR merged after CI validation across the affected platforms.
+
+**Implementation rule:** use CMake presets for stable, reusable generator/cache configuration shared by multiple developer or CI entry points. Keep job-specific feature toggles at the invocation site rather than growing one monolithic preset for unrelated build variants.
+
+**Confidence:** Very high. Merged master build-system/CI change authored by Gerald Combs and approved/merged after cross-platform pipeline validation.
