@@ -14,6 +14,16 @@ Because `packet_info` is shared through nested dissector calls, the parent saves
 
 **Confidence:** Very high. Merged master dispatch/API cleanup authored and merged by John Thacker.
 
+## Decode-As dissectors must use the matched selector, not a hard-coded default port
+
+A dissector that can be selected through Decode As must distinguish the port or other selector that actually caused dispatch from the protocol's conventional/IANA default. Direction decisions, nested dispatch context, and save/restore logic based on the default value are wrong when the user deliberately binds the dissector to another port.
+
+Merged MR !23597 fixes SOCKS on the supported release branch by comparing the destination port with `pinfo->match_uint` rather than the fixed SOCKS port when determining direction, and by preserving/restoring the actual matched transport-port context around a nested dissector call. The accepted change was merged by Jaap Keuter and approved by Michael Mann.
+
+**Implementation rule:** when behavior depends on the selector through which a dissector was invoked, use the dispatch metadata (`pinfo->match_uint`, `match_string`, or the corresponding registration context), not the protocol's default constant. Preserve and restore the real caller context around nested calls.
+
+**Confidence:** High. Merged correctness backport with maintainer approval, and it directly reinforces the more general merged-master dispatch-metadata rule above.
+
 ## Use dissector tables for protocol-defined vendor extension namespaces
 
 When a protocol deliberately reserves a numeric namespace for manufacturer/vendor-specific payloads, a dissector table is the normal extensibility mechanism. This allows built-in dissectors and external Lua/native plugins to register independently without teaching the core dissector about every vendor.

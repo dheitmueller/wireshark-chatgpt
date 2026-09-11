@@ -15,3 +15,13 @@ Merged master MR !23639, authored and merged by Guy Harris, expands tshark's `WS
 **Review rule:** when adding exit codes, audit callers and comments for assumptions that every enum/member is externally observable as an OS exit status; internal control values and public exit codes should remain visibly distinct semantic domains.
 
 **Confidence:** Extremely high. The principal merged master change was authored and merged by Guy Harris, and the direction is independently corroborated by the merged invalid-filter exit-status fix family.
+
+## Treat output failure as a terminal processing result, not merely a stream flag checked later
+
+For command-line packet-processing tools, successful dissection and successful delivery of its output are different results. If `print_packet()` or the corresponding flush fails, propagate a distinct output-error state immediately and stop processing additional packets. Continuing to dissect after a broken pipe, full filesystem, or exceeded quota wastes work and can obscure the real failure.
+
+Merged master MR !23569, authored and merged by Guy Harris, replaces a boolean packet-processing result with an enum that distinguishes “passed filter”, “did not pass”, and “passed but printing failed”. It explicitly checks both packet printing and `fflush()` and terminates packet processing on the print-error result. Guy's accepted release-4.6 backport !23570 carries the same behavior.
+
+**Implementation rule:** make output-producing processing APIs capable of reporting output failure as a first-class result. Check the operation that can fail at the point it occurs, propagate that result through the processing loop, and stop work when the consumer or output medium can no longer accept data.
+
+**Confidence:** Extremely high. Merged master and supported-branch changes authored and merged by Guy Harris with explicit rationale for broken-pipe, ENOSPC, and quota failures.

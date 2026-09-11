@@ -11,3 +11,15 @@ Merged MR !23930, authored and merged by John Thacker, fixes K12 source-descript
 **Implementation rule:** structure capture writers around fallible operations. Perform all size/capacity validation before writes into fixed storage, and use iteration/control flow that can terminate on the first error rather than discarding or deferring I/O failures.
 
 **Confidence:** Very high. Merged master writer hardening authored and merged by John Thacker, with a concrete reproducer.
+
+## When outer record length absorbs alignment padding, prove payload framing remains unambiguous
+
+Some capture formats require alignment between container records while also recording a length that spans the final padding. Backpatching the previous record's outer length can be a valid way to meet that contract, but only when every affected record type has an independent way to determine where meaningful payload ends. Otherwise padding bytes can become indistinguishable from data.
+
+Merged master MR !23608 changes the BLF writer so closing a log container pads the last object/block to a 4-byte boundary and backpatches the stored object/block length. The change does not rely on alignment alone: the implementation was accompanied by an audit of writable BLF object layouts to establish that variable payloads carry their own lengths or have fixed extents. Validation exercised CAN, CAN FD, CAN XL, LIN, FlexRay, and Ethernet combinations at adverse offsets, round-tripped the files, checked Vector-tool interoperability, and benchmarked a 10-million-packet workload to ensure the writer-path change did not introduce meaningful overhead. Its supported-branch precursor !23657 independently confirms the accepted format fix.
+
+**Implementation rule:** if a writer makes an enclosing length include alignment bytes, first prove that readers can still identify the true payload boundary for every record type that can occupy that position. Test the worst alignment cases and heterogeneous record families, and use independent readers/tools or round trips when available.
+
+**Review rule:** do not accept “padding is harmless” as an assumption when the padding lies inside a recorded object length. Review both the container framing and the nested record's own length semantics.
+
+**Confidence:** Very high. Merged master format-correctness change with broad record-type validation and an accepted stable-branch counterpart.
