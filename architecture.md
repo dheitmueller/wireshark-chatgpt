@@ -15,6 +15,16 @@ When changing a subsystem, trace the real call path in the current source before
 - Prefer existing dissector tables when a protocol field names the encapsulated protocol. Merged !26218 dispatches GUE Variant 0 through `ip.proto`, preserving normal protocol registration and nested display rather than embedding a private protocol switch.
 - When nested protocol layers have more than one plausible session context, make that distinction explicit at the API boundary. Merged !25853 separates “current TLS session” from “parent/calling TLS session” and passes the resolved `SslDecryptSession *` into lower helpers rather than making generic `packet_info`-based helpers infer which nesting level the caller intended. Prefer typed, already-resolved context when the semantic choice matters.
 
+## Frontend-specific GUI behavior
+
+Shared GUI bases should implement behavior that is genuinely common to Wireshark and Stratoshark without repeatedly asking at runtime which application is executing them. Put application-specific behavior in frontend subclasses and expose initialization hooks late enough for normal virtual dispatch to reach those overrides.
+
+Merged MR !23006, authored and merged by Michael Mann, refactors the common I/O Graph dialog into a frontend-neutral base plus a Stratoshark-specific subclass. The base no longer branches on application identity; an explicit `initialize()` phase allows overridden frontend behavior to participate after construction. Merged !22994 applies the same architectural direction to the Welcome Page by creating a Stratoshark-specific page instead of making the common page query the current application.
+
+**Architecture rule:** when Wireshark and Stratoshark share a substantial widget/controller but differ in behavior, prefer a common base with frontend-specific specialization over scattered runtime application checks. If virtual behavior is needed during setup, separate construction from an explicit post-construction initialization phase rather than depending on virtual dispatch from a base constructor.
+
+**Confidence:** High. Repeated merged master refactors authored/merged by Michael Mann, with the separation goal stated directly in the MR descriptions.
+
 ## Stateful analysis and identity
 
 State/reassembly keys must model the protocol's actual identity tuple, not just whichever field is most obvious. MR !26223 fixed MCTP reassembly where a three-bit tag alone collided between request and response; the tag-owner bit is part of the identity and therefore belongs in the key. When adding stateful analysis, enumerate the complete protocol identity before choosing conversation/reassembly keys.
