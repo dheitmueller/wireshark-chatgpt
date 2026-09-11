@@ -19,3 +19,13 @@ Merged MR !24208 is strong maintainer evidence. Michael Mann explained that the 
 This does **not** mean ignoring legitimate analyzer findings. In the same batch, merged !24207 makes a straightforward cleanup for a real Coverity complaint where the surrounding call contract already guarantees a non-NULL context. The distinction is whether the warning exposes a real invariant/bug or merely misunderstands a valid established pattern.
 
 **Confidence:** High for the review principle. Direct maintainer rationale on a merged MR, with an adjacent merged analyzer cleanup illustrating the complementary case.
+
+## Treat compiler attributes as semantic contracts, not decorative annotations
+
+Attributes that tell the compiler about allocation, aliasing, ownership, or other behavior must match the complete semantics of the returned object. In particular, `G_GNUC_MALLOC` / GCC `__attribute__((malloc))` is inappropriate for a constructor whose returned object contains pointers to pre-existing objects such as its `wmem_allocator_t`: the compiler attribute promises non-aliasing properties that such an object does not satisfy. Incorrect annotations can therefore create optimizer-visible semantic lies rather than merely inaccurate documentation.
+
+Merged master MR !23728, authored and merged by John Thacker, removes `G_GNUC_MALLOC` from `wmem_array_new`, `wmem_list_new`, interval-tree constructors, and similar APIs that retain an allocator pointer, while leaving the annotation on functions that return newly allocated standalone memory/strings where the contract is valid. Accepted release backports !23730 and !23731 repeat the correction. The MR explicitly ties the decision to GCC's documented rule that `malloc`-like functions may not return storage containing pointers to existing objects.
+
+**Implementation rule:** before adding or preserving a compiler/analyzer attribute, verify the semantic guarantees the tool is entitled to infer from it. If an object retains or aliases existing state, do not claim a stronger allocation/non-aliasing contract merely because the top-level object itself is newly allocated.
+
+**Confidence:** High. Merged master maintainer-authored change with accepted stable backports and explicit compiler-contract rationale.
