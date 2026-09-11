@@ -10,6 +10,18 @@ When the user asks ChatGPT in any conversation to read, review, consult, or use 
 
 Updates should be selective rather than transcript-like. Preserve knowledge that will improve future Wireshark development: verified conventions, architectural understanding, authoritative maintainer guidance, useful exemplars, mistakes/pitfalls, testing practices, design decisions and their rationale, and current unfinished work. Correct or remove stale information when new evidence supersedes it.
 
+### VANC discovery and sample indexing
+
+Whenever reviewing or analyzing a capture file, regardless of capture/container/transport type, inspect any SMPTE ST 291/VANC packets encountered as part of the analysis.
+
+- If a VANC DID/SDID type is encountered for which Wireshark does **not** already have a corresponding payload dissector implemented in `packet-smpte-291-vanc.c`, explicitly bring that fact to Devin's attention. Treat this as a useful discovery even when the VANC payload is unrelated to the capture-review task that led to it.
+- Maintain `vanc-sample-index.md` as a cumulative index of **all VANC types encountered in capture files**, including types that already have Wireshark dissectors and types that do not.
+- For every VANC type, record its DID/SDID (or other authoritative identifying tuple where applicable), a human-readable type/standard name when known, whether `packet-smpte-291-vanc.c` currently has a dissector for it, and every capture filename in which that type has been observed.
+- When the same VANC type is found in another file, add the filename to the existing entry rather than creating a duplicate type entry. Do not discard older filenames.
+- Record the filename as actually available to the user; when useful and known, include a repository/path/source qualifier so similarly named captures can be distinguished.
+- Do not guess a semantic VANC type from an SDID alone when identification depends on the DID/SDID combination. If identification is uncertain, preserve the numeric identifiers and mark the type as unknown/unconfirmed rather than inventing a label.
+- Update the index opportunistically during ordinary capture analysis; Devin should not need to separately ask for the index to be maintained.
+
 ### Repository-operation authority
 
 The following are hard limits for all Wireshark work, regardless of available credentials, connectors, network access, or tool permissions:
@@ -95,6 +107,7 @@ The corpus is raw evidence; this notebook is the curated durable knowledge deriv
 - `architecture.md` — architectural notes and subsystem relationships.
 - `dissector-conventions.md` — idioms, API usage, naming, registration, tree construction, and common review expectations.
 - `media-over-ip.md` — SMPTE/RTP/media-specific notes, including ST 2110, ST 2038, and ANC work.
+- `vanc-sample-index.md` — cumulative index of VANC types observed in captures and the filenames containing them.
 - `testing-fuzzing.md` — build, validation, fuzzing, and test practices.
 - `review-patterns.md` — conventions learned from upstream merge request reviews.
 - `personal-review-feedback.md` — cumulative feedback from Devin's own upstream MRs, expressed as future pre-submission checks.
