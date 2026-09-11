@@ -28,9 +28,11 @@ When a dissector header exposes an API, do not duplicate that public/private dec
 
 In merged MR !23934, Michael Mann adjusted a contribution that exported the DNS tap structure. He explicitly noted that `WS_DLL_PUBLIC` is enough for Wireshark's scripts to identify the header as public, so the header did not need to be manually added to a separate public-header list; he also removed an unnecessary `packet.h` include from the dissector header.
 
-**Implementation rule:** mark exported declarations through the established Wireshark export annotation/tooling path and avoid redundant public-header bookkeeping. Public dissector headers should include only the declarations needed to make their own API self-contained, not broad implementation headers by habit.
+Merged MR !23121, authored by Jaap Keuter and approved/merged by John Thacker, provides complementary evidence for common headers: `epan/packet.h` stopped including all of `wiretap/wtap_opttypes.h` when most consumers only needed the opaque Wireshark-owned `wtap_block_t` handle. It uses an incomplete `wtap_block` type at that boundary, leaving sources that actually need the structure definition to include the defining Wiretap header themselves. This does not override the separate rule for dependency-owned public typedefs: external-library types must come from the dependency's authoritative header rather than being locally reconstructed.
 
-**Confidence:** Very high. Direct maintainer correction by Michael Mann on a merged public-API change.
+**Implementation rule:** mark exported declarations through the established Wireshark export annotation/tooling path and avoid redundant public-header bookkeeping. Public and widely included headers should carry only the type definitions and includes required by their declarations; for Wireshark-owned opaque handles, an incomplete type can avoid forcing unrelated implementation dependencies on every consumer. For external-library types, use the authoritative dependency header instead of recreating its typedef.
+
+**Confidence:** Very high. Direct maintainer correction by Michael Mann on a merged public-API change, independently reinforced by a merged header-dependency cleanup approved by John Thacker.
 
 ## Public C headers that support C++ must avoid C++-reserved identifiers
 
