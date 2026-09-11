@@ -51,3 +51,13 @@ Merged MR !25834 fixes the 3GPP 32.423 nettrace reader after second-pass reads i
 **Implementation rule:** when record interpretation depends on metadata encountered earlier in a sequential file scan, persist the resolved per-record context under a stable record identity such as file offset or record key. Random-access/second-pass reads must restore that context explicitly; do not rely on traversal order or whatever session state a previous read happened to leave behind.
 
 **Confidence:** Very high. Merged master wiretap correctness fix with the first-pass/second-pass failure mode and restoration strategy documented directly in the MR.
+
+## Do not gate reassembly or persistent dissection state on `proto_tree` availability
+
+The protocol tree is presentation state, not an indication that protocol analysis may safely be skipped. Wireshark can dissect without constructing a tree, and first-pass state created in that mode can be required later for redissection, columns, Follow Stream, or dependent frames.
+
+Merged MR !23844, authored by John Thacker, fixes Fibre Channel reassembly that was conditioned on `tree != NULL`. When the first pass ran without a tree, the reassembly table was never populated; later tree-building redissection therefore could not recover the reassembled payload correctly. The accepted fix removes the tree condition while leaving tree-item creation naturally conditional through the normal APIs.
+
+**Implementation rule:** run stateful protocol analysis and reassembly whenever the packet semantics require it, regardless of whether a `proto_tree` is being built. Restrict `tree` checks to presentation work that truly requires tree nodes; do not use them to suppress state transitions whose results must survive into later passes.
+
+**Confidence:** Extremely high. Merged master correctness fix authored by John Thacker, with the tree-less first-pass/redissection failure mode directly documented.
