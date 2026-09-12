@@ -41,3 +41,13 @@ Merged MR !22758 initially proposed hidden fields for each NATS operation so use
 **Implementation rule:** use hidden fields only when there is a real need for information to be filterable but not visible. If the field names a meaningful structural event, operation, message type, or other protocol concept, model that concept in the visible tree—often with `FT_NONE` when presence itself is the value—and let filtering follow from that representation.
 
 **Confidence:** Very high. Direct design objection and replacement architecture from John Thacker on a merged master MR, followed by an updated sample capture/tree presentation and explicit approval.
+
+## Do not use text-only, unfilterable tree helpers in dissectors
+
+Dissector output should normally be represented by registered, filterable protocol fields, real subtrees, or expert information. `proto_tree_add_text_internal()` is retained for a small number of internal epan uses, but it is not a dissector API: it creates text that has no registered field and therefore cannot participate in display filtering.
+
+Merged master MR !22642, authored by Michael Mann and merged after review by John Thacker and approval by Anders Broman, removes the remaining dissector uses of `proto_tree_add_text_internal()`. The replacements illustrate the intended choices: use `proto_tree_add_subtree()` for structural presentation, registered `hf_` fields for protocol data, and expert fields for diagnostic/status text such as an absent parameter condition.
+
+**Implementation rule:** do not reach for an unfilterable free-form text item when writing a dissector. Model packet concepts using registered fields/subtrees; model noteworthy parser or protocol conditions using expert information. Free-form internal tree helpers are not a shortcut around protocol-field design.
+
+**Confidence:** Very high. Explicit API-boundary statement in a merged master MR from Michael Mann, with direct maintainer review and a multi-dissector cleanup implementing the rule.
