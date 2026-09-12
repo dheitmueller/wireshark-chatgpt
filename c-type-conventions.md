@@ -41,3 +41,13 @@ Merged MR !22877, authored and merged by John Thacker, fixes `rawshark` memory-l
 **Implementation rule:** when a platform typedef has implementation-defined width, determine behavior from the typedef's actual size/contract and convert through a correctly typed temporary. Do not populate it by casting its address to an unrelated fixed-width pointer merely because that matches the typedef on the development machine; normal assignment preserves representation, aliasing, alignment, and byte-order correctness.
 
 **Confidence:** Very high. Merged master portability correction authored and merged by John Thacker, with both the standards contract and big-endian failure mode documented in the MR.
+
+## Match preference backing storage to the preference API contract, not an enum's implementation-defined representation
+
+In C17, an enum's compatible integer type and therefore its signedness are implementation-defined. That makes an enum declaration a poor basis for deciding the pointee type handed to an API whose contract explicitly expects `int *` or another fixed scalar type.
+
+Merged master MR !22453, authored by John Thacker and merged by Michael Mann, fixes ASTERIX enum preferences whose backing variables and structure members used `unsigned` even though Wireshark's enum-preference registration stores values through `int *`. John notes that the preference values fit in `int`, so the well-defined representation is to use `int` for the backing variables and pointers and perform an explicit value conversion only where an unsigned comparison is actually required.
+
+**Implementation rule:** make callback/preference/API backing storage exactly match the API's declared pointer type. Do not try to mirror an enum's presumed signedness in storage passed through that API; under C17 the enum's representation is not a portable storage contract. Convert at semantic use sites when domains differ rather than passing an incompatible pointer or depending on implementation-defined enum representation.
+
+**Confidence:** Very high. Merged master portability/type-correctness change authored by John Thacker and merged by Michael Mann.
