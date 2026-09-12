@@ -43,3 +43,13 @@ Merged MR !23452, authored by John Thacker, fixes `wiretap/pcapng_module.h` afte
 **Implementation rule:** review public/header-visible names against every language the header claims to support, not only the language used to build Wireshark itself. In C headers intended for C++ inclusion, avoid C++ keywords and other C++-reserved identifiers in fields, callbacks, parameters, macros, and exported declarations.
 
 **Confidence:** Very high. Merged public-header compatibility fix authored by John Thacker, with direct Guy Harris naming review.
+
+## Encode subsystem API restrictions in automated checks when possible
+
+If a low-level library API is technically available but using it directly would violate a Wireshark architectural or security policy, do not rely only on reviewer memory. Put the restriction into the project's static API-checking machinery so new call sites fail review or CI close to the point where they are introduced.
+
+Merged master MR !21953, authored by Gerald Combs and approved/merged by John Thacker, adds `gnutls_init` to `tools/checkAPIs.pl` with the explicit policy that Wireshark configures and uses GnuTLS session APIs for dissection only. The accepted change converts that architectural usage rule into an automatically enforced prohibited-API rule.
+
+**Implementation rule:** when Wireshark has a project-wide wrapper, ownership boundary, or intentionally restricted use of a third-party API, prefer enforcing the forbidden raw entry points through `checkAPIs.pl` or equivalent tooling. Keep the nearby comment specific enough to explain the policy, not merely that the function is forbidden.
+
+**Confidence:** Very high. Merged master policy/tooling change authored by Gerald Combs and approved/merged by John Thacker.
