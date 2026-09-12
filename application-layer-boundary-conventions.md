@@ -33,3 +33,13 @@ Merged master MR !22636, authored and merged by Michael Mann, moves knowledge of
 **Architecture rule:** separate registration mechanism from registration policy. Generic epan/proto initialization may invoke application-supplied callbacks, but product-specific knowledge of which protocol sets to load should remain above the reusable dissection engine.
 
 **Confidence:** Very high. Merged master architectural refactor authored and merged by Michael Mann with the layering objective stated explicitly in the MR.
+
+## Do not use packet-analysis taps merely as application lifecycle callbacks
+
+A facility should be registered according to what it semantically is, not because an unrelated framework happens to provide a convenient callback at the desired time. UI/backend initialization belongs under application or frontend lifecycle control rather than being disguised as packet-analysis tap registration.
+
+Merged master MR !22330, authored by Michael Mann, moves funnel operations outside the tap mechanism so applications explicitly control funnel-menu initialization. The adjacent merged !22333 reinforces the same boundary for CLI applications: funnel operations are application facilities, not packet taps. A competing ordering-only fix in !22329 was also merged, but !22330 is the more durable architectural direction because it removes the semantic mismatch rather than relying only on registration timing.
+
+**Architecture rule:** use tap registration for packet-analysis listener semantics. When code only needs application initialization, menu/backend setup, or another lifecycle callback, expose and call an application-owned initialization mechanism instead of enrolling it as a tap solely for callback timing.
+
+**Confidence:** Very high. The architectural refactor and follow-up are merged master changes authored by Michael Mann and explicitly describe funnel operations as not being taps.
