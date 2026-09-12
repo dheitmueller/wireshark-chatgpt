@@ -31,3 +31,13 @@ Merged MR !24251 fixes a Bluetooth HID regression in which the one-byte header c
 **Implementation rule:** if later logic needs the original storage unit, fetch it explicitly as raw data or through an unmasked representation. If it needs multiple semantic bitfields, extract each according to its own field definition. Do not reuse the value returned for one masked `hf_` field as source material for another.
 
 **Confidence:** Very high. Merged correctness fix with direct review from Martin Mathieson addressing the exact masking mistake.
+
+## Prefer meaningful visible tree items over hidden fields created only for filtering
+
+When a protocol concept is useful enough to deserve a display filter, first ask whether that concept should also be represented naturally in the protocol tree. Do not create hidden `hf_` fields solely as filter hooks when a real packet concept can be modeled as a visible item or subtree without cluttering the dissection.
+
+Merged MR !22758 initially proposed hidden fields for each NATS operation so users could filter on operations such as `nats.pub` and `nats.msg`. John Thacker explicitly rejected the hidden-field approach and suggested representing each operation as an `FT_NONE` item/subtree beneath one NATS protocol item. The contributor reworked the MR accordingly, attached a sample capture, showed before/after tree presentation, fixed a payload-length issue discovered during the revision, and John approved the resulting implementation. The final diff adds operation-specific `hf_` items at the actual operation PDU ranges and uses them as the operation subtrees rather than invisible filter-only markers.
+
+**Implementation rule:** use hidden fields only when there is a real need for information to be filterable but not visible. If the field names a meaningful structural event, operation, message type, or other protocol concept, model that concept in the visible tree—often with `FT_NONE` when presence itself is the value—and let filtering follow from that representation.
+
+**Confidence:** Very high. Direct design objection and replacement architecture from John Thacker on a merged master MR, followed by an updated sample capture/tree presentation and explicit approval.
