@@ -53,3 +53,15 @@ Merged master MR !22245, authored and merged by Michael Mann, extends the generi
 **Architecture rule:** protocol-specific behavior may plug into generic UI or scripting facilities, but generic frontends should depend on generic interfaces rather than concrete dissector implementations. Prefer callbacks, registries, or localized adapters over upward or sideways dependencies that make UI/extension infrastructure explicitly link to one protocol.
 
 **Confidence:** Very high. Two adjacent merged master dependency-cleanup refactors authored and merged by Michael Mann; the separate illustrative no-dissector build provides weaker corroborating intent.
+
+## Keep protocol-specific shared code with dissectors, not in generic epan
+
+Code or generated data shared by several dissectors is not automatically generic dissection-engine infrastructure. If its semantics are specific to one protocol family, it should live with the dissectors rather than turning `epan/` into a catch-all shared-code directory.
+
+In merged MR !22141, Michael Mann explicitly asked that MIDI SysEx shared generated data follow the `packet-bluetooth-data.c` pattern and stay under `epan/dissectors/`. He stated the architectural objective of isolating `epan/` as the generic dissection engine and the dissector directory as a separate protocol-specific library boundary. The final MR also simplified the generated-file layout after moving the data into the dissector directory.
+
+The adjacent merged application-flavor refactors !22165, !22175, !22177, !22183, and !22188 strongly corroborate the same dependency direction: `wsutil`, Wiretap, epan internals, preferences, and dissectors should not reach upward into application-specific policy; that policy is pushed toward explicit application/epan boundaries instead.
+
+**Architecture rule:** decide placement by semantic ownership, not merely by reuse count. Shared protocol-specific tables, helpers, and generated data belong with dissectors; reserve `epan/` for facilities that are genuinely part of the generic dissection engine. Likewise, generic lower libraries should receive application-specific policy through explicit interfaces rather than directly calling application-flavor APIs.
+
+**Confidence:** Very high. The placement rule comes from explicit Michael Mann review on a merged MR and is reinforced by a sequence of merged layering refactors from the same maintainer.
