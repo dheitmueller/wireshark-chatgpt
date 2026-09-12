@@ -31,3 +31,13 @@ Merged MR !22579 replaces hand-maintained ASN.1/public-header lists with generat
 **Implementation rule:** automate public-header inventory from authoritative source markers, but do not equate "contains an exported function" with "is the entire public API." Provide an explicit source-level declaration for intentionally public structure/tap/plugin headers and treat changes to the installed set as API-compatibility changes.
 
 **Confidence:** Very high. Merged master build/tooling change by Gerald Combs with substantive maintainer discussion about third-party plugin compatibility and final merge by John Thacker.
+
+## Give extension modules a dedicated public API header instead of exposing internal implementation headers
+
+An extension or plugin should include a header that intentionally defines the supported module interface, not an internal header merely because that internal header currently contains the declarations it needs. Internal implementation headers accumulate private state and helpers over time; making plugins depend on them unintentionally turns those internals into a compatibility surface and weakens layering.
+
+Merged master MR !22129, authored and merged by Guy Harris, creates `wiretap/wtap_module.h` for the API needed by built-in and third-party Wiretap file-format modules and moves those declarations out of `wtap-int.h`. The change deliberately keeps Wireshark-only Wiretap internals private while providing module authors the declarations they actually need. Merged !22124 independently exposed why this matters in practice: a third-party pcapng plugin needed the public module/header dependency chain to be complete without reaching back into internal headers.
+
+**Implementation rule:** when external or separately built modules need a subsystem interface, define that interface in a dedicated public header whose contents are intentionally supported for module use. Keep private state, internal helpers, and application-only interfaces in internal headers, and validate the public header through a real external/plugin build where practical.
+
+**Confidence:** Extremely high. The principal master refactor was authored and merged by Guy Harris specifically to establish a public Wiretap-module interface, with a nearby merged third-party-plugin fix corroborating the boundary.
