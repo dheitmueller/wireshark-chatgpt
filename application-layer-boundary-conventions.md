@@ -75,3 +75,13 @@ Merged master MRs !22081 and !22082, authored by Michael Mann, move Stratoshark-
 **Architecture rule:** make ownership visible in APIs. Product-specific behavior belongs in the owning application/subclass, while reusable code should receive only the application identity, options object, or operation context it needs through parameters or narrowly defined interfaces. Avoid application-flavor probes and mutable process globals as implicit dependency injection.
 
 **Confidence:** Very high. A cluster of merged master refactors authored by Michael Mann all move hidden application/global context toward explicit ownership and parameter flow.
+
+## Prefer link-time composition when application behavior is a whole implementation choice
+
+When Wireshark and Stratoshark need different implementations of the same application-level facility, the distinction does not necessarily need to remain a runtime enum or `is_wireshark` / `is_stratoshark` branch. If each executable can select a complete implementation module, linking the appropriate module makes the dependency graph itself express the product choice and keeps lower shared libraries free of product tests.
+
+Merged master MR !21941, authored and merged by Michael Mann, pulls the former `application flavor` implementation into separate application libraries for packet-oriented Wireshark and event-oriented Stratoshark. The MR's stated goal is that applications link the module they support rather than explicitly setting behavior, and its follow-up discussion describes continuing to bubble product checks up toward the UI/application layer. Guy Harris specifically reviewed whether command-line applications such as `tshark`, `strato`, and `tfshark` also consume the new abstraction, reinforcing that the composition boundary must cover every executable that depends on the facility rather than only the Qt frontends.
+
+**Architecture rule:** where product identity selects an implementation rather than a small data value, consider module/library composition instead of runtime flavor checks. Make each executable link the implementation it owns, and audit GUI and command-line consumers together so the abstraction does not leave hidden product-specific branches in shared code.
+
+**Confidence:** Very high. Merged master architectural refactor authored and merged by Michael Mann, with direct architecture-focused review from Guy Harris.
