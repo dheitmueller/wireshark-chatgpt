@@ -21,3 +21,13 @@ Merged release-branch MRs !24311 and !24314, authored and merged by John Thacker
 **Implementation rule:** do not directly add to or subtract from `pinfo->dissection_depth`. Express the semantic number of recursion levels through the checked depth helpers, and keep increments/decrements exactly paired across every return path.
 
 **Confidence:** Very high. Merged safety API and generated-code corrections authored and merged by John Thacker on two maintained branches.
+
+## Suppress recursion warnings only after proving monotonic parser progress
+
+Recursive parsing is not safe merely because normal captures happen to terminate. If the recursive call is driven by packet-controlled offsets or lengths, malformed input must be unable to make the parser recurse without consuming input, move backward, or wrap an offset back into an earlier region.
+
+Merged MR !22414 underwent extended review before merge. In response to clang-tidy's `misc-no-recursion` warning, John Thacker explained that a local suppression can be reasonable only after showing that every recursive step advances the packet offset and that arithmetic cannot overflow, wrap, or otherwise leave the parser at the same position under fuzzed or malformed input. The warning is useful precisely because it forces that termination argument to be made rather than assuming recursion is harmless.
+
+**Implementation rule:** before suppressing a recursion diagnostic in a packet parser, establish a monotonic progress invariant for all input-controlled paths: each recursive descent must consume a positive bounded amount or move to a strictly later position, and the coordinate arithmetic must not overflow/wrap. If that proof is awkward, add an explicit depth/work bound or restructure the parser iteratively rather than silencing the warning.
+
+**Confidence:** Very high. Direct John Thacker review on a substantial MR that ultimately merged after prolonged review and revision.
