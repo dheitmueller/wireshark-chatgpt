@@ -31,3 +31,13 @@ Merged MR !22158 fixes VLAN depth tracking by restoring the prior VLAN protocol 
 **Architecture rule:** temporary nesting/depth state is stack-like. The dissector that changes it owns restoring it at the matching exit point; sibling or container dissectors should not need protocol-specific resets to compensate for leaked state.
 
 **Confidence:** Very high. Merged master fix authored by John Thacker and approved/merged by Jaap Keuter.
+
+## Match conversation state lifetime to the protocol's logical session, not just its endpoint tuple
+
+A transport endpoint tuple can be reused for multiple independent protocol transactions. Conversation lookup by addresses and ports alone is therefore unsafe when the attached state object models exactly one transfer or session; reusing that conversation can make a later transaction inherit stale state, especially on redissection.
+
+Merged MR !21803, authored by John Thacker and carried to release-4.6, fixes TFTP handling by creating a fresh conversation for every RRQ/WRQ, which is the protocol-defined beginning of a transfer. The MR explains that `tftp_conv_info_t` represents one transfer and cannot simply be reused when ports are reused later in the capture. It also notes the alternative architecture: retain a broader endpoint conversation only if it owns a keyed collection of per-transfer state objects.
+
+**Architecture rule:** identify the lifetime and identity of the state object, not merely the broadest conversation that can find the packet. If one endpoint tuple can carry successive logical sessions, create new state at the protocol's session-start event or key multiple session records beneath the broader conversation. Never let port/address reuse implicitly extend single-session state into a later transaction.
+
+**Confidence:** Very high. Merged John Thacker correctness fix with the state-lifetime mismatch described explicitly and accepted on a stable branch.

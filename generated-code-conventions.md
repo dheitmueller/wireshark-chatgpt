@@ -21,3 +21,13 @@ Merged master MRs !21852 and !21858 move SGP22 type/export information toward th
 **Implementation rule:** if the generator has enough information to produce export tables, type metadata, or equivalent derivative configuration, teach the generator/build workflow to produce it rather than keeping a parallel hand-edited representation. Treat the authoritative specification plus generator as the source of truth.
 
 **Confidence:** Very high. Multiple merged master generator cleanups, reinforced by explicit generated-code maintenance guidance from Michael Mann.
+
+## Preserve command-line option semantics while changing generator defaults
+
+Making a generator behavior the default is not the same as reversing the meaning of the option that previously enabled it. Existing build scripts and contributor workflows can continue to pass the old option; silently making that spelling mean the opposite behavior creates a compatibility trap even if the new default itself is desirable.
+
+Merged MR !21811 enables ASN.1 constraint checking by default in the Wireshark generator workflow. In follow-up discussion, John Thacker objected to flipping the historical meaning of `-C`: his preferred compatibility model was for `-C` to remain an enable/no-op once constraints are the default, with a separate way to disable them if needed. Stig Bjørlykke explained that the intended end state was to remove the transitional option entirely once the remaining dissectors were fixed rather than preserve an inverted meaning.
+
+**Implementation rule:** when promoting an optional generator feature to the default, keep existing enable-option semantics compatible during migration. Prefer an explicit inverse option for temporary opt-out, or remove the obsolete enable option once migration is complete; do not reuse the old spelling to mean the opposite operation. Also audit helper symbol visibility and generated-call surfaces when a formerly optional generation path becomes universal.
+
+**Confidence:** High. The default-on constraint-checking change merged, and the compatibility concern comes from explicit post-merge John Thacker review with a stated migration direction from Stig Bjørlykke.

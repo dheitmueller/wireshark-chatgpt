@@ -125,3 +125,13 @@ The MR notes that the code had already been performing an illegal access while t
 **Testing rule:** treat apparently harmless lifetime violations as real bugs even when current allocator/GC behavior masks them. Perturbations in allocation size, collection timing, or object layout can expose the invalid access later.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker with the ownership mismatch and previously masked illegal access documented explicitly.
+
+## References stored in packet-owned state must have packet-compatible lifetimes
+
+Putting a pointer into a `packet_info`-owned aggregate does not extend the lifetime of the pointed-to object. Protocol-private objects can be allocated from a shorter or independently reset scope, so retaining their embedded addresses in `pinfo` can leave dangling references later in packet processing or redissection.
+
+Merged master MR !21805, authored and merged by John Thacker, fixes BPv7 conversation elements that pointed at URI addresses owned by Bundle protocol state with a shorter lifetime. The accepted code instead uses `pinfo->src` and `pinfo->dst`, which have already been copied into `pinfo->pool`. Release-4.6 backport !21807 preserves the same fix.
+
+**Implementation rule:** when packet-owned structures retain references, ensure the referenced storage lives at least as long as the packet-owned structure. Prefer canonical copies already resident in `pinfo->pool` rather than retaining pointers into protocol-private state whose allocator or reset boundary is shorter.
+
+**Confidence:** Very high. Merged master lifetime fix authored and merged by John Thacker and carried to a supported release branch.
