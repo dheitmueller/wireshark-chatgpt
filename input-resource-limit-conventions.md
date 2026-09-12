@@ -21,3 +21,13 @@ Merged master MR !22640, authored by John Thacker and approved/merged by Michael
 **Implementation rule:** carry representation limits into the lowest decoder that consumes the variable-length encoding, and stop/reject once that limit is exceeded. Do not rely on later narrowing, range checks, or the outer buffer length to compensate for accepting an overlong representation.
 
 **Confidence:** Very high. Merged OSS-Fuzz-driven master fix authored by John Thacker with the broken helper contract stated explicitly.
+
+## Bound decompressed output independently of recursion depth or container count
+
+Removing an implementation bottleneck does not remove the need for a resource ceiling. A parser can be made iterative instead of recursive, or a container lookup can be made logarithmic instead of linear, while still allowing hostile input to request an unreasonable amount of output memory or decompression work.
+
+Merged master MR !22325, authored by John Thacker, caps HTTP/3 decoded header output at 1 MiB and reports an expert diagnostic when the limit is exceeded. The adjacent merged master MR !22310 improves composite TVBuff scalability by replacing linear child lookup with a `GSequence` and making composite copying iterative, but its description explicitly notes that a separate total-byte limit can still be necessary for compression-bomb inputs.
+
+**Implementation rule:** distinguish structural scalability from resource policy. Optimizing lookup complexity or eliminating recursive stack growth is useful, but parsers of compressed or expansion-capable input should also impose a defensible bound on total produced bytes or equivalent aggregate work.
+
+**Confidence:** Very high. Both are merged master changes authored by John Thacker, and the distinction between implementation scalability and a hostile-input byte ceiling is explicit in the MR descriptions.
