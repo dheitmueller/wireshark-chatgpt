@@ -23,3 +23,13 @@ Merged MR !22943, authored by Michael Mann, approved and merged by Guy Harris, c
 **Architecture rule:** maintain dependency direction from higher subsystems toward reusable lower layers. If a lower layer needs a small shared semantic domain such as generic file errors, define that domain at the lower/shared layer and translate at subsystem boundaries rather than importing a higher-layer header.
 
 **Confidence:** Very high. Merged master layering cleanup explicitly approved and merged by Guy Harris.
+
+## Let the application choose which protocol registration sets are installed
+
+The dissection engine should provide mechanisms for registering protocols, but the choice of which registration groups belong to a particular executable is application policy. Keeping the protocol-registration inventory in a generic lower layer makes it harder for Wireshark, Stratoshark, and future frontends to compose different dissector sets without teaching the engine about each product.
+
+Merged master MR !22636, authored and merged by Michael Mann, moves knowledge of the registration functions to the application layer. Applications supply registration and handoff callbacks to `epan_init()`, which passes them into `proto_init()` as part of generic engine initialization. This follows the same direction as the later application-layer path/version work: the generic engine executes registration, while the application decides what should be registered.
+
+**Architecture rule:** separate registration mechanism from registration policy. Generic epan/proto initialization may invoke application-supplied callbacks, but product-specific knowledge of which protocol sets to load should remain above the reusable dissection engine.
+
+**Confidence:** Very high. Merged master architectural refactor authored and merged by Michael Mann with the layering objective stated explicitly in the MR.
