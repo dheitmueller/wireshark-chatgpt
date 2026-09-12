@@ -51,3 +51,13 @@ Merged master MR !22642, authored by Michael Mann and merged after review by Joh
 **Implementation rule:** do not reach for an unfilterable free-form text item when writing a dissector. Model packet concepts using registered fields/subtrees; model noteworthy parser or protocol conditions using expert information. Free-form internal tree helpers are not a shortcut around protocol-field design.
 
 **Confidence:** Very high. Explicit API-boundary statement in a merged master MR from Michael Mann, with direct maintainer review and a multi-dissector cleanup implementing the rule.
+
+## Distinct filter semantics require distinct protocol fields
+
+Do not reuse one `hf_` field merely because two values share a numeric representation or are related internally. A display-filter field is a user-visible semantic identity: reusing it across conceptually different contexts makes a filter for one concept unexpectedly match the other.
+
+Merged master MR !21856, authored by John Thacker and merged by Michael Mann, splits MEGACO Context into separate fields for the packet's actual Context and a generated related-call-leg Context. The MR explicitly explains that users may want to filter frames for one use case without also matching the other, even though both values represent context identifiers.
+
+**Implementation rule:** define separate `hf_` entries when two occurrences have different filtering meaning, provenance, or user intent, even if they share type and values. A generated correlation/helper field should not silently broaden the semantics of the field representing the value actually carried by that protocol location.
+
+**Confidence:** Very high. Merged master semantic-field correction authored by John Thacker and merged by Michael Mann, with the display-filter consequence stated explicitly.
