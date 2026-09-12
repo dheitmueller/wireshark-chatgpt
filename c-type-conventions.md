@@ -31,3 +31,13 @@ Merged MR !23846 fixes BLF interface mapping after code stored the result of `wt
 **Implementation rule:** preserve enum/status returns in their declared semantic domain, or convert them to a predicate only with an explicit comparison to the named success/failure value. Never rely on generic C truthiness for an errno-style or enum-style status API unless that API explicitly defines boolean semantics.
 
 **Confidence:** Extremely high. Merged master correctness fix with direct Guy Harris review identifying the semantic error and the correct comparison model.
+
+## Size platform typedefs from the typedef itself; do not type-pun through an assumed width
+
+A standards-defined typedef can specify a semantic category without fixing its storage width. Writing through a pointer cast to a guessed fixed-width integer is therefore not a portable way to populate such an object: on a wider implementation it may write only part of the object, and which part is overwritten becomes byte-order dependent.
+
+Merged MR !22877, authored and merged by John Thacker, fixes `rawshark` memory-limit handling for `rlim_t`. POSIX requires `rlim_t` to be an unsigned integer type but does not require it to be 32 bits; many 32-bit systems nevertheless use a 64-bit `rlim_t`. The old code cast `&limit.rlim_cur` and `&limit.rlim_max` to `uint32_t *`, which could partially overwrite a wider `rlim_t` and behave incorrectly on big-endian systems. The accepted implementation parses into a correctly sized fixed-width temporary and then assigns the value normally to the `rlim_t` members.
+
+**Implementation rule:** when a platform typedef has implementation-defined width, determine behavior from the typedef's actual size/contract and convert through a correctly typed temporary. Do not populate it by casting its address to an unrelated fixed-width pointer merely because that matches the typedef on the development machine; normal assignment preserves representation, aliasing, alignment, and byte-order correctness.
+
+**Confidence:** Very high. Merged master portability correction authored and merged by John Thacker, with both the standards contract and big-endian failure mode documented in the MR.
