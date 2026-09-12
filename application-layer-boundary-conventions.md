@@ -43,3 +43,13 @@ Merged master MR !22330, authored by Michael Mann, moves funnel operations outsi
 **Architecture rule:** use tap registration for packet-analysis listener semantics. When code only needs application initialization, menu/backend setup, or another lifecycle callback, expose and call an application-owned initialization mechanism instead of enrolling it as a tap solely for callback timing.
 
 **Confidence:** Very high. The architectural refactor and follow-up are merged master changes authored by Michael Mann and explicitly describe funnel operations as not being taps.
+
+## Keep frontends and generic extension layers independent of individual dissector implementations
+
+Generic UI and extension infrastructure should not acquire a direct link-time dependency on a particular protocol dissector merely because that protocol needs specialized integration. Put the specialization behind a generic callback/registration hook, or keep a small adaptation in the consumer layer when that preserves the intended dependency direction.
+
+Merged master MR !22245, authored and merged by Michael Mann, extends the generic `decode_as_t` abstraction with the specialized list-building operation needed by DCE/RPC so the UI no longer explicitly links to the DCE/RPC dissector. Merged master MR !22247 applies the same principle to WSLua: DCE/RPC handle adaptation is implemented locally in the Lua dissector layer instead of exporting and depending on a DCE/RPC-specific helper solely for that consumer. The closed illustrative MR !22275 was never intended to merge, but its stated purpose—checking that dissector code does not creep into the UI—corroborates the boundary while carrying less evidentiary weight than the two accepted refactors.
+
+**Architecture rule:** protocol-specific behavior may plug into generic UI or scripting facilities, but generic frontends should depend on generic interfaces rather than concrete dissector implementations. Prefer callbacks, registries, or localized adapters over upward or sideways dependencies that make UI/extension infrastructure explicitly link to one protocol.
+
+**Confidence:** Very high. Two adjacent merged master dependency-cleanup refactors authored and merged by Michael Mann; the separate illustrative no-dissector build provides weaker corroborating intent.
