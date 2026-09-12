@@ -72,6 +72,16 @@ Merged MR !23875, authored and merged by Roland Knall, replaces the auto-connect
 
 **Confidence:** High. Merged master GUI cleanup by an authoritative Wireshark Qt maintainer, aligned with upstream Qt guidance and existing project practice.
 
+## Preserve explicit lifecycle semantics when optimizing Qt container updates
+
+A Qt optimization that reduces relayout/repaint work must preserve the complete state transition, not merely produce the same visible result on one platform. Framework behavior around hidden widgets, deferred deletion, tab removal, and relayout can differ across platform backends, so removing an explicit cleanup/reset operation because it appears redundant can create a platform-specific stale-state bug.
+
+Merged master MR !21884, authored by John Thacker, optimized `DataSourceTab` updates by hiding the tab widget while removing and rebuilding tabs, reducing repeated layout work that could behave quadratically. After merge, Stig Bjørlykke reported that selecting a different packet no longer removed old data-source tabs on macOS even though the optimization appeared correct on Linux. John followed with merged master MR !21890, restoring the explicit `clear()` call while retaining the useful hide/show optimization; he noted that the clear was needed on macOS and possibly Windows even if Linux did not require it.
+
+**Implementation rule:** when optimizing Qt widget/container rebuilds, retain explicit lifecycle operations unless their redundancy is established across supported backends. Test both performance and state cleanup on more than one supported platform when the optimization relies on framework side effects such as hidden-widget removal or deferred layout behavior.
+
+**Confidence:** Very high. A merged performance optimization immediately followed by an accepted cross-platform correctness repair, with the failure reported by Stig Bjørlykke and the repair authored by John Thacker.
+
 
 ## Register transformed payload buffers used by selectable tree fields
 
