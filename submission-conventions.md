@@ -93,3 +93,15 @@ The JSON dictionary-dissection work went through several early submissions, incl
 **Submission rule:** when reviewer feedback asks for revisions to the same logical change, amend/force-push the topic branch backing the existing MR rather than closing it and opening another MR. If a genuinely distinct successor is necessary, explicitly carry forward unresolved review context and link the superseded MR so reviewers do not have to reconstruct the discussion.
 
 **Confidence:** Very high. Direct Michael Mann maintainer guidance during a first-contribution series whose final revision merged.
+
+## Use a focused topic branch and choose MR scope by coherence, not by one-commit-per-change dogma
+
+A merge request should be backed by a branch dedicated to the proposed change, rather than a contributor's long-lived `master`/`main` branch. Its history should be easy to review and merge. At the same time, several small changes that form one coherent component update do not need to be artificially split into separate MRs merely because they could be expressed as separate commits.
+
+Closed MR !22090 provides explicit negative guidance from Jaap Keuter: he asked the contributor to replace an MR sourced from the contributor's `master`, and noted that unless multiple commits are strictly necessary the MR should normally contain a single focused commit, pointing to Wireshark's SubmittingPatches guidance. Because the implementation did not merge, this is weighted as maintainer workflow guidance rather than accepted code design. Merged MR !22072 supplies the complementary scope signal: Michael Mann questioned why three small related NetPerfMeter changes had been submitted as separate MRs instead of one coherent MR.
+
+Merged !22054 also updated the Wireshark Developer's Guide around the triangular Git workflow, commit guidance, and target-branch selection for cherry-pick MRs, reinforcing that branch and history presentation are part of the supported contribution workflow.
+
+**Submission rule:** develop an MR on a dedicated topic branch and keep its commits focused and reviewable. Prefer one coherent MR for a small related series; split work when changes are independently reviewable or have genuinely distinct purposes, not simply because every edit can be isolated mechanically. For stable-branch cherry-picks, explicitly target the intended release branch.
+
+**Confidence:** High. Direct Jaap Keuter and Michael Mann review guidance, supported by a merged Developer's Guide workflow update; the branch-specific example in !22090 itself was closed rather than merged.

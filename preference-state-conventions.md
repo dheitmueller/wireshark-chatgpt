@@ -23,3 +23,13 @@ Merged MR !23898, authored and merged by Michael Mann, fixes the Manage Interfac
 **Implementation rule:** treat the allocator/scope as part of a preference value's ownership contract. When persistent preference memory changes allocator or scope, audit every mutation and replacement path—not just initial allocation—and keep free/duplicate operations paired with that owner.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by Michael Mann with the ownership mismatch stated directly in the MR.
+
+## Preserve recoverable user records when validation fails
+
+A nonfatal validation error in a user-editable preference table should not erase otherwise recoverable configuration. Loading and validation are distinct phases: a record can be syntactically loadable yet currently invalid, and keeping it visible gives the user a path to repair it.
+
+Merged master MR !22059, authored by John Thacker, changes the Qt IO Graphs/Plots UAT handling so validation failures no longer cause the existing records to be cleared. Invalid records remain available for display and editing, while validation still reports that they are not usable as-is.
+
+**Implementation rule:** distinguish fatal parse/load failure from per-record semantic validation failure. When a record can be represented safely, retain it and surface the validation problem so the user can correct it; do not destructively replace an entire preference table merely because one or more records fail validation.
+
+**Confidence:** Very high. Merged master behavior fix authored by John Thacker, with preservation and repair of invalid UAT records as the stated purpose.

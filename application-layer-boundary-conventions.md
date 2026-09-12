@@ -65,3 +65,13 @@ The adjacent merged application-flavor refactors !22165, !22175, !22177, !22183,
 **Architecture rule:** decide placement by semantic ownership, not merely by reuse count. Shared protocol-specific tables, helpers, and generated data belong with dissectors; reserve `epan/` for facilities that are genuinely part of the generic dissection engine. Likewise, generic lower libraries should receive application-specific policy through explicit interfaces rather than directly calling application-flavor APIs.
 
 **Confidence:** Very high. The placement rule comes from explicit Michael Mann review on a merged MR and is reinforced by a sequence of merged layering refactors from the same maintainer.
+
+## Pass owning application and operation context explicitly instead of rediscovering it in shared code
+
+Once application-specific policy has been moved out of a shared layer, the replacement should normally be explicit data flow: the owner passes the product identity, options, or operation context that the lower layer actually needs. Replacing one hidden product probe with another hidden global leaves the same dependency problem under a different name.
+
+Merged master MRs !22081 and !22082, authored by Michael Mann, move Stratoshark-specific Follow Stream and search behavior into application-specific subclasses instead of testing application flavor in common Qt classes. Merged !22083 passes the application name through the capture interface, and merged !22087 does the same for software-update initialization. Merged !22078 independently reduces use of `global_capture_opts` by passing the relevant capture-options object to the code performing the operation.
+
+**Architecture rule:** make ownership visible in APIs. Product-specific behavior belongs in the owning application/subclass, while reusable code should receive only the application identity, options object, or operation context it needs through parameters or narrowly defined interfaces. Avoid application-flavor probes and mutable process globals as implicit dependency injection.
+
+**Confidence:** Very high. A cluster of merged master refactors authored by Michael Mann all move hidden application/global context toward explicit ownership and parameter flow.
