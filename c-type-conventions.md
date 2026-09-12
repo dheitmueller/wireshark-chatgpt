@@ -51,3 +51,13 @@ Merged master MR !22453, authored by John Thacker and merged by Michael Mann, fi
 **Implementation rule:** make callback/preference/API backing storage exactly match the API's declared pointer type. Do not try to mirror an enum's presumed signedness in storage passed through that API; under C17 the enum's representation is not a portable storage contract. Convert at semantic use sites when domains differ rather than passing an incompatible pointer or depending on implementation-defined enum representation.
 
 **Confidence:** Very high. Merged master portability/type-correctness change authored by John Thacker and merged by Michael Mann.
+
+## Encode fixed-size binary object contracts in the parameter type when practical
+
+A bare `uint8_t *` says where bytes begin but does not communicate that a function requires exactly one fixed-size object. When the object size is intrinsic to the API contract, a pointer to an array can make that requirement visible to both callers and the compiler without inventing a wrapper structure.
+
+Merged master MR !22425, authored and merged by Guy Harris, changes `str_to_eth()` from taking an unbounded byte pointer to taking `uint8_t (*)[6]`. Guy's rationale is direct: a MAC-48 address is an array of six octets, so the function signature should represent that object. Callers correspondingly pass the address of their six-byte array.
+
+**Implementation rule:** for APIs operating on a single fixed-size binary object, consider expressing the complete object shape in the C type rather than accepting an undifferentiated byte pointer. This is particularly useful for identifiers such as fixed-width link-layer addresses where the size is part of the semantic contract. Do not force this pattern across variable-length buffers or external ABI signatures where a pointer-plus-length contract is the correct abstraction.
+
+**Confidence:** Extremely high. Merged master API cleanup authored and merged by Guy Harris with an explicit semantic-type rationale.
