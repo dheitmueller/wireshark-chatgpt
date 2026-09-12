@@ -14,6 +14,16 @@ Merged MR !26331 independently applies the same principle to sharkd resampling: 
 
 **Confidence:** Very high. Two merged master fixes authored and merged by John Thacker, each propagated to stable branches.
 
+## Small unsigned integer operands can still undergo signed arithmetic
+
+Declaring a value as `uint8_t` or `uint16_t` does not guarantee that an arithmetic expression involving it is evaluated as unsigned. C's usual integer promotions can promote an unsigned type whose rank is below `int` to signed `int` when all of its values fit, so multiplication or other arithmetic can still invoke signed-overflow undefined behavior before assignment to an unsigned destination.
+
+Merged MR !22808, authored and merged by John Thacker after a Coverity finding, fixes exactly this pattern in the openSAFETY dissector. The MR explicitly notes that making an operand an unsigned type of smaller rank than `int` does not prevent the promotion, and that using an appropriately ranked type does not cost performance in practice.
+
+**Implementation rule:** reason about the promoted type of each operand, not merely its declared typedef. When arithmetic must have unsigned or wider semantics, arrange for the expression itself to be evaluated in a sufficiently ranked unsigned/wide type before the potentially overflowing operation.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker with an explicit language-semantics rationale.
+
 ## Reject invalid divisors and other arithmetic invariants at the boundary where they are established
 
 Values loaded from capture metadata should be validated before they become arithmetic operands. If a format requires a nonzero scaling factor, reject zero while opening/parsing the metadata rather than allowing later code to divide by it and produce platform-dependent exceptions or meaningless results.
