@@ -73,3 +73,13 @@ Merged master MR !23220 fixes the stats-tree floating maximum accumulator from `
 **Implementation rule:** when initializing floating min/max accumulators, choose an extremum whose semantics match the direction of the reduction. Do not assume integer-style meanings for `FLT_MIN`, `DBL_MIN`, or their equivalents.
 
 **Confidence:** High. Direct merged correctness fix with an explicit explanation of the C floating-point constant semantics.
+
+## Do not use unsigned post-decrement as the loop condition
+
+A condition such as `while (count--)` still performs the decrement when the old value is zero. For an unsigned counter, that failed final test wraps the variable to its maximum value even though the loop body is not entered. The wrap may be invisible today if the counter is dead afterward, but it violates the counter's semantic invariant and can become observable after later refactoring.
+
+Merged master MR !22439, authored and merged by Guy Harris after Coverity flagged the pattern in the COSEM dissector, replaces unsigned post-decrement loop tests with an explicit nonzero comparison and a decrement in the loop body. This makes the zero-exit path leave the counter at zero rather than wrapping it.
+
+**Implementation rule:** for an unsigned countdown, prefer `while (count != 0) { ...; count--; }` or an equivalently explicit construct. Do not use `while (count--)` when zero is the natural terminal state, especially for values derived from packet data or retained after the loop.
+
+**Confidence:** Extremely high. Merged master correctness cleanup authored and merged by Guy Harris, with the precise unsigned-wrap behavior identified by static analysis.
