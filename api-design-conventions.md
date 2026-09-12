@@ -53,3 +53,13 @@ Merged master MR !21953, authored by Gerald Combs and approved/merged by John Th
 **Implementation rule:** when Wireshark has a project-wide wrapper, ownership boundary, or intentionally restricted use of a third-party API, prefer enforcing the forbidden raw entry points through `checkAPIs.pl` or equivalent tooling. Keep the nearby comment specific enough to explain the policy, not merely that the function is forbidden.
 
 **Confidence:** Very high. Merged master policy/tooling change authored by Gerald Combs and approved/merged by John Thacker.
+
+## Route callers through the stable semantic facade and keep presentation mechanics private
+
+Once a subsystem has a stable caller-facing API for an operation, callers should use that semantic facade rather than invoking the lower-level mechanism that the facade currently delegates to. Besides making behavior consistent, this keeps the implementation behind the facade free to change without forcing callers to understand or preserve internal presentation policy.
+
+Merged master MR !21861, authored and merged by Guy Harris, changes error and warning call sites to use the `report_*` routines rather than directly calling `failure_message` and `alert_box`, then makes those lower-level routines `static`. Guy's stated rationale is that reporting becomes consistent and the internal behavior of `report_*` and the routines beneath it can change as long as the external behavior of the `report_*` interface remains compatible.
+
+**Implementation rule:** when a subsystem provides a semantic wrapper/facade, migrate callers to it and narrow the underlying implementation helpers to file-private or otherwise internal scope. Do not let convenience calls to a current UI/backend mechanism accidentally become a parallel API contract.
+
+**Confidence:** Extremely high. Merged master API cleanup authored and merged by Guy Harris with the encapsulation rationale stated explicitly.
