@@ -12,6 +12,16 @@ Merged MR !24258 added CIP Identity Object attributes. During review, Michael Ma
 
 **Confidence:** High. Direct maintainer review on a merged master MR, with the objection specifically framed in display-filter semantics.
 
+## Use string field types that match the bytes actually present on the wire
+
+`FT_STRINGZ` means that the protocol field is represented as a NUL-terminated string in the packet; it should not be used merely because the implementation happens to construct a C NUL-terminated string after extracting a bounded field. If the packet supplies an explicit length, use an ordinary string representation. If the protocol's termination semantics are truncated or padded, use the corresponding `FT_STRINGZTRUNC` or `FT_STRINGZPAD` representation rather than pretending an absent terminator is present.
+
+Merged MR !22834, authored and merged by John Thacker, corrects HTTP form URL-encoded keys and values from `FT_STRINGZ` to `FT_STRING`: those values are length-bounded and are not NUL-terminated on the wire. The MR's rationale explicitly distinguishes real terminated strings from fields whose absence/truncation must be determined by some other protocol mechanism.
+
+**Implementation rule:** select `FT_STRING`, `FT_STRINGZ`, `FT_STRINGZTRUNC`, or `FT_STRINGZPAD` from the field's wire-format contract, not from the representation returned by a helper API. A bounded non-NUL-terminated packet field is not `FT_STRINGZ` even if its extracted host string is terminated for convenience.
+
+**Confidence:** Very high. Merged master semantic cleanup authored and merged by John Thacker with explicit rationale about the field-type contract.
+
 ## A returned value from a masked field is the field value, not the untouched storage unit
 
 Do not assume that a `proto_tree_add_*_ret_*()` call using an `hf_` entry with a bitmask returns the original unmasked byte/word suitable for manually extracting other sibling bitfields. The field registration and helper semantics apply the field mask to obtain that field's value.
