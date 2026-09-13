@@ -24,6 +24,13 @@ Recent work has centered on SMPTE ST 2110-40, SMPTE ST 2038, ancillary data, and
 - Identify a type from the complete applicable identifier tuple, especially DID/SDID. Do not infer a semantic type from SDID alone where DID also participates in the definition.
 - If a payload is not confidently identified, record the numeric DID/SDID and mark the semantic identification as unknown or unconfirmed rather than guessing.
 
+## DekTec DTSDI compatibility
+
+- Real-world DTSDI V2 files may contain zero in both V2 extension fields (`m_FrameSize` and `m_NumFrames`). Samples `tcbug.dtsdi` and `triggerbug.dtsdi` have this form while their payloads are structurally valid single uncompressed full frames in 16-bit storage. Their payload lengths exactly match the complete raster implied by the declared video standard.
+- DekTec's own `DtPlay` source uses the format version to choose the 16-byte V1 or 24-byte V2 header but does not use the V2 frame-size or frame-count fields when configuring playback. Do not assume nonzero V2 extension fields are required for real-world interoperability merely because the header structure defines them.
+- For uncompressed full-frame data with known video-standard and storage flags, a reader can derive the frame size from the raster and sample representation. A zero frame count can then be inferred from the remaining logical stream length when available, or treated as unknown for sequential reading with checked EOF handling.
+- `tcbug.dtsdi` validates 16-bit full-frame 1080i50 scanning and contains HANC ST 12-2 ATC plus ST 352 payload-ID packets. `triggerbug.dtsdi` validates 16-bit full-frame 720p59.94 scanning and contains an HANC ST 352 payload-ID packet. Neither sample contains VANC.
+
 ## Test vectors
 
 - `libklvanc` contains vectors familiar to the developer, but independent known-good sources are desirable for validation.
