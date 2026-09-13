@@ -67,3 +67,15 @@ Merged master MR !23646, authored by John Thacker and accepted by Gerald Combs a
 **Review rule:** treat data-structure migrations as ownership/lifetime changes even when the visible lookup API is unchanged. Fuzz-detected lifetime failures are a strong signal to inspect every analogous insertion site.
 
 **Confidence:** Very high. Merged master memory-safety fix authored by John Thacker, with a concrete OSS-Fuzz stack-use-after-return trigger and senior-maintainer acceptance.
+
+## A shallow copy preserves the lifetime obligation of the referenced allocation
+
+Copying a structure does not transfer or duplicate pointee storage when the copy is shallow. If the copied object remains reachable after the original setup routine returns, manually freeing a referenced allocation merely because the original local variable is no longer needed can leave the surviving copy with a dangling pointer. At the same time, independently allocated side structures that are not retained still need normal cleanup.
+
+Merged master MR !20792, authored and merged by John Thacker, fixes both sides of this distinction in the XML dissector. The namespace retained a shallow copy referring to `root_name`, which was allocated in epan scope; explicitly freeing `root_name` after registration invalidated that retained reference, so the free was removed. Conversely, the separately allocated GLib list associated with the root element was not retained and is now explicitly freed.
+
+**Implementation rule:** whenever state is copied into a persistent map, namespace, conversation object, or similar container, determine whether the copy is deep or shallow before changing cleanup. A shallow-copy destination inherits the pointee's lifetime requirement even if it does not own the storage. Do not free referenced storage while any surviving alias still needs it, and do not let that rule obscure cleanup of unrelated allocations that truly are no longer owned.
+
+**Review rule:** lifetime review should follow references, not variable names. For each pointer-bearing structure copy, identify which pointees are retained, which allocator owns them, and how long every alias remains reachable.
+
+**Confidence:** Very high. Merged master memory-lifetime correction authored and merged by John Thacker, with the shallow-copy reason explicitly stated in the change.
