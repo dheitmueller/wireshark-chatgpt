@@ -23,3 +23,15 @@ Merged master MR !22220, authored by Michael Mann and approved/merged by John Th
 **Review implication:** when moving an initialization phase, audit what that phase registers and what later/earlier phases consume. UATs and preferences are especially important because a change can appear harmless until a feature whose registration contributes configuration is exercised.
 
 **Confidence:** Very high. Merged master fix for a concrete crash, authored by Michael Mann and explicitly endorsed by John Thacker; the failure mechanism and intended lifecycle boundary are described directly in the review discussion.
+
+## Establish mode selectors before initialization that derives state from them
+
+If an initializer computes paths, plugin locations, configuration names, or other state from a process/application mode, that mode must be established before the initializer runs. Setting the selector afterward does not retroactively repair derived state that has already been cached or consumed.
+
+Merged master MR !21100 fixes Stratoshark plugin discovery by calling `set_application_flavor(APPLICATION_FLAVOR_STRATOSHARK)` before `configuration_init()`. The earlier ordering initialized configuration while the process still appeared to be Wireshark, so flavor-dependent directories were wrong. The same correction was accepted on release-4.6 in !21114.
+
+**Implementation rule:** identify every input that an initialization routine reads directly or indirectly and make those inputs valid first. In particular, establish application/product flavor, profile/environment selection, and equivalent policy selectors before initializing subsystems that derive filesystem paths or persistent configuration from them.
+
+**Review implication:** when moving initialization calls or introducing a new mode selector, audit whether any earlier initializer snapshots or derives state from that selector. A later assignment can look locally correct while leaving previously derived configuration permanently stale for that process.
+
+**Confidence:** Very high. Merged master correctness fix plus stable backport, with the failure directly observable as missing flavor-specific plugin discovery.
