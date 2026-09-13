@@ -49,3 +49,13 @@ Merged master MR !23106, authored and merged by John Thacker, changes unsupporte
 **Implementation rule:** distinguish packet-controlled malformed encodings from code-controlled API arguments. Packet data should be diagnosed as input; an impossible or unsupported encoding constant passed by dissector code should fail visibly as a programmer bug rather than being silently reinterpreted. When the invalid combination is mechanically recognizable, add it to the appropriate source checker as well.
 
 **Confidence:** Very high. Merged core-API change authored by John Thacker plus explicit maintainer discussion about adding static checker coverage.
+
+## Do not apply developer-definition assertions to externally supplied identifiers
+
+An assertion can be appropriate for an invalid identifier compiled into Wireshark by a developer, because that is a repository/programming error that should be fixed. The same syntactic restriction must not automatically become a fatal assertion when the identifier originates outside Wireshark, such as an extcap source or a user-editable table. External values need validation, normalization, or another recoverable mapping into the internal namespace.
+
+Merged MR !20873 fixes extcap preference creation by sanitizing invalid preference-name characters. Michael Mann explicitly contrasted the normal dissector-preference case, where invalid developer-defined names may appropriately assert, with extcap. The author explained that extcap table option names can be supplied by users and legitimately contain GUID dashes, spaces, or other characters; allowing those values to reach the internal preference-name assertion caused Wireshark to crash. The merged solution handles that trust-boundary difference instead of imposing the internal identifier grammar directly on external data.
+
+**Implementation rule:** decide assertion policy based on who controls the value. For repository-defined constants and registrations, an invalid value may be a programmer bug; for user/plugin/extcap/network-derived values, validate and convert at the boundary without turning ordinary external input into a process-fatal invariant failure.
+
+**Confidence:** High. Merged master change with direct maintainer discussion explicitly comparing the two ownership/trust domains.
