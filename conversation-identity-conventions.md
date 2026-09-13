@@ -13,3 +13,13 @@ Merged MR !21653 carries John Thacker's LLMNR request/response tracking fix to r
 This complements the existing TFTP rule from merged !21803: endpoint tuples may also be *too broad* when reused by successive sessions. Together, the rules are: first identify the lifetime and identity of the protocol state, then choose or create a Wireshark conversation key that matches that identity.
 
 **Confidence:** Very high. The LLMNR behavior is explicit in the merged implementation rationale, and the underlying master change was authored by John Thacker; the stable-branch backport was accepted and merged.
+
+## Give higher-layer sessions their own stable stream identity when transport identity is insufficient
+
+Features such as Follow Stream should key themselves to the logical session being followed, not infer identity from whichever lower-layer transport happens to carry the current packet. This matters when the same protocol can be carried by different transports, nested in other sessions, or otherwise outlive a simple TCP/UDP port-type test.
+
+Merged MR !21008, authored and merged by John Thacker, adds an explicit generated TLS stream identifier allocated when a TLS session is created and uses TLS session identity in the follow-stream path instead of relying on the packet's final port type. QUIC handshake-only TLS is deliberately excluded because it does not represent a standalone followable TLS byte stream. Review also ensured repeated dissector-handle lookup was considered in terms of its actual per-session frequency rather than assumed per-packet cost.
+
+**Architecture rule:** when a user-facing or analytical feature operates on a higher-layer protocol session, assign and persist a protocol-layer identity with the same lifetime and semantics as that session. Do not substitute a lower-layer transport discriminator merely because it usually correlates with the protocol; explicitly handle protocol modes that do not form the same kind of stream.
+
+**Confidence:** Extremely high. Merged master architecture authored and merged by John Thacker, with review centered on how the TLS session is created and reused.
