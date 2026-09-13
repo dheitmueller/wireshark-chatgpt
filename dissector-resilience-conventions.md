@@ -23,3 +23,13 @@ Merged MR !20951, authored and merged by Martin Mathieson, replaces a PIM dissec
 **Implementation rule:** before asserting on a value derived from packet data, ask whether a malformed or truncated packet can produce it. If so, emit appropriate expert information and handle the condition as input error instead of terminating the dissector process.
 
 **Confidence:** Very high. Merged master change by a senior dissector maintainer and direct fuzzing context; it also corroborates the notebook's broader assertion/static-analysis guidance.
+
+## When the build cannot represent a decoded value accurately, say so instead of fabricating precision
+
+A dissector may be portable to a platform that lacks an arithmetic capability needed for one optional high-precision calculation. In that case, keep the protocol dissection usable, but do not substitute a plausible-looking lower-precision or incorrect value. Mark the affected field as undecoded/unsupported with Expert Info so users can distinguish a platform capability limit from actual packet data.
+
+Merged MR !20646, authored and merged by Guy Harris, handles LDANeo picosecond timestamps this way on platforms where the required 128-bit-divisor operation is unavailable. Rather than displaying nanosecond/picosecond fields that cannot be computed correctly, the dissector adds an `undecoded` expert warning in their place.
+
+**Implementation rule:** optional numeric decoding should degrade explicitly. If an exact result cannot be computed on a supported build target, omit that derived value and report the limitation; never present an approximation as though it were the protocol value unless the protocol/API explicitly defines that approximation.
+
+**Confidence:** Extremely high. Merged master change authored and merged by Guy Harris, with the graceful-degradation behavior stated directly in the MR description.
