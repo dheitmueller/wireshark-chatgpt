@@ -63,3 +63,13 @@ Merged master MR !21861, authored and merged by Guy Harris, changes error and wa
 **Implementation rule:** when a subsystem provides a semantic wrapper/facade, migrate callers to it and narrow the underlying implementation helpers to file-private or otherwise internal scope. Do not let convenience calls to a current UI/backend mechanism accidentally become a parallel API contract.
 
 **Confidence:** Extremely high. Merged master API cleanup authored and merged by Guy Harris with the encapsulation rationale stated explicitly.
+
+## Keep helper names and return contracts synchronized with what the helper actually does
+
+A helper whose behavior has changed through refactoring should not retain a historical name or return value that describes work it no longer performs. Stale names encourage callers and reviewers to reason from the old abstraction, while an obsolete return value implies a decision point that no caller actually has.
+
+Merged master MR !21638, authored and merged by Guy Harris, renames `read_record()` to `add_new_record_to_record_list()` because the record has already been read before the helper is called; the helper conditionally adds that record to the capture-file record list after read-filter processing. The same change converts the return type from `bool` to `void` because no caller any longer consumes the result.
+
+**Implementation rule:** after changing a helper's responsibility, re-audit both its name and signature. Name it for the current semantic action, and remove return values that no longer communicate information callers use. Do not preserve misleading interface shape merely to minimize the textual size of a refactor.
+
+**Confidence:** Extremely high. Merged master cleanup authored and merged by Guy Harris, with the semantic mismatch and obsolete result explicitly documented in the MR rationale.
