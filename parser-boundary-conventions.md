@@ -55,3 +55,13 @@ Merged MR !21375 hardens `ptvcursor` by replacing direct offset additions inside
 **Implementation rule:** when an API owns mutable parse position and already provides an invariant-enforcing movement helper, route every internal cursor change through that helper. Do not duplicate `offset += length` or equivalent arithmetic in sibling helpers; centralizing advancement makes overflow/error semantics uniform and keeps future safety changes localized.
 
 **Confidence:** Very high. Merged master parser-hardening change that deliberately funnels previously direct offset mutation through the existing checked cursor primitive.
+
+## Preserve synchronization across unknown length-delimited record types
+
+An unrecognized subtype does not necessarily make the enclosing stream undecodable. If the outer record supplies a trustworthy length, display the unknown payload as opaque bytes, report that it is undecoded when useful, and advance by the complete encoded record extent, including any protocol-defined alignment or padding, so later sibling records remain parseable.
+
+Merged MR !20860 fixes sFlow parsing where unknown flow or counter record formats previously stopped without advancing the offset. The accepted change retains the declared record length, adds the unknown bytes to the tree with Expert Info, and advances using the protocol's four-byte alignment before continuing. The change was authored and merged by John Thacker and was also accepted as a stable-branch backport.
+
+**Implementation rule:** for an unknown but structurally bounded record, distinguish “payload semantics unknown” from “framing unknown.” Preserve the outer framing, consume/skip the whole declared encoded extent, and continue at the next sibling rather than breaking at the unknown subtype.
+
+**Confidence:** Extremely high. Merged stable parser correctness fix authored and merged by John Thacker, with a concrete failure mode in which failing to advance corrupts all subsequent dissection.
