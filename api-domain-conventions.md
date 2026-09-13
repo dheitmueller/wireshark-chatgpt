@@ -47,3 +47,13 @@ Merged MR !25877, authored and merged by Guy Harris, changes the DCT2000 reader 
 **Implementation rule:** name and normalize length/count variables according to the unit consumed by the layer that owns them. When parsing textual encodings, convert character/nibble/word counts to byte counts once at a clear boundary and keep subsequent allocation, bounds, and record-length arithmetic in that normalized unit unless a later conversion is explicit.
 
 **Confidence:** Extremely high. Merged master wiretap cleanup authored and merged by Guy Harris, directly clarifying the unit contract of packet-record sizing.
+
+## Mark read-only container receivers const even when returned elements remain mutable
+
+Accessor APIs should describe whether the container itself is modified independently of whether the value reached through it can be modified. A query that only inspects tree, map, list, or array metadata should accept a `const` container pointer so callers do not need to discard constness merely to perform a lookup or retrieve an element.
+
+Merged master MR !21179 constifies the receiver parameters for the non-mutating `wmem_tree`, `wmem_map`, `wmem_list`, and `wmem_array` lookup/accessor families. The change deliberately does not imply deep constness: operations such as `wmem_array_index()` may still return a mutable element pointer. The contract being expressed is that performing the lookup does not mutate the container object.
+
+**Implementation rule:** apply constness at the layer whose mutation contract is known. For a read-only accessor, make the owning/container parameter `const` even when the API intentionally returns a mutable pointee. Do not conflate “this lookup does not mutate the container” with “the object obtained through the container is immutable.”
+
+**Confidence:** High. Broad merged master API cleanup across the core wmem container families; the change is explicit and internally consistent, though it had little substantive review discussion.

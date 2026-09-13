@@ -40,9 +40,11 @@ Merged MR !24758, authored by John Thacker and approved/merged by Anders Broman,
 
 Merged MR !21356 supplies earlier direct design commentary for the same pattern. While fixing BER end-offset overflows with checked arithmetic, John Thacker noted that the preferable long-term design would eliminate the `end_offset` bookkeeping and create a subset TVB instead, allowing the bounds exception to occur at the actual out-of-bounds access rather than during speculative end arithmetic.
 
+Merged MR !21174 supplies still earlier direct review evidence. While reviewing MPEG PMT extended-descriptor dispatch, John Thacker questioned passing the enclosing descriptor's tag and length into the nested dissector and recommended passing a subset TVB containing only the extension payload instead. The author adopted the review direction and the MR merged. This reinforces that subset TVBs are not only a hardening technique; they are also the preferred interface boundary when the caller already knows the nested object's exact extent.
+
 **Implementation rule:** once a trustworthy parent length identifies a nested record, create a TVB limited to that record and parse it in its own coordinate space. Prefer that structural boundary over carrying `(tvb, base_offset, length)` through every child helper and relying on each helper to repeat overflow-safe end arithmetic correctly.
 
-**Confidence:** Extremely high. Multiple independent merged master fixes authored by John Thacker, including direct design commentary favoring structural TVB bounds over absolute end-offset bookkeeping.
+**Confidence:** Extremely high. Multiple independent merged master fixes authored or reviewed by John Thacker, including direct design commentary favoring structural TVB bounds over absolute end-offset bookkeeping.
 
 ## Route cursor movement through the API's checked advancement primitive
 
