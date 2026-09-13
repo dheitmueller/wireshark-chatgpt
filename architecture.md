@@ -6,6 +6,12 @@ This is a curated cache of architectural understanding relevant to future develo
 
 When changing a subsystem, trace the real call path in the current source before designing the patch. Prefer existing registration, dispatch, reassembly, conversation, and dissector-table mechanisms over adding parallel infrastructure.
 
+## Compressed capture wrappers and logical file size
+
+- `wtap_file_size()` reports the size of the underlying file as seen by the operating system. For a capture transparently decompressed by Wiretap's file wrapper, that is the compressed size, not the logical length of the decompressed byte stream.
+- A reader that validates a header-declared logical size against `wtap_file_size()` must account for `file_iscompressed()`. Keep the early whole-file length check for uncompressed input, but do not reject a compressed wrapper merely because its physical size is smaller than the declared uncompressed content; normal checked record reads must still report a genuinely truncated decompressed stream.
+- Include an externally compressed fixture when a new file reader is expected to benefit from Wiretap's transparent gzip/zstd/lz4 handling. This catches accidental mixing of physical-file and logical-stream coordinate spaces.
+
 ## Extension points and protocol coupling
 
 - Prefer generic extension points in a generic protocol dissector over embedding knowledge of one downstream protocol. MR !26376 is moving CoAP away from a dedicated Thread/TMF mode toward a generic heuristic payload subdissector list. The MR is still open, so treat its exact implementation as provisional, but use the separation-of-concerns principle when evaluating new designs.
