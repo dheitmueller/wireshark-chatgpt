@@ -31,3 +31,13 @@ Merged MR !25509, authored and merged by Guy Harris, renames `FILE_ERR_CANT_WRIT
 **Implementation rule:** translate errors at abstraction boundaries without erasing their semantic cause. Use a write error for an actual write failure, a compression error for compressor failure, and equivalent layer-specific statuses elsewhere; carry supplemental library/OS details separately when useful.
 
 **Confidence:** Extremely high. Merged master file-wrapper error handling authored and merged by Guy Harris.
+
+## Diagnose capture filters in the context that will actually execute them
+
+Capture-filter validity and compiled BPF output can depend on the actual capture path, not just a nominal link-layer type. Linux live capture can expose libpcap BPF extensions unavailable to an offline/dead-handle compiler, and extcap interfaces have their own filter-verification mechanism. A GUI should therefore avoid presenting an approximation as the exact filter that the live capture path will use.
+
+Merged MRs !21014 and !21025 add a dumpcap path for obtaining the compiled filter for a real capture interface and switch the Qt Compiled Filter Output dialog to that result. The !21025 discussion includes direct Guy Harris review distinguishing a libpcap filter expression from the resulting compiled BPF program and emphasizing the Linux live-capture target semantics. John Thacker separately called out extcaps, which dumpcap cannot validate as ordinary devices and for which `extcap_verify_capture_filter()` is the relevant mechanism.
+
+**Implementation rule:** when reporting the exact compiled capture program or authoritative validity, use the same interface/context and backend that will execute the capture. If lightweight background syntax checking cannot safely or cheaply obtain that context—because it would require opening devices, crossing a privilege boundary, or invoking a different extcap validator—represent the result as context-dependent/indeterminate rather than falsely declaring it valid or invalid from an approximation.
+
+**Confidence:** Extremely high. Accepted master capture/UI changes authored by John Thacker with substantive Guy Harris review of the expression-versus-program and live-target distinction.
