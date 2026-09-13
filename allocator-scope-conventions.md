@@ -79,3 +79,17 @@ Merged master MR !20792, authored and merged by John Thacker, fixes both sides o
 **Review rule:** lifetime review should follow references, not variable names. For each pointer-bearing structure copy, identify which pointees are retained, which allocator owns them, and how long every alias remains reachable.
 
 **Confidence:** Very high. Merged master memory-lifetime correction authored and merged by John Thacker, with the shallow-copy reason explicitly stated in the change.
+
+## Do not assume ambient packet scope is active in callbacks invoked outside dissection
+
+Callbacks that format or print already-decoded fields can run after ordinary packet dissection has finished. Such callbacks must not silently depend on `wmem_packet_scope()` being active merely because the data originated in a packet.
+
+Merged master MR !20783, authored and merged by John Thacker, fixes a BACapp crash in custom field formatting invoked from `print_packet()` in tshark. At that point `pinfo->pool` still exists, but the formatter has no `packet_info` parameter and ambient `wmem_packet_scope()` is not active. The accepted fix therefore avoids a formatting helper that allocates from packet scope and uses the const/non-allocating lookup variant instead.
+
+Merged master MR !20780, authored by Michael Mann and accepted by Anders Broman, independently moved RPC helper allocation away from ambient `wmem_packet_scope()` by threading `packet_info *` through the public helper calls and allocating from `pinfo->pool`; the stated goal was also to stop passing NULL `packet_info` into public RPC helpers.
+
+**Implementation rule:** allocation scope should come from explicit context when an API has that context available (`pinfo->pool` for packet lifetime). For callbacks that deliberately lack packet context, use APIs that do not require packet-scope allocation or redesign the callback/API contract rather than depending on global ambient scope.
+
+**Review rule:** when moving code into formatters, taps, printing/export paths, or other deferred callbacks, re-audit any `wmem_packet_scope()` use. Being associated with a packet is not equivalent to executing while packet scope is active.
+
+**Confidence:** Very high. Two merged master changes from senior maintainers, including a concrete crash and a broad RPC API cleanup.
