@@ -61,3 +61,13 @@ Merged master MR !21856, authored by John Thacker and merged by Michael Mann, sp
 **Implementation rule:** define separate `hf_` entries when two occurrences have different filtering meaning, provenance, or user intent, even if they share type and values. A generated correlation/helper field should not silently broaden the semantics of the field representing the value actually carried by that protocol location.
 
 **Confidence:** Very high. Merged master semantic-field correction authored by John Thacker and merged by Michael Mann, with the display-filter consequence stated explicitly.
+
+## Keep wire span, extraction semantics, field type, and formatting mutually consistent
+
+A protocol-tree call has several representations of the same packet concept: the number of bytes selected from the tvbuff, the width/signedness used to extract the value, the registered `hf_` type, and any explicit display format. They must describe one compatible semantic value. A mismatch can silently truncate, reinterpret signedness, or make the displayed value disagree with filtering.
+
+Merged master MR !21494 fixes a NOE field for which the existing call claimed a one-byte span, extracted two bytes as unsigned, formatted the result as signed with `%d`, and used an `hf_` field whose type expected four bytes. The accepted cleanup uses `proto_tree_add_item()` so extraction and presentation follow the registered field semantics. During review, Martin Mathieson explained an important nuance in Wireshark's checker: selecting *more* bytes than the field width is suspicious because it can truncate, while selecting fewer bytes can be legitimate when a protocol field was widened in a later version but an older version still carries a narrower encoding.
+
+**Implementation rule:** audit the whole field contract together: tvbuff span, endianness/encoding, extracted C domain, `hf_` width/signedness, mask, and format string. Prefer `proto_tree_add_item()` or another semantic helper when it can perform the wire extraction directly. Do not demand byte-count equality mechanically when a protocol version legitimately encodes the same semantic field more narrowly, but never rely on a wider extraction being silently narrowed by the field definition.
+
+**Confidence:** Very high. Merged master correctness fix plus direct Martin Mathieson explanation of the checker boundary and Anders Broman review of the accepted simpler API.
