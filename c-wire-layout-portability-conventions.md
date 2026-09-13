@@ -35,3 +35,13 @@ Merged MR !25451, authored by John Thacker, removes an XOR hash optimization in 
 **Implementation rule:** treat arbitrary packet/string byte storage as byte-aligned unless its API explicitly promises stronger alignment. Use byte-wise operations, `memcpy()` into an aligned local, or an existing endian/load helper rather than dereferencing a wider cast pointer. Optimize only after preserving the representation's actual alignment contract.
 
 **Confidence:** Extremely high. Merged master UB fix authored by John Thacker and demonstrated by UBSan with a concrete misaligned access.
+
+## Make byte-order helper names state the value domain and wire order explicitly
+
+Byte-load/store helpers should describe the actual semantic transformation: the width, signedness/domain, and big- or little-endian wire order. Avoid host-relative terminology such as “swapped” versus “unswapped,” which changes meaning with the host and obscures whether the helper represents signed or unsigned data.
+
+Merged MR !20997, authored and merged by Guy Harris, renames the `pint.h` load/store family from names such as `pntoh16`/`phton16` to forms explicitly containing the unsigned domain, such as `pntohu16`/`phtonu16`, across the tree. Its rationale is explicit: these routines work on unsigned values; signed variants can be provided separately if needed. Merged !20999, also authored and merged by Guy, then moves RTP-player sample writing to the shared `wsutil/pint.h` routines and renames the argument in terms of big-endian versus little-endian rather than byte-swapped versus unswapped.
+
+**Implementation rule:** prefer the shared endian-aware byte helpers for fixed-width wire loads/stores, and make helper/API names encode the value domain they actually implement. Express byte order as big-endian/little-endian (or the applicable protocol order), not relative to the host's native order.
+
+**Confidence:** Extremely high. Two merged master changes authored and merged by Guy Harris, including a tree-wide API rename whose sole purpose was making the unsigned contract explicit.
