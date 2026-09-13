@@ -57,3 +57,15 @@ Startup callbacks can run before profile preferences and command-line overrides 
 Move the side effect to the preference-application phase or another point where the effective configuration is authoritative. If the desired behavior must occur even when a preference retains its default value, ensure the relevant apply path is still invoked; do not rely only on a detected value change.
 
 **Evidence:** merged master MR !20725, authored by John Thacker, prevents `mmdbresolve` from being started by the first MaxMindDB UAT post-update callback because that callback occurs before all preferences and command-line options are read. The accepted change waits for name-resolution preference application and explicitly marks that module for application so the default-enabled case is handled too.
+
+## Deferred or lazy registration must preserve the observable registration contract
+
+Deferring expensive registration work can improve startup time, but laziness is an implementation detail and must not change what generic consumers observe. Any code that enumerates fields, prefixes, protocols, handoffs, or other registration products must either run after registration is complete or explicitly force completion before it queries the registry.
+
+Merged !20665 experimented with deferring XML field registration while replacing hand-written parsing with libxml2. Merged successor !20684 deliberately restored much of the established XML registration/code flow while retaining the parser-backend improvement, so the accepted end state prioritized behavioral equivalence over keeping every part of the more aggressive lazy-registration refactor. Independently, merged !20674, authored by John Thacker, fixes the Qt supported-protocols loader by explicitly calling `proto_initialize_all_prefixes()` before iterating registered protocol fields; otherwise deferred fields could be missing from that consumer's view.
+
+**Architecture rule:** optimize registration only behind a stable externally observable contract. If a registry supports deferred construction, provide a defined completion point and invoke it before generic enumeration/query APIs that require a complete view. During parser/backend migrations, first preserve protocol registration, handoff, field naming, and discovery behavior; separate additional lifecycle/performance changes when they would make equivalence harder to establish.
+
+**Review implication:** when introducing lazy registration, search beyond the primary dissector path for consumers that enumerate registry state during startup, UI setup, taps, export, or command-line initialization. A fast startup path is not correct if another supported consumer sees an incomplete registry.
+
+**Confidence:** Very high. The evidence is a sequence of merged master changes, including a later accepted correction of the more aggressive XML refactor and an independent John Thacker fix for a consumer that needed explicit deferred-registration completion.
