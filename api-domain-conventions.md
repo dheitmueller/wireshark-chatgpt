@@ -8,9 +8,11 @@ Lengths, byte counts, offsets, and other quantities that cannot legitimately be 
 
 A cluster of merged MRs provides unusually strong evidence for this rule. In !25653, John Thacker changed multiple proto APIs that return item lengths from signed to unsigned because their results are inherently non-negative. In !25655 and !25651, Guy Harris similarly changed wiretap byte-count state and arithmetic to unsigned 64-bit values. In !25625, John Thacker widened RELOAD parser offsets after packet-derived 32-bit quantities had been stored in 16-bit variables; release backports !25627 and !25628 preserved the fix.
 
-**Implementation rule:** choose integer types from the semantic domain and maximum representable input, not from historical convenience. For packet/file offsets and lengths, verify that the type can represent the full wire or buffer range and avoid signedness that implies impossible negative values.
+Merged master MR !21574 supplies additional parser-specific evidence. An ASN.1 PER choice index is decoded from the packet as an unsigned value; converting it to signed `int` before further index arithmetic created signed-overflow undefined behavior under OSS-Fuzz. John Thacker's accepted fix keeps the value in `uint32_t`, preserving the wire field's actual domain through the arithmetic.
 
-**Confidence:** Extremely high. Multiple merged master changes from Guy Harris and John Thacker, with accepted stable-branch propagation.
+**Implementation rule:** choose integer types from the semantic domain and maximum representable input, not from historical convenience. For packet/file offsets and lengths, verify that the type can represent the full wire or buffer range and avoid signedness that implies impossible negative values. Keep packet-derived enumerators, indices, and counts in their non-negative domain unless a later API genuinely requires a signed representation.
+
+**Confidence:** Extremely high. Multiple merged master changes from Guy Harris and John Thacker, with accepted stable-branch propagation and independent OSS-Fuzz evidence.
 
 ## Normalize sentinel values at the API boundary, then keep internal APIs in the real domain
 
@@ -20,9 +22,11 @@ Merged MR !25622 is a strong exemplar. John Thacker changed internal proto-tree 
 
 Merged MR !21738 adds a complementary boundary-validation detail. WSLua `TreeItem_set_len` must preserve the documented `-1` sentinel, but after Jaap Keuter questioned an implementation that accepted every negative value, the merged code was tightened to reject values below `-1`. A distinguished sentinel does not imply that the entire otherwise-invalid numeric region shares its meaning.
 
-**Implementation rule:** keep exceptional encodings and compatibility sentinels at the smallest boundary that needs them. Normalize them before entering internal code so lower layers can express and enforce their true invariants in the type system. When validating the compatibility-facing boundary itself, accept exactly the documented sentinel values; do not generalize a special value such as `-1` into “any negative value” unless the API contract explicitly assigns meaning to that whole range.
+Merged master MR !21558, authored and merged by John Thacker, adds a further control-flow consequence. SSH uses `mac_length == -1` for "unknown". Testing that signed value with plain C truthiness incorrectly treats `-1` as a usable MAC length; the accepted fix tests `mac_length > 0` before consuming bytes and normalizes non-positive values before using them as an actual size. Stable backport !21559 preserves the correction.
 
-**Confidence:** Very high. Merged master API cleanup by John Thacker plus merged WSLua boundary validation revised in response to direct Jaap Keuter review.
+**Implementation rule:** keep exceptional encodings and compatibility sentinels at the smallest boundary that needs them. Normalize them before entering internal code so lower layers can express and enforce their true invariants in the type system. When validating the compatibility-facing boundary itself, accept exactly the documented sentinel values; do not generalize a special value such as `-1` into “any negative value” unless the API contract explicitly assigns meaning to that whole range. When a signed field mixes a negative sentinel with positive sizes or counts, test the semantic domain explicitly (`> 0`, `== sentinel`, etc.); do not use boolean truthiness as a proxy for validity.
+
+**Confidence:** Very high. Merged master API cleanup by John Thacker, merged WSLua boundary validation revised in response to direct Jaap Keuter review, and a merged John Thacker SSH correctness fix with stable backport.
 
 ## Consume aliased inputs before mutating an output parameter
 

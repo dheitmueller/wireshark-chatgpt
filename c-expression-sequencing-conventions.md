@@ -11,3 +11,13 @@ In merged master MR !24450, John Thacker explicitly rejected setting `hfinfo` tw
 **Implementation rule:** if two arguments would mutate, assign, increment, or otherwise depend on the same scalar state, establish the required order in separate statements before calling the function. Do not encode ordering assumptions in the argument list.
 
 **Confidence:** Very high. Direct substantive review from John Thacker on a merged master MR, with the correction applied before merge.
+
+## Separate validation from a call when another argument depends on that validation happening first
+
+Unspecified function-argument evaluation order is also dangerous when the arguments do not modify the same object. If one argument invokes a bounds-checking or exception-raising accessor and another argument performs arithmetic that is only safe after that validation, putting both expressions in one call does not establish the required order. The compiler may evaluate the arithmetic first.
+
+Merged master MR !21565, authored and merged by John Thacker after OSS-Fuzz found signed-overflow undefined behavior in the Kafka dissector, explicitly split `tvb_get_ptr()` out of a protocol-tree call. The TVBuff access is capable of throwing on an invalid/overflowing packet-derived range, but the other arguments contained length arithmetic that could overflow before the accessor was evaluated. The accepted fix performs the TVBuff access in a separate statement, then makes the call only after validation has completed.
+
+**Implementation rule:** when correctness relies on one operation validating, throwing, clamping, or otherwise establishing an invariant before another expression is evaluated, make that ordering explicit with separate statements. Do not use placement in a function argument list as a sequencing mechanism.
+
+**Confidence:** Extremely high. Merged master OSS-Fuzz fix authored and merged by John Thacker, with the C evaluation-order issue called out directly in the change rationale.
