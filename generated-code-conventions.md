@@ -12,6 +12,14 @@ Merged MR !22694, authored by John Thacker and merged by Anders Broman, adds COR
 
 **Confidence:** Extremely high. Merged master CI change authored by John Thacker and approved/merged by Anders Broman, with the generated-source invariant explicitly stated.
 
+### Keep the generator capable of reproducing accepted hand-modernizations
+
+Merged master MR !21028 updated both the Skinny generator template/input and `tools/parse_xml2skinny_dissector.py` after the checked-in dissector had accumulated accepted C99 type, include-cleanup, and loop-variable changes. Its explicit success criterion was that regeneration once again produced the same `packet-skinny.[ch]` files already in the tree. Guy Harris approved the MR and, when Alexis La Goutte suggested CI coverage, recommended first exposing generated-dissector regeneration through named CMake targets so contributors and CI need to know the target rather than the generator's procedural steps.
+
+**Implementation rule:** when an accepted change modernizes generated output, carry the equivalent change back into the authoritative template/generator promptly and verify byte-for-byte regeneration parity. Prefer a stable build-system target for regeneration so local contributor workflows and CI invoke the same authoritative procedure instead of duplicating generator command sequences.
+
+**Confidence:** Extremely high. Merged master correction explicitly restoring generator/output parity, approved by Guy Harris, with Guy also providing the build-interface direction for future CI enforcement.
+
 ## Generate derivative metadata instead of maintaining parallel hand-written copies
 
 When a dissector is already generated, metadata that can be derived reliably from the same authoritative input should be generated as part of that workflow rather than maintained in a separate hand-written file. Parallel manual copies create another source of drift and unnecessary intervention.
