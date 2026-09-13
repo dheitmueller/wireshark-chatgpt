@@ -60,8 +60,8 @@ Merged MR !21375 hardens `ptvcursor` by replacing direct offset additions inside
 
 An unrecognized subtype does not necessarily make the enclosing stream undecodable. If the outer record supplies a trustworthy length, display the unknown payload as opaque bytes, report that it is undecoded when useful, and advance by the complete encoded record extent, including any protocol-defined alignment or padding, so later sibling records remain parseable.
 
-Merged MR !20860 fixes sFlow parsing where unknown flow or counter record formats previously stopped without advancing the offset. The accepted change retains the declared record length, adds the unknown bytes to the tree with Expert Info, and advances using the protocol's four-byte alignment before continuing. The change was authored and merged by John Thacker and was also accepted as a stable-branch backport.
+Merged master MR !20801, authored by John Thacker, fixes sFlow parsing where unknown flow or counter record formats previously stopped without advancing the offset. The accepted change retains the declared record length, adds the unknown bytes to the tree with Expert Info, and advances using `WS_ROUNDUP_4(length)` so both record families remain synchronized at their protocol-defined four-byte alignment. Merged stable backport !20860 carries the same behavior into a maintained release branch.
 
 **Implementation rule:** for an unknown but structurally bounded record, distinguish “payload semantics unknown” from “framing unknown.” Preserve the outer framing, consume/skip the whole declared encoded extent, and continue at the next sibling rather than breaking at the unknown subtype.
 
-**Confidence:** Extremely high. Merged stable parser correctness fix authored and merged by John Thacker, with a concrete failure mode in which failing to advance corrupts all subsequent dissection.
+**Confidence:** Extremely high. Merged master parser correctness fix authored by John Thacker plus an accepted stable backport, with a concrete failure mode in which failing to advance corrupts all subsequent dissection.
