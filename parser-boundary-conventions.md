@@ -38,6 +38,18 @@ When an outer dissector already knows the exact extent of a nested message or su
 
 Merged MR !24758, authored by John Thacker and approved/merged by Anders Broman, converts RTPS submessage dissectors to operate on per-submessage TVB subsets. The stated goals are to reduce signed-integer-overflow risk and prevent malformed parsing from leaking from one submessage into the next. Merged MR !24737, also authored by John Thacker, independently applies the same approach to OCP. It combines a bounded message TVB with `proto_tree_add_item_ret_*` helpers so values needed for control flow are fetched once rather than re-reading at base-plus-inner offsets.
 
+Merged MR !21356 supplies earlier direct design commentary for the same pattern. While fixing BER end-offset overflows with checked arithmetic, John Thacker noted that the preferable long-term design would eliminate the `end_offset` bookkeeping and create a subset TVB instead, allowing the bounds exception to occur at the actual out-of-bounds access rather than during speculative end arithmetic.
+
 **Implementation rule:** once a trustworthy parent length identifies a nested record, create a TVB limited to that record and parse it in its own coordinate space. Prefer that structural boundary over carrying `(tvb, base_offset, length)` through every child helper and relying on each helper to repeat overflow-safe end arithmetic correctly.
 
-**Confidence:** Extremely high. Two independent merged master fixes authored by John Thacker, one directly addressing an OSS-Fuzz finding and the other explicitly preventing cross-submessage leakage.
+**Confidence:** Extremely high. Multiple independent merged master fixes authored by John Thacker, including direct design commentary favoring structural TVB bounds over absolute end-offset bookkeeping.
+
+## Route cursor movement through the API's checked advancement primitive
+
+A cursor abstraction only centralizes boundary safety if all of its internal operations use the same checked movement path. Helpers that directly modify the stored offset can bypass overflow handling and create inconsistent behavior between nominally equivalent cursor operations.
+
+Merged MR !21375 hardens `ptvcursor` by replacing direct offset additions inside several item-adding helpers with calls to `ptvcursor_advance()`. That primitive performs checked addition and throws `ReportedBoundsError` on overflow, so using it consistently makes the cursor's offset invariant apply to every mutation path rather than only to callers that happen to invoke the public advance operation explicitly.
+
+**Implementation rule:** when an API owns mutable parse position and already provides an invariant-enforcing movement helper, route every internal cursor change through that helper. Do not duplicate `offset += length` or equivalent arithmetic in sibling helpers; centralizing advancement makes overflow/error semantics uniform and keeps future safety changes localized.
+
+**Confidence:** Very high. Merged master parser-hardening change that deliberately funnels previously direct offset mutation through the existing checked cursor primitive.
