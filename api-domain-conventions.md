@@ -18,9 +18,11 @@ A public or compatibility-facing API may need a special signed sentinel such as 
 
 Merged MR !25622 is a strong exemplar. John Thacker changed internal proto-tree text helpers to accept unsigned lengths, while `proto_tree_add_subtree_format()`—the layer whose contract still permits `-1`—converts that sentinel into `tvb_captured_length_remaining()` before calling the internal unsigned helper. This removes a special case from lower layers without breaking the boundary contract.
 
-**Implementation rule:** keep exceptional encodings and compatibility sentinels at the smallest boundary that needs them. Normalize them before entering internal code so lower layers can express and enforce their true invariants in the type system.
+Merged MR !21738 adds a complementary boundary-validation detail. WSLua `TreeItem_set_len` must preserve the documented `-1` sentinel, but after Jaap Keuter questioned an implementation that accepted every negative value, the merged code was tightened to reject values below `-1`. A distinguished sentinel does not imply that the entire otherwise-invalid numeric region shares its meaning.
 
-**Confidence:** Very high. Merged master API cleanup by John Thacker, approved and merged by Anders Broman.
+**Implementation rule:** keep exceptional encodings and compatibility sentinels at the smallest boundary that needs them. Normalize them before entering internal code so lower layers can express and enforce their true invariants in the type system. When validating the compatibility-facing boundary itself, accept exactly the documented sentinel values; do not generalize a special value such as `-1` into “any negative value” unless the API contract explicitly assigns meaning to that whole range.
+
+**Confidence:** Very high. Merged master API cleanup by John Thacker plus merged WSLua boundary validation revised in response to direct Jaap Keuter review.
 
 ## Consume aliased inputs before mutating an output parameter
 
