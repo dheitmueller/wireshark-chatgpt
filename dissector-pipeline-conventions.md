@@ -19,3 +19,11 @@ If a helper sometimes suppresses expert information or column updates, prefer an
 When replacing the implementation used to parse configuration/schema input, separate the parser-engine substitution from changes to protocol registration timing, field registration behavior, and other observable semantics unless those semantic changes are independently intended and validated. Compare old and new generated/registered output where practical.
 
 **Evidence:** merged master MR !20684 replaces the XML DTD Flex parser with libxml2 while deliberately restoring the established field-registration flow rather than carrying forward broader behavior changes from an earlier attempt. Michael Mann supplied old/new field-output comparisons, and John Thacker explicitly reviewed the revised approach as the right direction while checking remaining DTD semantic differences. Closed draft !20718 explored a broader version and is therefore treated as superseded context rather than accepted precedent.
+
+## Internalize mandatory dissection preparation in the owning library layer
+
+When a dissection prerequisite can be derived from libwireshark's own state, perform it at the common library entry point rather than requiring every frontend or caller to remember an extra preparatory call. This keeps first-pass behavior consistent across Wireshark, TShark, and other consumers and prevents new frontends from silently omitting a required setup step.
+
+**Evidence:** merged master MR !20384, authored by John Thacker and approved/merged by Anders Broman, moves postdissector field priming into the common record/file dissection path. The library already knows whether the frame has been visited and whether postdissectors want fields on the first pass, so callers no longer need to remember to invoke the priming API themselves. The stated rationale is to centralize the logic and make subsequent changes easier.
+
+**Implementation rule:** if preparation is an invariant of the dissection pipeline rather than application policy, make the pipeline enforce it. Expose separate setup APIs only when callers genuinely need to choose whether or how the preparation occurs.
