@@ -135,3 +135,13 @@ Merged master MR !21805, authored and merged by John Thacker, fixes BPv7 convers
 **Implementation rule:** when packet-owned structures retain references, ensure the referenced storage lives at least as long as the packet-owned structure. Prefer canonical copies already resident in `pinfo->pool` rather than retaining pointers into protocol-private state whose allocator or reset boundary is shorter.
 
 **Confidence:** Very high. Merged master lifetime fix authored and merged by John Thacker and carried to a supported release branch.
+
+## Copy mutable defaults into independently owned option state
+
+Assigning a pointer to a default string into multiple independently mutable option objects creates hidden shared ownership. If each object later frees and replaces its own option value, a shallow assignment can free storage still referenced by the default or by sibling objects.
+
+Merged master MR !20413, authored and merged by Guy Harris, fixes capture-interface timestamp-type initialization by copying the default string into each new interface's option state. The timestamp type follows the same replace/free ownership model as the other string options, so each interface must own its own copy. The bug caused a crash reported through the security mailing list; stable-branch backports !20415 and !20416 preserve the same fix.
+
+**Implementation rule:** when a field participates in per-object replace/free semantics, initialize it with storage owned by that object rather than aliasing a shared default. Matching values do not imply shared lifetime. Audit neighboring string/collection options for consistent ownership whenever adding a new mutable option.
+
+**Confidence:** Extremely high. Merged master ownership fix authored and merged by Guy Harris, with the precise aliasing/free failure mechanism documented in the MR and carried to two release branches.
