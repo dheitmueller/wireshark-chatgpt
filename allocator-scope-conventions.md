@@ -93,3 +93,17 @@ Merged master MR !20780, authored by Michael Mann and accepted by Anders Broman,
 **Review rule:** when moving code into formatters, taps, printing/export paths, or other deferred callbacks, re-audit any `wmem_packet_scope()` use. Being associated with a packet is not equivalent to executing while packet scope is active.
 
 **Confidence:** Very high. Two merged master changes from senior maintainers, including a concrete crash and a broad RPC API cleanup.
+
+## Borrowed column strings must outlive `column_info`
+
+`col_set_str()` does not copy the supplied string. The caller therefore retains the lifetime obligation for that storage until the corresponding `packet_info`/`column_info` is finished with it. A string can be packet-related and still die too early for this API.
+
+Merged master MR !20317, authored and merged by John Thacker, makes this contract explicit in `column-utils.h`: strings allocated from `wmem_packet_scope()` are freed slightly too early for `col_set_str()`, while storage from `pinfo->pool` has the required lifetime. Martin Mathieson also pointed to `./tools/check_col_apis.py --verbose` as a project check for suspicious non-persistent strings passed to column APIs, and John noted that some violations are non-local because allocation and column assignment can happen in different functions.
+
+Merged !20316 (RPC) and !20311 (SICK CoLA) independently fix concrete cases by replacing ambient `wmem_packet_scope()` allocation with `pinfo->pool`; !20332 similarly moves MQ string extraction inside the `pinfo`-present path after a `pinfo->pool` conversion exposed a NULL-context crash.
+
+**Implementation rule:** before using a no-copy/borrowed-pointer API such as `col_set_str()`, verify the pointee lifetime against the consumer's actual lifetime, not merely the current function or dissection phase. For column strings created during packet dissection, use `pinfo->pool` when dynamic storage is required; use static/constant storage where appropriate.
+
+**Review rule:** no-copy APIs require interprocedural lifetime review. Trace where a string was allocated as well as where it is installed, and use `tools/check_col_apis.py --verbose` as a useful screening aid rather than assuming local inspection is sufficient.
+
+**Confidence:** Very high. Direct API documentation authored and merged by John Thacker plus multiple merged crash/use-after-free fixes in the same change series.
