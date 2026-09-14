@@ -51,3 +51,13 @@ Merged MR !24502 limits Protobuf URI-pattern recursion to 16 levels and adds a U
 **Implementation rule:** when a preference/UAT/configuration value controls recursive matching, validate structural complexity when the configuration is accepted and retain an explicit execution-time recursion/work bound as defense in depth. Do not assume configuration input is harmless merely because it is not packet-controlled.
 
 **Confidence:** Very high. Merged master denial-of-service fix, merged by John Thacker, with validation at both configuration and execution boundaries.
+
+## Do not turn an ambiguous specification presentation into a stricter wire-format requirement
+
+Diagrams, grouping, alignment in a table, or legacy prose can suggest a constraint without actually specifying it. Before making a reader reject traffic or forcing a writer to emit padding solely from such presentation, determine whether the requirement is normative and interoperable.
+
+MR !20574 provides unusually strong review evidence. The proposed BLF/LINKTYPE_LIN fix initially treated the link-type page's 4/8-byte layout as a mandatory padding rule. Guy Harris explicitly challenged whether that conclusion followed from the text, noting that the words “pad” and “padding” were absent and that the presentation could merely be grouping fields. The discussion went back to the format's original provenance/author before the MR was eventually merged months later.
+
+**Review rule:** when the apparent wire rule comes from ambiguous wording or diagram layout, separate what the document literally requires from what an implementation historically does. Seek authoritative clarification, deployed-implementation evidence, or compatibility rationale before tightening acceptance. Prefer a tolerant reader when the format contract permits it; do not create a new interoperability rule by interpretation alone.
+
+**Confidence:** Extremely high as a review method. Direct, extended protocol-interpretation feedback from Guy Harris on a merged MR, with the ambiguity explicitly identified and escalated to the specification's provenance.
