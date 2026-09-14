@@ -121,3 +121,13 @@ Merged MR !23816, authored by Gerald Combs, introduces `CMakePresets.json` and c
 **Implementation rule:** use CMake presets for stable, reusable generator/cache configuration shared by multiple developer or CI entry points. Keep job-specific feature toggles at the invocation site rather than growing one monolithic preset for unrelated build variants.
 
 **Confidence:** Very high. Merged master build-system/CI change authored by Gerald Combs and approved/merged after cross-platform pipeline validation.
+
+## Preserve symbolized diagnostic context in sanitizer builds
+
+Sanitizer-oriented builds may intentionally alter teardown behavior when ordinary shutdown would make diagnostics materially less useful. In particular, unloading dynamic modules before LeakSanitizer reports can erase the symbol/file/line information needed to act on leaks originating in plugins.
+
+Merged master MR !20378, authored and merged by John Thacker, marks Wireshark plugins resident when built with ASan/LSan so their code remains mapped through process exit. The MR demonstrates the difference directly: the same leak changes from `<unknown module>` frames to symbolized MATE source locations.
+
+**Implementation rule:** for diagnostic/instrumented builds, optimize teardown for actionable diagnostics rather than mechanically matching production unload behavior when the difference has no semantic effect on the tested workload. Keep such behavior narrowly conditional on the instrumentation that requires it.
+
+**Confidence:** Very high. Merged master sanitizer-support change authored and merged by John Thacker with before/after diagnostic evidence.
