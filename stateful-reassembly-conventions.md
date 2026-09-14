@@ -61,3 +61,13 @@ Merged MR !23844, authored by John Thacker, fixes Fibre Channel reassembly that 
 **Implementation rule:** run stateful protocol analysis and reassembly whenever the packet semantics require it, regardless of whether a `proto_tree` is being built. Restrict `tree` checks to presentation work that truly requires tree nodes; do not use them to suppress state transitions whose results must survive into later passes.
 
 **Confidence:** Extremely high. Merged master correctness fix authored by John Thacker, with the tree-less first-pass/redissection failure mode directly documented.
+
+## Include protocol generation/epoch when a sequence namespace can reset
+
+A fragment or message sequence number is only unique within the protocol namespace that defines it. If renegotiation, restart, epoch change, or another generation event can reset that number while older reassembly state still exists, the generation discriminator is part of the reassembly identity.
+
+Merged master MR !20435, authored and merged by John Thacker, fixes DTLS 1.2 handshake reassembly across renegotiation. DTLS 1.2 resets `message_seq` for each handshake while incrementing the epoch, so using `message_seq` alone can collide with an earlier handshake. The accepted code incorporates the epoch into the fragment sequence identifier. The MR explicitly distinguishes DTLS 1.3, where `message_seq` does not reset on key update and the same extra discriminator is not normally needed.
+
+**Implementation rule:** determine the lifetime of every sequence-number namespace. When a protocol generation event resets or reuses the sequence space, include that generation/epoch/session discriminator in the reassembly key rather than treating the raw sequence number as globally unique. Do not add dimensions that the protocol version does not actually use; model the version-specific identity semantics.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker with the reset/collision mechanism stated directly.
