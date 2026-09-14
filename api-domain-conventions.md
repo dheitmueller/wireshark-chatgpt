@@ -57,3 +57,13 @@ Merged master MR !21179 constifies the receiver parameters for the non-mutating 
 **Implementation rule:** apply constness at the layer whose mutation contract is known. For a read-only accessor, make the owning/container parameter `const` even when the API intentionally returns a mutable pointee. Do not conflate “this lookup does not mutate the container” with “the object obtained through the container is immutable.”
 
 **Confidence:** High. Broad merged master API cleanup across the core wmem container families; the change is explicit and internally consistent, though it had little substantive review discussion.
+
+## Do not reuse one protocol field as a proxy for a different semantic domain
+
+Two protocol properties may correlate on common traffic without representing the same thing. A field that is useful for inferring byte order is not thereby a character-set identifier, and an application/platform discriminator should not silently become the encoding parameter to a string API.
+
+Merged master MR !20559 was authored and merged by Guy Harris specifically to fix this in MQCONN reply handling. The MQ application type is retained only locally as a heuristic for integer byte order; character encoding is determined separately and passed to `tvb_get_string_enc()`. The previous code reused the application type as the string encoding and therefore conflated independent protocol semantics.
+
+**Implementation rule:** name, scope, and pass decoded values according to the protocol property they actually represent. If one value merely helps infer another property, keep that inference explicit and local, then carry the independently determined semantic value downstream. Do not turn correlation into type/meaning equivalence.
+
+**Confidence:** Extremely high. Direct merged correction authored by Guy Harris with the semantic distinction stated explicitly in the commit/MR rationale.
