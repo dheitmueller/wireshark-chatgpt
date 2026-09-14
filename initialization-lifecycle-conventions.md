@@ -70,6 +70,8 @@ Merged !20665 experimented with deferring XML field registration while replacing
 
 **Confidence:** Very high. The evidence is a sequence of merged master changes, including a later accepted correction of the more aggressive XML refactor and an independent John Thacker fix for a consumer that needed explicit deferred-registration completion.
 
+Merged master MR !20495, authored by John Thacker, provides additional performance evidence for this rule: X11, ASTERIX, and ERF defer thousands of same-prefix field registrations until their common dissection entry point, reducing empty-capture TShark startup time by a little over 10% in the author's callgrind/cachegrind and real-world measurements. The optimization was practical precisely because those protocols had controlled entry points; protocols with configuration-driven registration or many entry points were explicitly called out as less suitable for the same treatment.
+
 ## Register a dissector handle only after its owning protocol has been registered
 
 A dissector handle that is associated with a protocol ID must be created in a registration phase where that protocol ID is already valid. Do not register a handle for a sibling/sub-protocol from another protocol's registration function merely because both live in the same source file; doing so can bind the handle to protocol ID 0 or another not-yet-established value.
@@ -79,3 +81,25 @@ Merged master MR !20563, authored and merged by John Thacker, moves the DLT stor
 **Implementation rule:** treat protocol registration as a dependency for any handle whose metadata references that protocol. When a file registers multiple protocols, keep each handle registration with the registration function that owns its `proto_*` ID, unless a later phase explicitly guarantees all required IDs are initialized.
 
 **Confidence:** Extremely high. Merged John Thacker master fix with stable-branch propagation and an explicit failure mode in the MR description.
+
+## Resolve stable registry identities in handoff, not in the packet hot path
+
+If a dissector repeatedly looks up another already-registered protocol by a stable filter/name key, resolve that identity once in the handoff/registration lifecycle and retain the resulting protocol ID. Name-to-ID lookup is registry work, not packet-specific work.
+
+Merged master MR !20530, authored and merged by Michael Mann, moves repeated `proto_get_id_by_filter_name()` calls out of multiple dissectors' packet paths and into their handoff functions, caching the resulting protocol IDs for `p_get_proto_data()` and similar use.
+
+**Implementation rule:** use handoff as the phase for resolving stable cross-protocol handles/IDs after registration dependencies exist. Keep the dissection hot path focused on packet-dependent work; do not repeatedly hash or search immutable registry names for every packet.
+
+**Review implication:** this optimization depends on lifecycle correctness. Before caching a protocol identity in handoff, verify that the target protocol has already been registered and that the identity cannot change with preferences or per-capture state.
+
+**Confidence:** Very high. Merged master refactor by Michael Mann across multiple dissectors, with the performance rationale stated directly in the MR description.
+
+## Parse control options at the earliest phase required by the subsystem they control
+
+The general rule to defer preference-dependent side effects does not mean every command-line control belongs in the normal preference phase. If a subsystem can produce observable behavior before preferences are loaded, options controlling that early behavior must be interpreted before the first such use, by the subsystem that owns it.
+
+Merged master MR !20534, authored and merged by Michael Mann, restores handling of legacy `-o console.log.level:...` inside `ws_log_parse_args()` because logging can occur before ordinary preferences are processed. The later preferences path recognizes the option but no longer owns the side effect.
+
+**Implementation rule:** place configuration handling according to first-use dependency. Early bootstrap controls such as logging level may require subsystem-level argument parsing; ordinary behavior that depends on final profile/preferences should still wait for preference application. Avoid executing the same control independently in both phases.
+
+**Confidence:** Very high. The merged fix explicitly identifies pre-preference logging as the reason the option must remain in `ws_log`'s early argument handling.
