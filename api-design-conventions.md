@@ -73,3 +73,13 @@ Merged master MR !21638, authored and merged by Guy Harris, renames `read_record
 **Implementation rule:** after changing a helper's responsibility, re-audit both its name and signature. Name it for the current semantic action, and remove return values that no longer communicate information callers use. Do not preserve misleading interface shape merely to minimize the textual size of a refactor.
 
 **Confidence:** Extremely high. Merged master cleanup authored and merged by Guy Harris, with the semantic mismatch and obsolete result explicitly documented in the MR rationale.
+
+## Match pointer-to-pointer out parameters with pointer-sized storage
+
+A pointer-to-pointer out parameter is a real storage contract, not an invitation to cast the address of a smaller scalar to make the compiler accept the call. If an API writes a `void *` through a `void **`, the destination must actually be pointer-sized storage; receive the pointer value in the declared type and then convert it explicitly to the scalar representation expected by the caller.
+
+Merged master MR !20029, authored and merged by John Thacker, fixes an SSH call to `wmem_map_lookup_extended()` that passed `(void **)&sender_channel` where `sender_channel` was a `uint32_t`. On platforms where `void *` is wider than 32 bits, the callee can overwrite adjacent storage; the bug was observed as a segfault with the SFTP sample capture. The accepted code receives the result into `void *sender_channel_p` and then uses `GPOINTER_TO_UINT()` to recover the integer. Stable backport !20032 carries the same correction.
+
+**Implementation rule:** never satisfy an out-parameter type by casting the address of differently sized or differently represented storage. Use an object of the API's exact output type, then perform an explicit checked/project-standard conversion after the call.
+
+**Confidence:** Extremely high. Concrete merged crash fix authored and merged by John Thacker and propagated to a stable branch.
