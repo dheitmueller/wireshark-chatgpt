@@ -25,3 +25,15 @@ Merged MR !22947, authored and merged by John Thacker, fixes P4RPC by calling `w
 **Implementation rule:** after bounded formatting, use the formatter's documented return contract to distinguish complete output from truncation before examining or repairing the destination tail. Never infer initialized extent from buffer capacity alone, and keep payload length, destination capacity, and NUL-terminator accounting as separate quantities.
 
 **Confidence:** Very high. Merged master undefined-behavior fix authored and merged by John Thacker.
+
+## Formatting helpers that write into caller storage must receive the caller's capacity
+
+A formatting helper cannot safely assume that every destination has the canonical field-label size. The same formatter may be used for a normal protocol-tree label, a larger custom-column buffer, or some other caller-owned destination. Hard-coding one capacity in the helper makes the implementation depend on an accidental calling context and can turn a legitimate larger or differently sized destination into an overflow/truncation bug.
+
+Merged master MR !20320, authored and merged by Martin Mathieson after a crash with many O-RAN I/Q values, changes floating-point label helpers to take `label_str_size` explicitly and passes the actual capacity from each caller. Normal item-label callers pass `ITEM_LABEL_LENGTH`; the custom-column path passes its larger buffer size. During review, Guy Harris asked whether the code should format into an intermediate buffer and use `label_fill()`; that prompted examination of where `label_fill()` already occurs and expansion of the same size-aware treatment to the IEEE 11073 float formatter.
+
+**Implementation rule:** if a helper writes into memory owned by its caller, make destination capacity part of the helper contract and propagate the real size at every call site. Do not infer capacity from a conventional constant unless the type/API itself guarantees that exact storage size.
+
+**Review rule:** when fixing one overflow in a family of formatting helpers, audit sibling helpers and all callers for the same hidden-size assumption rather than applying a one-site bound check.
+
+**Confidence:** Extremely high. Merged crash fix plus direct Guy Harris review; the accepted change generalized the size contract across both affected floating-point formatting paths.
