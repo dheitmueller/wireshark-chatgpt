@@ -23,3 +23,13 @@ Merged MR !21008, authored and merged by John Thacker, adds an explicit generate
 **Architecture rule:** when a user-facing or analytical feature operates on a higher-layer protocol session, assign and persist a protocol-layer identity with the same lifetime and semantics as that session. Do not substitute a lower-layer transport discriminator merely because it usually correlates with the protocol; explicitly handle protocol modes that do not form the same kind of stream.
 
 **Confidence:** Extremely high. Merged master architecture authored and merged by John Thacker, with review centered on how the TLS session is created and reused.
+
+## Include every semantic discriminator in lookup and cache keys
+
+A numeric identifier is not a complete key when the same number legitimately names different objects in different semantic domains. Caches must distinguish all dimensions that affect the lookup result; otherwise a previous lookup can poison later lookups for another domain, including by caching a negative result.
+
+Merged master MR !20539, authored by John Thacker and merged by Anders Broman, fixes service-name resolution by keying the cache with both the port number and `port_type`. TCP, UDP, SCTP, and DCCP can use the same numeric port for different services, and the old cache could retain a NULL/result from one transport and incorrectly reuse it for another.
+
+**Architecture rule:** before choosing a cache/state key, enumerate the complete semantic identity of the object being cached. If a lookup result varies with transport type, direction, namespace, protocol mode, tag-owner bit, interface, or another discriminator, that discriminator belongs in the key even when one component is usually sufficient on common traffic. Cached misses require the same complete key discipline as cached hits.
+
+**Confidence:** Extremely high. Merged master correctness fix authored by John Thacker, consistent with the notebook's existing reassembly/conversation identity rules.
