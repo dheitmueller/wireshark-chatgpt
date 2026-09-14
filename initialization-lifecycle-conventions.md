@@ -69,3 +69,13 @@ Merged !20665 experimented with deferring XML field registration while replacing
 **Review implication:** when introducing lazy registration, search beyond the primary dissector path for consumers that enumerate registry state during startup, UI setup, taps, export, or command-line initialization. A fast startup path is not correct if another supported consumer sees an incomplete registry.
 
 **Confidence:** Very high. The evidence is a sequence of merged master changes, including a later accepted correction of the more aggressive XML refactor and an independent John Thacker fix for a consumer that needed explicit deferred-registration completion.
+
+## Register a dissector handle only after its owning protocol has been registered
+
+A dissector handle that is associated with a protocol ID must be created in a registration phase where that protocol ID is already valid. Do not register a handle for a sibling/sub-protocol from another protocol's registration function merely because both live in the same source file; doing so can bind the handle to protocol ID 0 or another not-yet-established value.
+
+Merged master MR !20563, authored and merged by John Thacker, moves the DLT storage dissector handle from `proto_register_dlt()` into `proto_register_dlt_storage_header()` immediately after the storage-header protocol itself is registered. Stable backports !20565 and !20566 carry the same ordering fix.
+
+**Implementation rule:** treat protocol registration as a dependency for any handle whose metadata references that protocol. When a file registers multiple protocols, keep each handle registration with the registration function that owns its `proto_*` ID, unless a later phase explicitly guarantees all required IDs are initialized.
+
+**Confidence:** Extremely high. Merged John Thacker master fix with stable-branch propagation and an explicit failure mode in the MR description.
