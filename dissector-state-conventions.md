@@ -41,3 +41,15 @@ Merged MR !21803, authored by John Thacker and carried to release-4.6, fixes TFT
 **Architecture rule:** identify the lifetime and identity of the state object, not merely the broadest conversation that can find the packet. If one endpoint tuple can carry successive logical sessions, create new state at the protocol's session-start event or key multiple session records beneath the broader conversation. Never let port/address reuse implicitly extend single-session state into a later transaction.
 
 **Confidence:** Very high. Merged John Thacker correctness fix with the state-lifetime mismatch described explicitly and accepted on a stable branch.
+
+## Match transient state to a single dissection pass when that is the semantic lifetime
+
+A frame can be dissected repeatedly, and a protocol dissector can also be invoked multiple times while dissecting one frame in a single pass. State whose only purpose is to distinguish the first invocation from later invocations in that same pass should reset naturally before the next pass; carrying it across passes makes redissection history affect presentation.
+
+Merged MR !20414 spent several review iterations on SMB column handling. John Thacker demonstrated that a static `last_fnum` could incorrectly classify the first SMB command when the GUI redissected the same frame after changing colorization. His preferred model was protocol data in `pinfo->pool`: it starts empty on each pass, can record that SMB has already been invoked for the current frame during that pass, and disappears before a later pass. He explicitly preferred `p_add_proto_data()`/`p_get_proto_data()` over globals where possible; `register_frame_end_routine()` was described as a fallback for pre-existing global state rather than a reason to introduce it.
+
+**Architecture rule:** identify whether state is per invocation, per frame/pass, per packet across passes, per conversation, or per file. For same-pass coordination between repeated calls of one dissector, prefer protocol-scoped data with `pinfo->pool` so redissection begins from a clean transient state. Do not infer same-pass history from a static frame number that survives into a later pass.
+
+**Review implication:** exercise GUI-triggered redissection paths when state affects columns or presentation. A test that only walks the capture sequentially once can miss stale-state bugs that appear when the same frame is dissected twice in succession.
+
+**Confidence:** Very high. The MR was eventually merged after a detailed multi-month review, and the pass-lifetime reasoning comes directly from John Thacker's concrete reproducer and proposed state model.
