@@ -31,3 +31,15 @@ Closed draft MR !22117 proposed generated SAE J2735:2024 dissector code while th
 **Submission rule:** before proposing generated dissector/source output, verify that the project can retain or otherwise legally access and use the canonical generator inputs under terms compatible with ongoing upstream maintenance. The regeneration procedure must be reproducible by Wireshark developers and CI without depending on a particular contributor or an externally supplied regenerated snapshot.
 
 **Confidence:** High for submission policy. The motivating MR closed unmerged, so it carries less weight than a merged implementation, but the rejection and reproducibility rationale were explicit maintainer feedback about a fundamental generated-source maintenance constraint.
+
+## Pin generated-source inputs to known-good upstream revisions and record them
+
+Reproducibility also requires controlling *which revision* of external generator inputs is used. Regenerating from an upstream development branch can silently import transient schema mistakes or behavior changes; a known-good release tag or otherwise pinned revision is preferable when upstream tip is not known to be stable for Wireshark's generator.
+
+Guy Harris's merged !20043 regenerated the X11 dissector inputs from current upstream sources, but merged follow-up !20044 corrected that choice after the xcbproto development tip was found to contain suspected XML errors. The accepted result pins xcbproto to the `xcb-proto-1.17.0` release tag, documents the required versions in `README.X11`, and records the exact generator input version in the generated file headers.
+
+**Generation rule:** use explicit, reproducible revisions for externally maintained schemas/registries used to produce checked-in source. Prefer known-good release tags when development tip has unresolved problems, and record enough provenance in the regeneration documentation and generated output to identify the inputs that produced the committed files.
+
+**Review rule:** treat a generator run succeeding as insufficient evidence that its upstream input revision is appropriate. Check upstream issues/release status when generated output changes unexpectedly, and prefer correcting the input provenance over hand-editing generated output.
+
+**Confidence:** Extremely high. The correcting MR !20044 was authored and merged by Guy Harris and directly supersedes the less-stable input choice in !20043.
