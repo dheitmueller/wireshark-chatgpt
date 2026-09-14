@@ -35,3 +35,15 @@ Merged master MR !20500, authored and merged by John Thacker, fixes IDB comparis
 **Implementation rule:** normalize optional metadata to its effective semantic value before identity/equality decisions. Do not let harmless serialization differences split one logical interface, and do not treat a missing option as a wildcard when its specified default differs from the other side.
 
 **Confidence:** Very high. Merged master fix authored and merged by John Thacker with the default/equality cases stated explicitly in the MR description.
+
+## Put shared per-packet interface identity at the layer that owns the semantics
+
+A capture format should only participate in interface-ID mapping when the format actually has interface identity to preserve. If multiple readers need the same name/channel-to-interface machinery, the reusable mechanism belongs in common Wiretap infrastructure rather than being copied into one format family and forced onto unrelated readers.
+
+Merged master MR !20470 refactors SocketCAN-based readers so formats with interface or channel information can attach interface IDs to packets. During review, Guy Harris asked which formats besides candump actually contain packets from multiple interfaces and a per-packet indication of where each packet was received or sent; he explicitly noted that those are the formats that need the mapping code. He also suggested that the mechanism should eventually be lifted to `wiretap/wtap.c` and generalized for iptrace, candump, and other formats that can use it. Michael Mann then identified PEAK TRC bus IDs and Busmaster channels as examples of real interface-like identity.
+
+**Implementation rule:** model interface identity from the capture format's actual semantics. Do not synthesize multi-interface machinery merely because a sibling reader uses it. When the same interface-name/channel mapping pattern appears across unrelated capture formats, prefer a Wiretap-level helper with format-specific extraction feeding it.
+
+**Review rule:** ask two separate questions: (1) does this format contain meaningful interface/channel identity for each packet, and (2) is the mapping implementation generic enough that it belongs above the individual reader? Keeping those questions separate prevents both metadata loss and premature abstraction.
+
+**Confidence:** Extremely high for the semantic/layering guidance because it comes from an explicit Guy Harris review discussion on a merged master MR.
