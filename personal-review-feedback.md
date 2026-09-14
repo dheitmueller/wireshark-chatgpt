@@ -87,6 +87,47 @@ Authoritative maintainer feedback, especially from Guy Harris, should receive co
 
 **Future check:** Before delivering or submitting any generated Wireshark fileset, mechanically scan every changed text file for trailing whitespace, extra blank lines at EOF, missing final newline, and other whitespace-only formatting defects. A text file should end with exactly one newline after its final content line, not additional blank lines.
 
+
+### Document authoritative sources and the compatibility boundary in new format readers
+
+**Provenance:** DTSDI patch review by Devin Heitmueller, 2026-09-13.
+
+**Feedback:** A new file-format implementation should point future developers to the vendor SDK or format documentation and should state, in the source file, what is supported, explicitly unsupported, and otherwise limited.
+
+**Classification:** `personal-check` / likely project-maintainability guidance.
+
+**Future check:** Does each new file reader's main source comment identify the best available authoritative format references and summarize supported versions/layouts/storage modes, rejected variants, and material operational limitations?
+
+### Prefer declarative classification tables over long identifier switches
+
+**Provenance:** DTSDI patch review by Devin Heitmueller, 2026-09-13.
+
+**Feedback:** The HANC audio-DID classifier was clearer as a compact table of inclusive DID ranges than as a switch enumerating every individual value.
+
+**Classification:** `personal-check`.
+
+**Future check:** When many numeric identifiers are being classified by contiguous ranges or a stable mapping, would a small const table plus a bounded lookup make the data easier to audit and extend than a long switch?
+
+### Remove low-value wrappers and keep lookup tables mechanically readable
+
+**Provenance:** DTSDI patch review by Devin Heitmueller, 2026-09-13.
+
+**Feedback:** Reassess helpers that only wrap one short API sequence, and align static value tables so their entries can be compared visually. In the DTSDI dissector, the generated-uint wrapper was eliminated by directly marking the item returned from `proto_tree_add_uint()` as generated.
+
+**Classification:** `personal-check`.
+
+**Future check:** For each new local helper, does it add a meaningful abstraction or safety invariant rather than merely obscuring a short standard API idiom? Are value/range tables consistently one entry per line with aligned fields?
+
+### Include malformed and truncated coverage for new capture readers
+
+**Provenance:** DTSDI patch review by Devin Heitmueller, 2026-09-13; consistent with the notebook's general fuzzing guidance.
+
+**Feedback:** Bounds-checking confidence should be supported by concrete adverse-input tests, not only inspection of valid samples.
+
+**Classification:** `confirmed-project-convention`.
+
+**Future check:** For a new Wiretap reader, test at least a recognized-but-truncated header, a truncated record, and hostile declared sizes/counts relevant to its allocation and iteration paths. Verify rejection occurs before unsafe arithmetic, allocation, or record iteration.
+
 ## Maintenance
 
 This checklist is cumulative. Do not remove an applicable check merely because it has become habitual. If later maintainer feedback supersedes or narrows a rule, update the entry with the new evidence and rationale.
