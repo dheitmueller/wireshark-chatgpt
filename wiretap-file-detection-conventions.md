@@ -23,3 +23,13 @@ Merged master MR !22240, authored and merged by John Thacker, adds `XML_PARSE_NO
 **Implementation rule:** while a file opener is in recognition/probing mode, suppress or capture diagnostics from subordinate parsers unless and until the opener has established that the input is its format. Report meaningful parser errors after ownership is known, but keep ordinary `OPEN_NOT_MINE` paths observationally quiet.
 
 **Confidence:** Very high. Merged master correctness/UX fix authored and merged by John Thacker with a minimal direct change to the recognition path.
+
+## Do not create persistent reader state while merely probing a candidate file
+
+Format recognition and committed reading can legitimately reuse the same parser, but the probe path must not perform mutations that assume the file has already been accepted. Per-file interface tables, IDBs, conversation-like mappings, and similar state belong after recognition establishes ownership.
+
+Merged master MR !20434, authored and merged by Guy Harris, deliberately passes a NULL `wtap *` into `candump_parse()` during `candump_open()`. The accompanying comment explains that the reader has not yet decided the file is candump and has not initialized its interface-name table, so the probe must not try to look up interface names or create interfaces. The explicit comment was added to prevent a future cleanup from treating the NULL as an accidental omission.
+
+**Implementation rule:** separate speculative parsing from committed side effects. If one parsing helper serves both phases, make the ownership/context argument explicitly optional and gate persistent mutations on it, or split probing from committed parsing when that is clearer. Document intentional sentinel/NULL context where it protects a subtle lifecycle boundary.
+
+**Confidence:** Extremely high. The convention comes directly from a merged master change authored and merged by Guy Harris whose sole purpose was documenting this intentional probe/commit distinction.
