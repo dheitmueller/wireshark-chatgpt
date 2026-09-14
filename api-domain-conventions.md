@@ -67,3 +67,13 @@ Merged master MR !20559 was authored and merged by Guy Harris specifically to fi
 **Implementation rule:** name, scope, and pass decoded values according to the protocol property they actually represent. If one value merely helps infer another property, keep that inference explicit and local, then carry the independently determined semantic value downstream. Do not turn correlation into type/meaning equivalence.
 
 **Confidence:** Extremely high. Direct merged correction authored by Guy Harris with the semantic distinction stated explicitly in the commit/MR rationale.
+
+## Carry the owning format/domain identity with format-specific records
+
+When a generic record container can hold payloads that are meaningful only for one file type or subsystem, the record itself should carry the discriminator needed to establish that ownership. Do not force writers or downstream consumers to infer compatibility from the payload shape or from ambient state.
+
+Merged master MR !19990, authored and merged by Guy Harris, adds the file type to headers for file-type-specific events and reports. This lets a writer reject a record whose format-specific payload belongs to a different file type. The same change improves `WTAP_ERR_UNWRITABLE_REC_TYPE` reporting by attaching an explanatory info string that states the specific incompatibility.
+
+**Implementation rule:** put the authoritative domain discriminator on the object whose validity depends on it, initialize it when the object is created, and validate it at serialization/consumption boundaries. When rejecting an incompatible record, pair the stable error code with enough diagnostic context to identify the actual violated contract.
+
+**Confidence:** Extremely high. Broad merged Wiretap contract cleanup authored and merged by Guy Harris.
