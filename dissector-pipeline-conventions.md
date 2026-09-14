@@ -27,3 +27,13 @@ When a dissection prerequisite can be derived from libwireshark's own state, per
 **Evidence:** merged master MR !20384, authored by John Thacker and approved/merged by Anders Broman, moves postdissector field priming into the common record/file dissection path. The library already knows whether the frame has been visited and whether postdissectors want fields on the first pass, so callers no longer need to remember to invoke the priming API themselves. The stated rationale is to centralize the logic and make subsequent changes easier.
 
 **Implementation rule:** if preparation is an invariant of the dissection pipeline rather than application policy, make the pipeline enforce it. Expose separate setup APIs only when callers genuinely need to choose whether or how the preparation occurs.
+
+## Update semantic state before rendering fields that depend on it
+
+When a packet both establishes state and displays generated fields derived from that state, perform the state update before the presentation step. Otherwise the packet that first creates the relationship can be the one packet that does not display it, with only later packets benefiting from the newly learned state.
+
+**Evidence:** merged master MR !20302 moves DIAMETER, GTP, GTPv2, and PFCP session tracking ahead of adding associated-session information to the protocol tree. The stated result is that the associated IMSI is available on the first request itself rather than only after that request has already been rendered. Review discussion considered duplicate presentation of an IMSI already present elsewhere in the packet, and the merged implementation favored consistent generated association information after state tracking is complete.
+
+**Implementation rule:** structure a dissection pass as semantic acquisition/update followed by presentation of derived state when the current packet is itself capable of changing that state. Do not make generated fields accidentally one packet late merely because tree construction precedes bookkeeping in source order.
+
+**Confidence:** High. Merged master behavior correction across four related protocol dissectors, with explicit review of the resulting generated-field presentation.
