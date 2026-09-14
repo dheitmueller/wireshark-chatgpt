@@ -83,3 +83,15 @@ Merged master MR !22439, authored and merged by Guy Harris after Coverity flagge
 **Implementation rule:** for an unsigned countdown, prefer `while (count != 0) { ...; count--; }` or an equivalently explicit construct. Do not use `while (count--)` when zero is the natural terminal state, especially for values derived from packet data or retained after the loop.
 
 **Confidence:** Extremely high. Merged master correctness cleanup authored and merged by Guy Harris, with the precise unsigned-wrap behavior identified by static analysis.
+
+## Restructure timestamp scaling when declared precision can overflow intermediate products
+
+Timestamp-resolution metadata can make otherwise simple scaling arithmetic overflow even when the final normalized timestamp is representable. Treat the resolution as untrusted arithmetic input and choose an exact formulation whose intermediates fit the implementation's integer types.
+
+Merged master MR !20440, authored by John Thacker and approved/merged by Anders Broman, fixes pcapng timestamp conversion when decimal resolutions finer than `10^-10` or binary resolutions finer than `2^-32` make the nanosecond calculation overflow. Rather than depending on non-portable wider integers, the accepted implementation uses different exact integer decompositions for powers of ten and powers of two so the multiplication/division sequence stays in range. The MR also notes the separate serialization problem that extremely fine source precision may exceed what later output can represent; that representation issue is tracked in the Wiretap interface-metadata conventions.
+
+**Implementation rule:** when converting externally declared units or resolutions, bound every intermediate product and denominator. If the straightforward `value * scale / divisor` expression can overflow, algebraically split quotient/remainder terms or otherwise reformulate the exact calculation before considering a wider implementation-specific integer type.
+
+**Review rule:** test arithmetic at the most extreme resolution allowed by the file format, not merely at common microsecond/nanosecond settings. Separately verify whether the in-memory and output formats can truthfully retain the source precision.
+
+**Confidence:** Very high. Merged master Wiretap correctness fix authored by John Thacker and approved/merged by Anders Broman.
