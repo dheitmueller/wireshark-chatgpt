@@ -14,6 +14,8 @@ When preparing, reviewing, or generating code that Devin is likely to submit ups
 
 Feedback on Devin's own contributions has elevated practical significance even when it has not yet been proven to be a universal Wireshark convention. Preserve provenance and scope so reviewer-specific or context-specific advice is not incorrectly generalized.
 
+This file is specifically for substantive feedback from third parties, such as upstream reviewers and maintainers, on Devin's contributions. Do not record Devin's own design instructions, preferences, or review comments here; treat those as task requirements or place independently verified general conventions in the appropriate topic file.
+
 For each useful review comment on Devin's contributions, record:
 
 - MR, mailing-list thread, patch, or other provenance and reviewer.
