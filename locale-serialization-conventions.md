@@ -11,3 +11,15 @@ Merged master MR !21663, authored by John Thacker and approved by Anders Broman,
 **Serialization rule:** use a canonical, grammar-defined numeric representation for machine-readable output rather than inheriting the user's numeric locale. Add regression coverage using a locale whose decimal separator differs from the canonical format so locale assumptions cannot remain invisible.
 
 **Confidence:** Very high. Merged master fix by John Thacker with a targeted non-C-locale regression test.
+
+## Machine-readable exporters should request the machine representation from the field-value layer
+
+Human display text and machine serialization are different contracts. When Wireshark's field-value layer already exposes a representation intended for a machine grammar, exporters should request that representation rather than starting from the human display representation and accumulating exporter-specific exceptions.
+
+Merged master MR !19316, authored and merged by John Thacker, changes `-T ek` field formatting from `FTREPR_DISPLAY` to `FTREPR_JSON`, matching `-T json`. That lets the shared ftype representation logic own details such as ISO 8601 absolute-time formatting and removes a redundant EK-specific absolute-time special case. The accepted change is a useful architectural example: choose the representation according to the consumer contract, then centralize type semantics below the individual exporter.
+
+Merged master MR !19329, also authored by John Thacker, adds a persistent machine-readable-output preference for conversation and endpoint taps and exposes the same choice in the GUI. In later discussion Guy Harris explicitly called out that output ideal for humans and output ideal for programs do not always coincide, and asked where else the distinction would be useful.
+
+**Representation rule:** do not assume presentation-oriented strings are suitable serialization values. For JSON/EK or another machine-consumed grammar, use the representation mode defined for that grammar and keep field-type formatting semantics in the shared representation layer when possible. When a statistics feature legitimately supports both audiences, make the human-vs-machine choice explicit and apply it consistently across CLI and GUI surfaces that expose the same data.
+
+**Confidence:** Very high. Independent merged master changes by John Thacker, with direct architectural reinforcement from Guy Harris.
