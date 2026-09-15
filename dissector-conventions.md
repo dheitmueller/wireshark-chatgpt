@@ -54,6 +54,7 @@ Before implementing new functionality, locate several analogous dissectors in th
 
 - A heuristic dissector must reject packets that do not belong to it without throwing a bounds exception merely because the packet is short or malformed. Recognition logic runs on arbitrary traffic, so every probe read needs to be guarded as part of the heuristic contract.
 - Prefer tvbuff remaining-length APIs such as `tvb_captured_length_remaining()` over hand-written arithmetic like `total_length - offset` when packet-controlled or unsigned offsets are involved. Merged MR !25807, authored by John Thacker, explicitly states that heuristic dissectors must not throw exceptions for nonmatching packets and replaces subtraction-based tests with `tvb_captured_length_remaining()`. This also avoids unsigned underflow turning a negative conceptual remainder into a huge positive value. The successful release-4.6 backport !25809 independently preserves the same pattern.
+- When multiple protocols legitimately share a registered port and one dissector is a broad catch-all that never rejects while another has strong recognition and can reject nonmatches, try the discriminating dissector first and fall back to the catch-all. John Thacker's merged MR !19496 applies this to Wake-on-LAN versus Echo/Discard on UDP ports 7 and 9. A non-rejecting dissector placed first makes later protocol recognition unreachable; dispatch order is therefore part of correctness, not just preference.
 
 ## Truncation, verification, and malformed data
 
