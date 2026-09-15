@@ -59,3 +59,13 @@ Merged !19841 converted Sysdig pcapng block handling to `register_pcapng_block_t
 **Implementation rule:** make handler registration collision-safe and preserve a single authoritative owner for each format identifier. Keep collision prevention separate from namespace-policy validation: an officially assigned extension identifier may legitimately be implemented outside core code, while arbitrary squatting on externally governed identifiers should not be encouraged.
 
 **Confidence:** Very high. Merged master architecture work with direct Guy Harris review.
+
+## Preserve section-scoped identity when rewriting or merging captures
+
+If a pcapng object is identified only within a section, references to that object cannot safely be treated as capture-global when sections are combined, reordered, or rewritten. A writer that combines sections must either preserve section boundaries or rewrite both the object identifiers and every reference to them consistently. Compatibility with external readers is part of the design constraint, not an afterthought.
+
+Merged !19734 added support for Darwin's legacy process-information blocks and triggered an extended review of how those blocks interact with pcapng section semantics. Guy Harris clarified that stored process-information blocks, like IDBs, are section-specific. John Thacker then pointed out that Wireshark/dumpcap commonly combine sections and that IDB identifiers are rewritten in packets in some such paths; the same issue therefore has to be solved deliberately for process-information references rather than assuming their IDs remain meaningful after a merge. The discussion also explicitly considered whether rewritten files would remain readable by existing Darwin `tcpdump`, and the MR ultimately merged after months of iteration and supplied sample captures for both pktap and droptap metadata.
+
+**Implementation rule:** whenever a block or option contains an identifier that is scoped to a section, audit every save/merge/passthrough path for that scope. Do not move definitions across sections or collapse sections unless all dependent references are remapped consistently, and validate the resulting file against important external readers when compatibility matters.
+
+**Confidence:** Very high. Merged master feature with prolonged architecture review including direct Guy Harris and John Thacker discussion.
