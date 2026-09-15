@@ -49,3 +49,13 @@ Merged !19979, authored and merged by Guy Harris, reshaped the custom-binary-opt
 **Implementation rule:** common infrastructure should identify and route extension data; extension modules should interpret it. Prefer established dissector-table/registration idioms, and reserve hard-coded switches for genuinely core closed sets rather than letting them grow with every extension.
 
 **Confidence:** Very high. Multiple merged master changes, including a coherent series authored and merged by Guy Harris plus direct Guy Harris architecture review.
+
+## Treat extension registration as ownership of a format identifier
+
+A registration API should prevent extensions from silently replacing handlers for identifiers already owned by core code or another extension. At the same time, policy about which identifiers may be registered should follow the external format's namespace rules rather than assuming that every non-core identifier is necessarily private/local.
+
+Merged !19841 converted Sysdig pcapng block handling to `register_pcapng_block_type_handler()` as part of shaping a plugin-style block API. In review, Guy Harris explained that registration checks serve in part to prevent plugins from overriding block types already handled by `pcapng.c`; he also distinguished officially assigned but not-yet-supported block types from arbitrary unregistered numbers. The implementation used first-registration ownership so a later registration could not override an existing handler.
+
+**Implementation rule:** make handler registration collision-safe and preserve a single authoritative owner for each format identifier. Keep collision prevention separate from namespace-policy validation: an officially assigned extension identifier may legitimately be implemented outside core code, while arbitrary squatting on externally governed identifiers should not be encouraged.
+
+**Confidence:** Very high. Merged master architecture work with direct Guy Harris review.
