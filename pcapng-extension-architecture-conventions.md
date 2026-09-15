@@ -39,3 +39,13 @@ For pcapng alignment, use the established `WS_ROUNDUP_n()` / `WS_PADDING_TO_n()`
 Merged !20113 and !20110, both authored and merged by Guy Harris, replaced local/hand-rolled alignment calculations with the common helpers and moved nonnegative byte counts toward unsigned types. Merged !20096 independently removed redundant SPB padding recomputation and used `WS_ROUNDUP_4()` for option sizing.
 
 **Confidence:** Very high. Repeated merged master cleanup by Guy Harris.
+
+## Replace vendor-specific dispatch with registered generic extension points
+
+When common packet or file-format code has accumulated knowledge of one vendor-specific option or record family, move the semantic handling into the owning module and dispatch through a generic registration mechanism. Where practical, shape the callback like an existing Wireshark dissector interface rather than inventing a parallel callback convention.
+
+Merged !19979, authored and merged by Guy Harris, reshaped the custom-binary-option callback to use the standard dissector signature. Merged !19980 then introduced a dissector table for custom binary options, moved Netflix Black Box Log dissection out of `packet-frame.c` into `packet-bblog.c`, and removed the last Netflix-specific knowledge from the common frame dissector. Merged !19957 independently moved Wiretap block-option registration toward module-owned registration; during review Guy Harris explicitly raised replacing record-type switch statements with lookup-table registration for non-core record types.
+
+**Implementation rule:** common infrastructure should identify and route extension data; extension modules should interpret it. Prefer established dissector-table/registration idioms, and reserve hard-coded switches for genuinely core closed sets rather than letting them grow with every extension.
+
+**Confidence:** Very high. Multiple merged master changes, including a coherent series authored and merged by Guy Harris plus direct Guy Harris architecture review.
