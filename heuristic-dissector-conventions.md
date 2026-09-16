@@ -12,6 +12,19 @@ Practical guidance:
 - When identification fundamentally depends on deployment configuration such as a non-standard port, prefer a configurable port binding / Decode As-capable dispatch path over a weak heuristic.
 - Once selected, use the transport's standard PDU helper when the protocol permits multiple messages in one transport unit instead of open-coding message iteration.
 
+## Re-evaluate heuristic defaults when accepted-value space expands
+
+A heuristic that was selective enough when introduced can become unsafe after an otherwise legitimate protocol change broadens the values it accepts. Re-evaluate false-positive probability whenever timestamp precision, legal ranges, framing variants, optional fields, or similar changes enlarge the heuristic's acceptance space. If the discriminator becomes weak, disabling the heuristic by default is preferable to silently increasing false positives while a stronger test is sought.
+
+Merged MR !19011, authored by John Thacker and merged after Alexis La Goutte's approval, is a concrete example. HiPerConTracer's timestamp plausibility test had accepted only about 0.01437% of the 64-bit search space when timestamps were constrained to microseconds. Adding nanosecond timestamps expanded that accepted space to about 14.37%, making UDP/TCP false positives too likely. The accepted response was to keep the heuristic available but disable it by default until a more discriminating test exists.
+
+Practical guidance:
+
+- Treat heuristic selectivity as a property that can regress when the protocol's valid input domain changes.
+- Where practical, quantify the accepted-value space or otherwise estimate false-positive risk rather than relying only on captures that happen not to collide.
+- A protocol feature expansion should trigger review of existing heuristic assumptions even if the heuristic code itself is unchanged.
+- When a formerly safe heuristic becomes weak, preserve explicit opt-in availability if useful, but do not keep it enabled by default merely for backward compatibility.
+
 ## Heuristics that override explicit protocol metadata should be opt-in
 
 When a protocol carries an explicit dispatch hint such as HTTP `Content-Type`, prefer that declared metadata by default. If real deployments frequently provide incorrect or overly generic metadata and a content heuristic can improve dissection, expose heuristic-first behavior as a user preference rather than silently changing the default precedence.
