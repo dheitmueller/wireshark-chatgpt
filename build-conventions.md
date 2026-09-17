@@ -2,6 +2,16 @@
 
 This file records durable build-system conventions extracted from accepted upstream Wireshark changes. Current upstream build files remain authoritative.
 
+## Suppress only the diagnostic a generated source cannot reasonably satisfy
+
+Generated code can legitimately violate a project warning policy that hand-written code is expected to satisfy. When that happens, disable the specific diagnostic for the generated source rather than disabling compiler warnings wholesale.
+
+Merged master work represented by release-4.4 MR !17410 changes Lemon-generated sources on MSVC from `/w` (all warnings disabled) to `/wd4100` (unused-parameter only), matching the existing GCC/Clang `-Wno-unused-parameter` treatment. This also avoids MSVC warning D9025 caused by overriding the project's normal warning-level options.
+
+**Implementation rule:** keep warning exceptions as narrow as possible in both diagnostic scope and source scope. Generated-code limitations justify suppressing the warning the generator predictably triggers, not hiding unrelated diagnostics from that source.
+
+**Confidence:** High. Accepted master behavior with a merged release-4.4 backport authored by John Thacker.
+
 ## Model object libraries as targets and propagate their usage requirements
 
 When a CMake object library is a reusable build component, link it as a target rather than manually injecting `$<TARGET_OBJECTS:...>` into each consumer's source list. Put the component's include paths and library requirements on the component target with the appropriate `PUBLIC` or `PRIVATE` scope so CMake can propagate them transitively.
