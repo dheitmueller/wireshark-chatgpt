@@ -53,3 +53,13 @@ Merged MR !20414 spent several review iterations on SMB column handling. John Th
 **Review implication:** exercise GUI-triggered redissection paths when state affects columns or presentation. A test that only walks the capture sequentially once can miss stale-state bugs that appear when the same frame is dissected twice in succession.
 
 **Confidence:** Very high. The MR was eventually merged after a detailed multi-month review, and the pass-lifetime reasoning comes directly from John Thacker's concrete reproducer and proposed state model.
+
+## Treat protocol-data keys as a namespace, not as interchangeable labels
+
+`p_add_proto_data()` / `p_get_proto_data()` identify an entry by the protocol ID and key (plus any layer bits used by the caller). Two logically independent state records stored under the same protocol ID must therefore use distinct keys. Reusing a key because two records have the same C type does not make them the same state object; one path can overwrite or retrieve the other's data and then interpret unrelated or uninitialized state as its own.
+
+Merged MR !26517 fixes EAP/LEAP frame state after LEAP reused EAP's `PROTO_DATA_EAP_FRAME_STATE` key. Both paths stored `frame_state_t`, but they represented different state machines. The collision caused them to stomp on one another and led to uninitialized-memory access. The accepted fix introduces a dedicated `PROTO_DATA_EAP_FRAME_STATE_LEAP` key and was approved and merged by John Thacker.
+
+**Architecture rule:** allocate protocol-data keys by semantic state identity. If multiple subprotocols, modes, or independent analyses use the same `proto_id`, give each independent record a distinct key (while preserving any deliberate layer component). Do not reuse a key merely because the payload struct type is identical.
+
+**Confidence:** Very high. Direct merged correctness fix with the key collision and resulting memory-safety failure stated explicitly.
