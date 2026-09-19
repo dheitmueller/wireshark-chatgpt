@@ -61,3 +61,23 @@ Merged master MR !22425, authored and merged by Guy Harris, changes `str_to_eth(
 **Implementation rule:** for APIs operating on a single fixed-size binary object, consider expressing the complete object shape in the C type rather than accepting an undifferentiated byte pointer. This is particularly useful for identifiers such as fixed-width link-layer addresses where the size is part of the semantic contract. Do not force this pattern across variable-length buffers or external ABI signatures where a pointer-plus-length contract is the correct abstraction.
 
 **Confidence:** Extremely high. Merged master API cleanup authored and merged by Guy Harris with an explicit semantic-type rationale.
+
+## Use standard C integer format macros with standard C integer types
+
+When modernizing Wireshark-owned integer code from GLib aliases to standard C fixed-width types, modernize the corresponding formatting contract as well. Use the `<inttypes.h>` `PRI*`/`SCN*` macros that match the standard integer type rather than retaining GLib-specific format macros.
+
+Merged MR !16471, authored by Gerald Combs and merged by Anders Broman, explicitly replaces `G_GUINT64_FORMAT` and `G_GINT64_FORMAT` with `PRIu64` and `PRId64` and recommends the C99 forms. The surrounding merged conversion series (!16449-!16457, !16464-!16468, and !16483-!16487) systematically moves dissector-internal types and tvbuff accessors toward standard C forms, making !16471 an explicit formatting rule within a broad accepted migration rather than an isolated cleanup.
+
+**Implementation rule:** after choosing a standard fixed-width integer type for Wireshark-owned data, use the matching standard format macro for printf/scanf-family formatting. Keep type and format contract paired; do not rely on platform-specific assumptions about the underlying base type or mix a migrated C type with an unrelated library-specific format macro.
+
+**Confidence:** Very high. Explicit merged master recommendation backed by a broad merged type-conversion series.
+
+## Bulk type conversion must preserve dependency API boolean conventions
+
+Type-modernization scripts are useful for large mechanical migrations, but they must distinguish Wireshark-owned values from dependency API parameters. In particular, GLib functions declared with `gboolean` parameters should continue to use the GLib boolean convention expected at that API boundary rather than being rewritten blindly to C `bool` literals.
+
+During review of merged !16450, Stig Bjørlykke explicitly requested retaining `gboolean` semantics for GLib APIs and stated that GLib functions using `gboolean` should keep `TRUE`/`FALSE`. The conversion was corrected afterward: merged !16458 restores `TRUE` in `g_string_free()` calls in `packet-f5ethtrailer.c`, and merged !16459 does the same in `packet-btatt.c`. This independently corroborates the notebook's existing dependency-boundary rule and shows that bulk conversion tooling needs API-aware exclusions or post-conversion review.
+
+**Implementation rule:** do not treat `gboolean`/`bool` or `TRUE`/`true` as mechanically interchangeable across dependency calls. Conversion scripts should exclude or specially handle dependency-owned API arguments, and reviewers should check the callee prototype when a bulk migration changes scalar types or boolean spellings at a library boundary.
+
+**Confidence:** Very high. Direct maintainer review plus two merged corrective follow-ups, consistent with independently reviewed later API-boundary evidence.
