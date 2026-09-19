@@ -11,3 +11,13 @@ Merged master MR !21482 adds a packaging-time check for shipped headers after a 
 **Implementation rule:** mechanically include/preprocess installed public headers from a clean consumer context in each supported language mode, rather than relying on Wireshark's internal translation units to prove header usability. Generate the test input from the authoritative shipped-header list where practical so newly installed headers enter the check automatically.
 
 **Confidence:** Very high. Merged master build/packaging validation with Guy Harris review assignment and Anders Broman merge, following an actual public-header C-compatibility failure.
+
+## Include the headers that directly define macros and declarations you use
+
+A widely included or public-facing header should be self-contained with respect to the symbols in its own declarations. Do not rely on some other header normally being included first and indirectly supplying an annotation, export macro, typedef, or declaration. Transitive include order is an implementation accident and can differ between translation units, tools, and external consumers.
+
+Merged master MR !16504, authored and merged by Guy Harris, makes `tvbuff.h` directly include the headers that define `WS_DLL_PUBLIC` and the `WS_*` attribute macros it uses. The change removes dependence on surrounding include order and also lets standalone analysis tools such as cppcheck see the declarations in the same context as the compiler.
+
+**Implementation rule:** if a header uses a macro, annotation, or type in its own interface, include the authoritative header that defines it unless the type is deliberately handled through a valid opaque forward declaration. Do not depend on unrelated callers or umbrella headers to establish that prerequisite first.
+
+**Confidence:** Extremely high. Merged header-hygiene correction authored and merged by Guy Harris.
