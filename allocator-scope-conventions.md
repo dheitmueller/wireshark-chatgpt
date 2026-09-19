@@ -16,6 +16,18 @@ During !17606 review, Gerald Combs suggested an even narrower ownership model: a
 
 **Confidence:** Very high. Merged correctness fix plus direct review from Gerald Combs and agreement from John Thacker; the same lifetime principle is independently represented elsewhere in the notebook.
 
+## Globals must not retain pointers into packet-scoped storage after frame teardown
+
+Scope-managed allocation frees the storage automatically, but it does not clear aliases stored outside that scope. A global or otherwise longer-lived pointer to packet-scoped data becomes dangling when the frame finishes even though no explicit free is required.
+
+Merged master fix !10089 and its accepted release backports !10096 (4.0) and !10097 (3.6), authored by John Thacker, repair RPC-over-RDMA state where a global write-offset array was allocated from `wmem_packet_scope()`. The accepted stable-branch solution registers a frame-end routine that sets the global pointer to NULL. The MR explicitly notes that protocol data would be the preferable architecture, but the frame-end reset was the appropriate low-risk stable fix because a header helper lacked `packet_info` context.
+
+**Implementation rule:** never let a global, static, conversation-independent cache, or other longer-lived alias continue to reference packet-scoped storage after the packet/frame lifetime ends. Prefer moving such state into protocol/packet data with an explicit lifetime. When a stable-branch-compatible architectural change is impractical, register frame-end cleanup that invalidates the alias even though the scoped allocation itself requires no free.
+
+**Review rule:** scope-managed memory review must inspect aliases as well as frees. Automatic deallocation prevents leaks; it does not prevent stale pointers held by objects with broader lifetime.
+
+**Confidence:** Very high. Merged master correctness fix plus accepted backports to both supported stable branches, authored/merged by John Thacker.
+
 ## Pass short-lived borrowed data explicitly instead of hiding it in broader context state
 
 A pointer can be technically valid for the duration of a call and still be a poor member of a longer-lived context structure. If a value is produced for one immediate operation and its lifetime does not match the context object, make that borrowed lifetime visible in the function signature.
