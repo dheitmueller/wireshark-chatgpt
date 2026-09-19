@@ -83,3 +83,13 @@ Merged master MR !20029, authored and merged by John Thacker, fixes an SSH call 
 **Implementation rule:** never satisfy an out-parameter type by casting the address of differently sized or differently represented storage. Use an object of the API's exact output type, then perform an explicit checked/project-standard conversion after the call.
 
 **Confidence:** Extremely high. Concrete merged crash fix authored and merged by John Thacker and propagated to a stable branch.
+
+## Put operation-wide bookkeeping in the primitive that owns the operation
+
+When every normal caller of a low-level operation must perform the same state update, make that update part of the operation itself rather than requiring callers to remember a second bookkeeping step. This reduces duplicated call-site logic and makes the state invariant hold automatically. Callers with deliberately non-linear behavior should save and restore the bookkeeping state around that exceptional operation rather than weakening the normal contract.
+
+Merged MR !10105 moves `wdh->bytes_dumped` accounting into `wtap_dump_file_write()` and removes the repeated manual increments from capture-file writers. File formats that write packets and later seek back to fill a header preserve the correct logical byte count by saving and restoring `bytes_dumped` around the header rewrite. John Thacker approved and merged the change after rebasing it.
+
+**Implementation rule:** if a state change is an invariant consequence of a successful primitive operation, update that state inside the primitive. Handle exceptional operations such as in-place rewrites explicitly at their call sites by preserving/restoring the state needed to retain the primitive's simple normal contract.
+
+**Confidence:** Very high. Broad merged Wiretap cleanup approved and merged by John Thacker, removing duplicated accounting from many writers.
