@@ -15,3 +15,13 @@ Merged successor MR !21901 provides the accepted design. The SI and IEC prefix a
 **Review rule:** when static analysis reports a possible array overrun, check not only the comparison but also whether the expression used to derive the bound still denotes the backing array. A syntactically plausible bounds check with a pointer-derived `G_N_ELEMENTS()` can be worse than no fix because it appears self-maintaining while enforcing the wrong limit.
 
 **Confidence:** Very high for the rule. It combines explicit John Thacker review rejecting the incorrect form with the merged, tested successor !21901. The abandoned !21898 implementation itself is deliberately down-weighted.
+
+## Enforce fixed-array capacity at the consumer boundary as well as at producers
+
+A structure that carries both a count and a fixed-size backing array has an internal invariant: the count must never exceed the array capacity. It is useful for in-tree producers to enforce that invariant before handing the structure off, but a consumer that indexes the fixed array should still validate the count it receives rather than relying on every current and future producer to have done so correctly.
+
+Merged MR !26541 adds exactly those checks to the UMTS FP dissector for `fp_info.no_ddi_entries`, even though all in-tree dissectors that populate the structure had already been fixed to cap the value. The MR explicitly describes the change as checking in the consumer as well, and Anders Broman approved and merged it. Release-branch backports !26546 and !26547 carry the same hardening into supported branches.
+
+**Implementation rule:** when a consumer receives a count-plus-fixed-array structure and will index the array using that count, validate `count <= capacity` at the consuming boundary before iteration or indexing. Producer-side validation is valuable but does not replace the consumer's own memory-safety check, especially for shared structures with multiple producers.
+
+**Confidence:** Very high. Merged master hardening authored by John Thacker, approved by Anders Broman, with two accepted stable-branch backports.
