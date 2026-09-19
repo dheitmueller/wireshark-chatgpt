@@ -93,3 +93,13 @@ Merged MR !10105 moves `wdh->bytes_dumped` accounting into `wtap_dump_file_write
 **Implementation rule:** if a state change is an invariant consequence of a successful primitive operation, update that state inside the primitive. Handle exceptional operations such as in-place rewrites explicitly at their call sites by preserving/restoring the state needed to retain the primitive's simple normal contract.
 
 **Confidence:** Very high. Broad merged Wiretap cleanup approved and merged by John Thacker, removing duplicated accounting from many writers.
+
+## Express read-only pointer contracts with `const` instead of forcing callers to cast
+
+If an API consumes caller-owned data without modifying it, declare that pointer parameter `const`. Do not make every caller cast away constness merely to satisfy an unnecessarily mutable signature; the type system should document and enforce the API's actual ownership/mutation contract. When a fixed string's size is part of a bounded wire representation, a static array plus `sizeof(array) - 1` can also make the bound compile-time visible and avoid narrowing warnings that arise from runtime-sized `strlen()` results.
+
+Merged MR !10048, authored by Guy Harris, changes the data parameter of `wtap_buffer_append_epdu_tag()` to `const guint8 *` because the routine does not and should not modify the supplied bytes. It also changes fixed protocol names to static arrays and uses `sizeof ... - 1` so compilers can prove that the Exported-PDU tag length fits its 16-bit field. Closed !10049 proposed a convenience macro for the same warning, but Guy folded the corrected underlying API and call-site treatment into !10048; therefore the merged implementation is the authoritative precedent.
+
+**Implementation rule:** make non-mutating byte/string inputs const-correct at the API boundary. For fixed compile-time objects feeding bounded length fields, prefer representations that preserve compile-time size information rather than hiding it behind a pointer and recovering length dynamically.
+
+**Confidence:** Extremely high. Merged API correction authored by Guy Harris, with the competing closed proposal explicitly superseded by the accepted implementation.
