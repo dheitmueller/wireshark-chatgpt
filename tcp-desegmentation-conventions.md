@@ -19,6 +19,16 @@ Merged MR !16517, authored and merged by John Thacker, replaces NMF's hand-rolle
 
 **Confidence:** Very high. Merged master stream-framing fix authored and merged by John Thacker.
 
+## Recover from contradictory framing after stream ownership is established
+
+Once a dissector is operating inside `tcp_dissect_pdus()`, malformed duplicate framing fields are not necessarily a reason to reject the current packet as though the protocol had never been recognized. If two redundant length/type fields disagree and the dissector has no principled way to choose which is authoritative, consume a bounded amount of the current PDU, report the contradiction with expert information, and arrange to search for a trustworthy framing point on subsequent data rather than inventing a value or throwing through the stream helper.
+
+Merged MR !16463, authored by John Thacker and merged by Anders Broman, applies this policy to IEC 60870-5-101/104 traffic seen through serial-to-TCP converters. When duplicated length or type fields disagree, the accepted implementation reports the bogus packet, takes the remainder of the current packet, and attempts to synchronize on a later PDU. The MR explicitly notes that once inside `tcp_dissect_pdus()` the dissector cannot simply reject the packet and that neither of two conflicting duplicate values can be assumed correct.
+
+**Implementation rule:** distinguish initial protocol recognition from recovery after a stream dissector has already committed to framing. For contradictory redundant framing fields, surface expert diagnostics and choose a bounded resynchronization strategy; do not arbitrarily trust one conflicting copy, let malformed arithmetic escape, or retroactively behave like an uncommitted heuristic probe.
+
+**Confidence:** Very high. Merged master malformed-stream recovery change authored by John Thacker and merged by Anders Broman.
+
 ## Relationship to general heuristic guidance
 
 These rules complement `dissector-conventions.md`: heuristic probes must be safe on arbitrary traffic and may decline nonmatches, but once a stateful TCP dissector has committed to desegmentation it must not subsequently behave as though the same packet were merely an unclaimed heuristic candidate.
