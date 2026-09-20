@@ -23,3 +23,13 @@ Merged MR !21492 adds project-wide detection for inefficient or redundant uses o
 **Implementation rule:** when review repeatedly exposes a syntactically identifiable class of API misuse, prefer adding or extending a Wireshark checker and integrating it with the normal pre-submit workflow. Keep the checker focused on cases where the diagnosis is dependable; leave context-dependent fixes for review or an explicit fixer mode.
 
 **Confidence:** High. Merged master tooling change with extensive review and explicit discussion of the boundary between safe detection and semantic replacement.
+
+## Make semantic fixups auditable inside bulk mechanical refactors
+
+A scripted migration can produce a mostly mechanical diff while still requiring a small number of human semantic decisions. Those hand edits carry more review risk than the generated replacements and should be easy to identify and review independently; a tree merely compiling after “fixups” is not evidence that those decisions are semantically correct.
+
+During merged MR !16268, Martin Mathieson explicitly asked what manual fixes were needed after the type-conversion script. Stig Bjørlykke warned that a very large MR made those fixes hard to distinguish and that “fixes to make it compile” could be merged without checking whether they were correct. Merged MR !16265 illustrates a better review shape by explicitly calling out the exceptional manual change. Closed MR !16278 supplies only secondary negative evidence: a compiler issue exposed by conversion was better treated as an independent focused fix than as a reason to convert every dissector.
+
+**Review/submission rule:** for large scripted refactors, make the mechanical transform reproducible and isolate or explicitly enumerate every manual semantic fix. Prefer separate commits or focused follow-up MRs when a hand change has its own correctness argument. Review dependency/API contracts for those edits; do not accept successful compilation as proof of semantic correctness.
+
+**Confidence:** High. Direct maintainer review on a merged bulk refactor, corroborated by an adjacent merged example; the closed MR is used only as secondary evidence.
