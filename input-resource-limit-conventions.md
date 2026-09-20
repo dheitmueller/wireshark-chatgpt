@@ -31,3 +31,15 @@ Merged master MR !22325, authored by John Thacker, caps HTTP/3 decoded header ou
 **Implementation rule:** distinguish structural scalability from resource policy. Optimizing lookup complexity or eliminating recursive stack growth is useful, but parsers of compressed or expansion-capable input should also impose a defensible bound on total produced bytes or equivalent aggregate work.
 
 **Confidence:** Very high. Both are merged master changes authored by John Thacker, and the distinction between implementation scalability and a hostile-input byte ceiling is explicit in the MR descriptions.
+
+## Validate hostile counts before allocation, and apply the limit to every equivalent decode path
+
+A count that directly determines allocation size must be sanity-checked before the allocation occurs; limiting only the later loop is too late to prevent memory amplification. When a protocol has several structurally equivalent count-driven decode paths, the resource limit must be applied consistently to all of them rather than fixing only the first reproducer.
+
+Merged master MR !16237 fixes NFSv4 decoding after a malformed capture could drive `wmem_alloc0_array()` to request roughly 2.2 GiB. The change adds a maximum operation count and performs the check before allocation in all remaining affected NFSv4 array decode paths. The MR includes a small reproducer and a Valgrind trace demonstrating the excessive allocation, making both the resource failure and the effectiveness of the fix directly testable.
+
+**Implementation rule:** validate untrusted element counts before computing or allocating count-sized storage, using a defensible protocol/implementation ceiling. Audit sibling decoders for the same count-to-allocation pattern and apply the limit uniformly. A post-allocation loop bound does not mitigate the allocation itself.
+
+**Testing rule:** for resource-amplification bugs, keep a minimal malformed-input reproducer when practical and use allocation diagnostics, Valgrind, sanitizers, or equivalent tooling to verify that the excessive request occurs before the fix and is prevented afterward.
+
+**Confidence:** Very high. Merged master resource-exhaustion fix with a concrete reproducer and dynamic-analysis evidence, accepted upstream.
