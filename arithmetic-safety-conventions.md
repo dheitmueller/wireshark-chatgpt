@@ -95,3 +95,15 @@ Merged master MR !20440, authored by John Thacker and approved/merged by Anders 
 **Review rule:** test arithmetic at the most extreme resolution allowed by the file format, not merely at common microsecond/nanosecond settings. Separately verify whether the in-memory and output formats can truthfully retain the source precision.
 
 **Confidence:** Very high. Merged master Wiretap correctness fix authored by John Thacker and approved/merged by Anders Broman.
+
+## After clamping or normalizing a value, use the canonical value for every downstream calculation
+
+A guard that clamps an input is only effective if later arithmetic consistently uses the clamped representation. Retaining the original out-of-range value for shifts, offsets, loop counts, or secondary length calculations can reintroduce exactly the overflow or undefined behavior that normalization was intended to prevent.
+
+Merged master MR !16344, authored and merged by John Thacker, fixes `tvb_get_bits64_le()`. The routine clamps an excessive requested bit count to 64, but one downstream calculation still used the original `total_no_of_bits` rather than the normalized `remaining_bits`. That stale value could drive invalid shift/count arithmetic despite the earlier clamp. The accepted fix makes the downstream computation use the already-clamped value.
+
+**Implementation rule:** once a value has been validated, clamped, canonicalized, or otherwise normalized, treat that result as the authoritative representation for the remainder of the operation. Do not mix the raw input back into arithmetic that depends on the normalization invariant.
+
+**Review rule:** after introducing a clamp or normalization step, search all subsequent uses of the original input and verify that each is intentionally raw; stale uses are a common way for safety fixes to become incomplete.
+
+**Confidence:** Very high. Merged master tvbuff correctness fix authored and merged by John Thacker.
