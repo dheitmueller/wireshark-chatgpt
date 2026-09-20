@@ -103,3 +103,23 @@ Merged master MR !20534, authored and merged by Michael Mann, restores handling 
 **Implementation rule:** place configuration handling according to first-use dependency. Early bootstrap controls such as logging level may require subsystem-level argument parsing; ordinary behavior that depends on final profile/preferences should still wait for preference application. Avoid executing the same control independently in both phases.
 
 **Confidence:** Very high. The merged fix explicitly identifies pre-preference logging as the reason the option must remain in `ws_log`'s early argument handling.
+
+## Register taps during protocol registration, before handoff consumers run
+
+A tap name/ID is registry state that other dissectors can consume during handoff. Registering it only in the owning dissector's handoff makes correctness depend on handoff ordering.
+
+Merged master MR !16252 moves `register_tap()` calls from `proto_reg_handoff_*()` into `proto_register_*()` across multiple dissectors so taps already exist when peer handoff routines run.
+
+**Architecture rule:** establish taps in protocol registration. Use handoff for bindings and dependency resolution that consume previously registered identities; do not create cross-dissector registry identities so late that another handoff can observe them missing. Apply the same rule to generated/template sources so regeneration preserves lifecycle placement.
+
+**Confidence:** Very high. Broad merged cleanup explicitly justified by cross-dissector handoff availability and approved/merged by Pascal Quantin.
+
+## Preserve configuration-source precedence when a lower-precedence layer is reloaded
+
+Configuration precedence is a continuing invariant, not a one-time startup parse order. Reloading a profile replaces profile-backed values but must not silently discard a still-active higher-precedence command-line override.
+
+Merged master MR !16250 changes profile switching to call `commandline_options_reapply()` after loading the new profile, and documents that command-line preferences continue to override profile preferences. It also documents the deliberate exception: when the user explicitly changes the same preference in the Preferences dialog, that command-line override is retired for subsequent profile switching.
+
+**Implementation rule:** model preference sources by precedence and lifetime. Whenever a lower-precedence source such as a profile is reloaded, reapply active higher-precedence overrides before consumers observe effective configuration. If interactive mutation is defined to supersede or retire an override, make that transition explicit rather than relying on incidental load order.
+
+**Confidence:** Very high. Merged master behavior fix and matching user-facing documentation.
