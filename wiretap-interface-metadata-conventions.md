@@ -47,3 +47,15 @@ Merged master MR !20470 refactors SocketCAN-based readers so formats with interf
 **Review rule:** ask two separate questions: (1) does this format contain meaningful interface/channel identity for each packet, and (2) is the mapping implementation generic enough that it belongs above the individual reader? Keeping those questions separate prevents both metadata loss and premature abstraction.
 
 **Confidence:** Extremely high for the semantic/layering guidance because it comes from an explicit Guy Harris review discussion on a merged master MR.
+
+## Carry already-resolved interface metadata across the capture process boundary
+
+When the parent capture application has already resolved user-visible interface metadata, pass that metadata to the capture child instead of asking the child to rediscover it from an interface name. Parent and child can have different discovery capabilities or platform behavior, and rediscovery can produce inconsistent IDBs and filenames.
+
+Merged master MR !15765, authored by John Thacker and merged by Anders Broman, changes Wireshark/tshark capture startup so an interface description is always passed to dumpcap when available, not only for extcaps. The MR notes a concrete Windows loopback case where the child cannot retrieve the same description through the Win32 API; before the fix, captures launched through Wireshark/tshark could therefore differ from direct dumpcap capture in IDB description and temporary filename.
+
+**Implementation rule:** treat resolved capture metadata as part of the process-boundary contract. If the parent has authoritative interface name/description or other capture metadata needed in file output, transmit it explicitly to the child rather than relying on environment-dependent rediscovery.
+
+**Review rule:** compare direct-child invocation with parent-spawned capture on interfaces that are difficult to enumerate or describe, including loopback and extcap-like paths. Metadata equivalence is part of capture correctness, not merely cosmetic UI behavior.
+
+**Confidence:** Very high. Merged master capture fix authored by John Thacker with a concrete cross-platform inconsistency described in the MR.
