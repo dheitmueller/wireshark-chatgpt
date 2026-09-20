@@ -31,3 +31,15 @@ Merged MR !22414 underwent extended review before merge. In response to clang-ti
 **Implementation rule:** before suppressing a recursion diagnostic in a packet parser, establish a monotonic progress invariant for all input-controlled paths: each recursive descent must consume a positive bounded amount or move to a strictly later position, and the coordinate arithmetic must not overflow/wrap. If that proof is awkward, add an explicit depth/work bound or restructure the parser iteratively rather than silencing the warning.
 
 **Confidence:** Very high. Direct John Thacker review on a substantial MR that ultimately merged after prolonged review and revision.
+
+## Put an explicit depth limit on externally controlled nesting
+
+Even when each individual nesting step makes progress, an input grammar whose nesting depth is controlled by a capture, dictionary, schema, or other external input needs an explicit maximum depth. Natural termination of valid input is not a resource bound for malformed or adversarial input.
+
+Merged master MR !16197 adds a TLV nesting stack to the RADIUS dictionary parser and rejects nesting at `MAX_INCLUDE_DEPTH`, emitting a diagnostic and terminating the parse instead of allowing an unbounded nesting chain. The same existing bound was already used for include nesting, making the parser's finite nesting budget explicit and auditable.
+
+**Implementation rule:** for recursively or stack-parsed external nesting, define a finite maximum depth and check the bound before pushing/descending. The failure path should stop parsing that input cleanly and report the offending nesting where practical. Do not rely on C stack exhaustion, allocator failure, or well-formed-input expectations as the effective limit.
+
+**Review rule:** distinguish progress safety from depth safety. A parser can advance monotonically on every level and still consume excessive stack, heap, or CPU if the number of levels is unbounded.
+
+**Confidence:** High. Accepted merged parser hardening in the RADIUS dictionary loader, consistent with Wireshark's broader bounded-dissection model.
