@@ -51,3 +51,15 @@ Closed MR !16228 attempted to add ITS VAM support by editing generated `packet-i
 **Review rule:** a diff touching generated source without its authoritative input is presumptively incomplete; likewise, an input-only change that should alter committed generated output should be checked for a missing regeneration.
 
 **Confidence:** Very high. The incorrect direct-edit MR was closed, the maintainer supplied the correct workflow, and the replacement MR using that workflow was merged.
+
+## Treat vendored upstream generator synchronization as a semantic port
+
+A vendored generator can share ancestry with an upstream project while intentionally differing in API contracts and generated-code semantics. Synchronizing it therefore requires reviewing upstream commits against Wireshark's local contracts rather than mechanically importing every adjacent change.
+
+Merged master MR !16095, authored and merged by John Thacker, imports upstream PIDL support for an `int64` IDL type but explicitly skips the following upstream Samba change that switched generated calls to `dissect_ndr_int64()`. Wireshark's NDR dissector intentionally uses `dissect_ndr_uint64()` while presenting the result through signed `FT_INT64` fields, so the apparently natural upstream follow-on would have changed local behavior incorrectly. The MR documents that divergence rather than hiding it inside the vendor refresh.
+
+**Implementation rule:** treat updates from a vendored generator's upstream as semantic ports. Review each candidate change against Wireshark's local runtime APIs, field semantics, compatibility constraints, and generated output. Cherry-pick selectively when necessary, and document deliberately skipped or adapted upstream commits so a future sync does not reintroduce them blindly.
+
+**Review rule:** provenance or proximity to upstream is evidence that a change is relevant, not evidence that it is correct for Wireshark. Pay particular attention to commits that alter generated call signatures, signedness, field types, ownership, or wire-decoding behavior.
+
+**Confidence:** Extremely high. The accepted merged change was authored and merged by John Thacker and contains an explicit rationale for importing one upstream generator capability while intentionally rejecting the adjacent upstream semantic change.
