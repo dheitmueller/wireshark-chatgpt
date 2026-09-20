@@ -53,3 +53,15 @@ Merged MR !20978, authored by Guy Harris and merged by John Thacker, tightens th
 **Implementation rule:** design count-returning wrappers so valid requests cannot overflow the signed result domain, branch on negative error values first, and cast to unsigned only after nonnegativity is established.
 
 **Confidence:** Extremely high. Merged master change authored by Guy Harris with the signed/unsigned contract spelled out in the commit rationale, plus a merged portability follow-up by John Thacker.
+
+## A wrapper must surface failures that callers need to react to
+
+Checking a lower-level API result locally is not sufficient if the enclosing helper has no way to tell its caller that the operation failed. When successful completion is required for later parsing, authentication, decryption, or state construction, propagate a success/failure result through the wrapper chain until the layer that can make the appropriate policy decision.
+
+Merged master MR !15261 adds error handling for `gcry_md_open()` across multiple dissector/security paths. The library returns zero on success and a nonzero error on failure. Guy Harris specifically reviewed a helper that could notice the failure but could not report it upward and asked for the routine to expose a success/failure indication so the caller could react. The final accepted change checks the library return and propagates failure through the affected wrappers rather than continuing as if a digest context had been created. Guy also used the same review to reinforce Wireshark's migration from `gboolean` to C99 `bool` for project-owned interfaces.
+
+**Implementation rule:** if a nested API failure invalidates the promised result of the current helper, make that failure part of the helper's contract and propagate it. Do not convert "initialization failed" into a partially initialized success merely because the original wrapper did not previously have an error return.
+
+**Review rule:** when adding a return-value check inside a `void` or unconditional-success helper, follow the call graph upward. Ask which caller must change behavior after failure and extend the status contract far enough to reach that decision point.
+
+**Confidence:** Extremely high. Merged master correctness change with explicit Guy Harris review identifying the missing propagation boundary, followed by an accepted implementation that carries the failure upward.
