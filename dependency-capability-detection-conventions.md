@@ -13,3 +13,15 @@ The configure logic also documents an important limitation: CMake's available so
 **Implementation rule:** test the dependency contract that the source code actually needs. Treat version macros as reliable only when the relevant ecosystem guarantees that API state and version identity remain coupled; otherwise prefer a narrowly scoped compile/configure probe and make its assumptions explicit.
 
 **Confidence:** Extremely high. Merged master portability fix authored and merged by Guy Harris specifically because real downstream packaging invalidated version-number inference.
+
+## A compiler option is available only when its required toolchain components are available
+
+Recognizing a command-line option is not always sufficient to make that option usable. Some compiler features depend on optional libraries, runtime components, SDK pieces, or linker support that can be installed separately from the compiler itself.
+
+Merged MR !16165 initially made MSVC `/Qspectre` unconditional on the assumption that supported Visual Studio versions accepted the flag. Review identified that Spectre-mitigated libraries are an optional Visual Studio component, so flag recognition alone did not imply a usable build environment. The subsequent merged MR !16173 reverted the unconditional setting and returned `/Qspectre` to Wireshark's tested common flags, with an explicit comment that the optional Spectre component requires availability detection.
+
+**Implementation rule:** capability checks for compiler or linker features must exercise enough of the actual build contract to cover required auxiliary components, not merely test whether the compiler parses an option. If a feature requires optional libraries or SDK/toolchain packages, either probe the complete compile/link behavior or keep the feature conditional on an equivalent verified capability.
+
+**Review rule:** when broadening a compiler flag from probed/conditional to unconditional, verify installation prerequisites as well as compiler-version documentation. A feature present in the compiler product can still be absent from a particular installed toolchain.
+
+**Confidence:** Very high. The initial merged assumption was explicitly corrected by the maintainer and superseded by a merged revert that documents the missing prerequisite.
