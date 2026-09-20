@@ -50,3 +50,18 @@ Practical guidance:
 - Keep the strict/default path aligned with normative protocol constraints when those constraints provide useful discrimination.
 - When adding a relaxation, document the false-positive tradeoff so the preference is not mistaken for an equivalent validation mode.
 - Prefer an enum or similarly explicit policy setting when there are meaningful levels of tolerance rather than a single opaque on/off switch.
+
+## Use established conversation state to strengthen otherwise-weak encrypted-header heuristics
+
+A newer protocol version can remove or encrypt the cleartext fields that made stateless recognition selective. Do not compensate by broadening the stateless heuristic until common multiplexed traffic also matches. If the packet is only useful after a session has already been identified, previously established conversation state can itself provide the missing recognition evidence.
+
+Merged MR !15477, authored and merged by John Thacker, adds heuristic support for the DTLS 1.3 unified header. The first-octet space is deliberately compatible with RTP/RTCP/STUN/TURN/ZRTP/DTLS multiplexing and the legacy version bytes are encrypted, so the old cleartext checks are unavailable. The accepted heuristic therefore succeeds only when Wireshark has already detected a DTLS session on that connection and, when the unified header carries a connection ID, that CID matches the stored session. John also notes that without an established session Wireshark would not be able to decrypt the packet anyway.
+
+Practical guidance:
+
+- When encryption or compact framing removes a strong cleartext discriminator, do not replace it with a much broader stateless signature merely to retain heuristic coverage.
+- Require previously established protocol/conversation state when that state is necessary to interpret the packet meaningfully anyway.
+- Match stable session identifiers such as connection IDs in addition to coarse transport identity when the protocol supplies them.
+- If neither packet-local evidence nor established state can distinguish the protocol reliably, decline the heuristic rather than claiming ambiguous traffic.
+
+**Confidence:** Very high. Merged master change authored and merged by John Thacker, with the false-positive/multiplexing constraint and the state requirement explained directly in the MR.
