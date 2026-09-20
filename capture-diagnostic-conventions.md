@@ -53,3 +53,13 @@ Merged MRs !21014 and !21025 add a dumpcap path for obtaining the compiled filte
 **Implementation rule:** when reporting the exact compiled capture program or authoritative validity, use the same interface/context and backend that will execute the capture. If lightweight background syntax checking cannot safely or cheaply obtain that context—because it would require opening devices, crossing a privilege boundary, or invoking a different extcap validator—represent the result as context-dependent/indeterminate rather than falsely declaring it valid or invalid from an approximation.
 
 **Confidence:** Extremely high. Accepted master capture/UI changes authored by John Thacker with substantive Guy Harris review of the expression-versus-program and live-target distinction.
+
+## Propagate low-latency streaming semantics through every buffering layer
+
+A user-visible promise such as line-buffered or immediate live output is an end-to-end contract. Flushing the final process is insufficient if an upstream capture process still intentionally batches records before delivering them over IPC.
+
+Merged master MR !15406, authored by John Thacker and merged by Anders Broman, observes that TShark's `-l` option exists specifically so a downstream program or script can see each live-capture packet promptly. The accepted change therefore sets dumpcap's update interval to zero when `-l` is active, preventing dumpcap's normal update batching from defeating TShark's output-buffering choice.
+
+**Implementation rule:** when an option promises low-latency streaming, audit all producer/consumer and IPC buffering stages involved in the path. Configure upstream batching consistently with the requested semantics rather than changing only the final stdout/stderr buffering policy.
+
+**Confidence:** Very high. Merged master end-to-end live-capture behavior authored by John Thacker.
