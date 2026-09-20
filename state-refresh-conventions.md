@@ -23,3 +23,15 @@ Merged master MR !16350 caches Signal PDU value-name configuration to avoid repe
 **Review rule:** performance-motivated caching changes require a lifecycle audit. Ask what configuration or source-state changes invalidate the cached result, whether the cached object owns or borrows referenced data, and which other caches must be cleared or rebuilt atomically with it.
 
 **Confidence:** High. Merged master optimization with the coupled-lifetime requirement stated explicitly in the MR rationale and embodied in the accepted implementation.
+
+## Reset dependent analysis state at protocol lifecycle boundaries
+
+Stateful dissectors often maintain sequence, reassembly, or bearer state in lower protocol layers. When a protocol-defined lifecycle event makes that history invalid, the reset belongs at that semantic event boundary, and all dependent layers and sibling protocol variants must be audited. The reset still has to respect the protocol's event-specific semantics; a blanket reset can be just as wrong as leaving stale state in place.
+
+Merged master MR !16110 fixes LTE analysis after reconnect/reestablishment events by having LTE RRC notify the RLC and PDCP dissectors to discard bearer state when the relevant RRC event occurs. Pascal Quantin's review identified additional event variants and NB-IoT counterparts that needed the same audit, while also pointing out that different events require different PDCP behavior: for example, reestablishment resets SRB/UM state but not all AM state, and resume handling is more complicated. Martin Mathieson expanded the accepted change to the relevant LTE/NB-IoT entry points while deliberately leaving unsupported complex cases as explicit TODOs rather than applying an over-broad reset.
+
+**Implementation rule:** tie state invalidation to the protocol event that changes the identity or validity of the state, then audit every layer and sibling variant that derives state from that lifecycle. Encode the reset set per event according to protocol semantics; do not assume that reconnect, reestablishment, resume, and related variants invalidate identical subsets.
+
+**Review rule:** whenever a state-reset fix is added for one control-plane event, explicitly search for equivalent event variants, alternate radio/protocol modes, and dependent state machines. Also identify cases whose reset semantics differ and keep them out of the change unless they are understood and tested.
+
+**Confidence:** Very high. Merged master state-correctness change authored and merged by Martin Mathieson, with detailed protocol-expert review from Pascal Quantin that directly changed the coverage and reset semantics of the accepted implementation.
