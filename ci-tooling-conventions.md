@@ -101,3 +101,15 @@ Merged master MR !15824 fixes `test_sharkd_req_follow_http2` so it is skipped wh
 **Implementation rule:** for supported optional-feature build matrices, run the test suite in representative feature-disabled configurations when practical. Feature-specific tests should detect the corresponding capability and skip intentionally, while tests for unaffected functionality should still run; do not treat compilation alone as proof that the feature-disabled runtime is supported.
 
 **Confidence:** Very high. Merged master testing correction approved and merged by John Thacker, with direct maintainer commentary identifying the build-only CI coverage gap.
+
+## Model post-job behavior by job outcome instead of treating all non-success states alike
+
+CI cleanup/report hooks often have different obligations on success, ordinary failure, and cancellation. A post-job step that is useful precisely because the main job failed must not be guarded by a generic `status != success` early exit; conversely, artifact publishing or checks that assume completed build output should not run after cancellation or a failed producer.
+
+Merged master MR !15389, authored by Gerald Combs and merged by Anders Broman, updates Wireshark for GitLab 17's behavior in which `after_script` also runs on canceled jobs. It adds outcome checks to post-build work and moves documentation/S3 work that belongs to the successful main job out of `after_script`. Merged follow-up !15392, authored and merged by Gerald Combs, corrects the fuzz job specifically: the failure-report path must still run after an ordinary failed fuzz job, so it exits early only for `canceled` rather than for every status other than `success`.
+
+**Implementation rule:** classify each post-job action by the outcomes for which it is meaningful. Success-only artifact publication should require success; cancellation should skip work that depends on completed output; failure diagnostics and crash/fuzz reports must remain reachable on ordinary failure. Avoid a single blanket non-success guard around heterogeneous `after_script` actions.
+
+**Review rule:** when CI platform lifecycle semantics change, audit both cleanup and diagnostic paths. Test/inspect at least success, failure, and cancellation separately; a change that fixes canceled-job errors can accidentally suppress the evidence needed to diagnose a genuine failed job.
+
+**Confidence:** Extremely high. Two merged master CI changes from Gerald Combs, with the second immediately correcting the failure-versus-cancellation distinction exposed by the first.
