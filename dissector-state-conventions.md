@@ -63,3 +63,15 @@ Merged MR !26517 fixes EAP/LEAP frame state after LEAP reused EAP's `PROTO_DATA_
 **Architecture rule:** allocate protocol-data keys by semantic state identity. If multiple subprotocols, modes, or independent analyses use the same `proto_id`, give each independent record a distinct key (while preserving any deliberate layer component). Do not reuse a key merely because the payload struct type is identical.
 
 **Confidence:** Very high. Direct merged correctness fix with the key collision and resulting memory-safety failure stated explicitly.
+
+## Store derived state at the scope that owns its semantic identity
+
+A convenient transport conversation is not necessarily the semantic owner of information derived while dissecting it. If one transport conversation can legitimately carry multiple unrelated higher-level transactions, attaching transaction-specific state to the transport conversation can make the later transaction inherit or overwrite another transaction's state.
+
+Merged master MR !15398, authored by John Thacker and merged by Anders Broman, fixes SDP-generated Call-ID handling. The same SDP transport connection can be reused by unrelated calls, so the accepted code no longer stores the generated Call-ID list on the SDP conversation. It transfers the data transiently through packet protocol data and, when SIP has the appropriate file-scoped offer/answer `transport_info_t`, stores it with that transaction-level object; standalone SDP remains packet-scoped.
+
+**Architecture rule:** choose state storage by the identity and lifetime of the information, not by the broadest conversation object that happens to be available. When a lower-level connection can host several independent higher-level transactions, keep transaction-specific state on the transaction/session object, using packet-scoped handoff data when necessary to move the result between dissector layers.
+
+**Review rule:** for every new conversation proto-data field, ask whether the underlying endpoint tuple can be reused by multiple semantic owners. If it can, either key the state by the higher-level identity or attach it to a narrower state object whose lifetime matches that identity.
+
+**Confidence:** Very high. Merged master correctness fix authored by John Thacker; the MR description explicitly identifies transport-connection reuse as the bug and documents the accepted packet/file-scope split.
