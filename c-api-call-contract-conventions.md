@@ -65,3 +65,15 @@ Merged master MR !15261 adds error handling for `gcry_md_open()` across multiple
 **Review rule:** when adding a return-value check inside a `void` or unconditional-success helper, follow the call graph upward. Ask which caller must change behavior after failure and extend the status contract far enough to reach that decision point.
 
 **Confidence:** Extremely high. Merged master correctness change with explicit Guy Harris review identifying the missing propagation boundary, followed by an accepted implementation that carries the failure upward.
+
+## Check nullable pointer results before pointer arithmetic, not afterward
+
+A pointer-returning search or lookup API must be tested for its failure sentinel before the pointer is adjusted, dereferenced, or otherwise transformed. Adding an offset to NULL is already invalid C behavior; checking the adjusted pointer afterward does not recover the original failure and can hide a defect behind platform-specific behavior.
+
+Merged master MR !15167, authored and merged by John Thacker after a Coverity finding in the HTTP dissector, moves the NULL check on `ws_strnstr()` ahead of the `+ 3` adjustment used to skip a delimiter. The old code formed `NULL + 3` on a failed search and only then tested the resulting pointer.
+
+**Implementation rule:** preserve the API's original result long enough to evaluate its success/failure contract. For nullable pointer returns, branch on NULL before any arithmetic, field access, cast-dependent dereference, or ownership transfer; perform offsets only inside the known-success path.
+
+**Review rule:** expressions such as `search(...) + n`, `lookup(...)->field`, or a pointer-returning call embedded inside another expression deserve scrutiny whenever the callee can return NULL. Refactor to an explicit temporary and check the sentinel first.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with a concrete static-analysis report exposing undefined pointer arithmetic.

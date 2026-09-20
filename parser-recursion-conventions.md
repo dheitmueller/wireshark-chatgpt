@@ -43,3 +43,13 @@ Merged master MR !16197 adds a TLV nesting stack to the RADIUS dictionary parser
 **Review rule:** distinguish progress safety from depth safety. A parser can advance monotonically on every level and still consume excessive stack, heap, or CPU if the number of levels is unbounded.
 
 **Confidence:** High. Accepted merged parser hardening in the RADIUS dictionary loader, consistent with Wireshark's broader bounded-dissection model.
+
+## Recursion protection is an explicit project policy, not merely a static-analysis cleanup
+
+Wireshark's developer guidance treats recursive dissection as a safety concern in its own right. A dissector that recurses must be able to show why its recursion is bounded; when the protocol does not supply a natural finite bound, it should use Wireshark's dissection-depth facilities rather than relying on the C call stack.
+
+Merged master MR !15189 was authored by Gerald Combs and merged by Anders Broman specifically to add this requirement to `doc/README.developer`. The documentation points developers at `increment_dissection_depth()` / `decrement_dissection_depth()` and notes that CI's clang-tidy recursion check may require a suppression only after the recursion has been made safe. This gives the implementation patterns recorded elsewhere in this file an explicit project-policy anchor.
+
+**Submission rule:** a new or modified recursive dissector should make its termination/depth argument visible in the code and review. If recursion is inherently bounded by protocol structure, document or preserve that invariant; otherwise use the checked dissection-depth helpers. Do not treat silencing `misc-no-recursion` as the objective—the objective is bounded work and bounded stack use on malformed captures.
+
+**Confidence:** Extremely high. This is merged project developer documentation authored by Gerald Combs and accepted by Anders Broman, so it represents unusually direct evidence of intended Wireshark contributor policy.

@@ -35,3 +35,15 @@ Merged master MR !16110 fixes LTE analysis after reconnect/reestablishment event
 **Review rule:** whenever a state-reset fix is added for one control-plane event, explicitly search for equivalent event variants, alternate radio/protocol modes, and dependent state machines. Also identify cases whose reset semantics differ and keep them out of the change unless they are understood and tested.
 
 **Confidence:** Very high. Merged master state-correctness change authored and merged by Martin Mathieson, with detailed protocol-expert review from Pascal Quantin that directly changed the coverage and reset semantics of the accepted implementation.
+
+## A newly opened capture must start with neutral transient-operation state
+
+Queued work, deferred rescans, lock-related flags, and other transient operation state belong to the capture instance that scheduled them. Opening or replacing a capture establishes a fresh lifecycle; it must not inherit a pending operation from the previous file even when normal shutdown paths are expected to have drained that work.
+
+Merged master MR !15187, authored by John Thacker and merged by Anders Broman, clears `redissection_queued` while opening a new capture. Without that reset, a queued rescan from the prior file could survive into the replacement capture and cause later filtering/redissection decisions to behave as though work were still pending for the new file.
+
+**Implementation rule:** when a resource replacement establishes a new capture-file lifecycle, explicitly reset transient operation state whose meaning is scoped to the old resource. Do not rely solely on the old resource's close path, event ordering, or an assumption that queued work must already have executed.
+
+**Review rule:** lifecycle tests should include open/close/reopen sequences while deferred work is pending, not just a clean steady-state transition. State that represents "work queued for this object" is as lifecycle-sensitive as cached analysis data.
+
+**Confidence:** Very high. Merged master lifecycle correctness fix authored by John Thacker and accepted by Anders Broman.

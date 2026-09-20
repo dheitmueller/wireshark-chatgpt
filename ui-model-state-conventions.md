@@ -21,3 +21,15 @@ Merged master MR !15582, also authored and merged by John Thacker, handles I/O G
 **Review rule:** exercise multi-window and lifecycle sequences, not only one-dialog steady state: two views editing one table, profile change while a non-modal dialog is open, close/reopen a capture while a dialog persists, and model reset while pending changes exist.
 
 **Confidence:** Extremely high. The primary fixes are merged master changes authored and merged by John Thacker and address concrete crashes/data-inconsistency paths across multiple dialogs and lifecycle transitions.
+
+## Choose the model notification whose semantics match the scope of the change, and measure its scaling
+
+A nominally more precise Qt model notification is not automatically cheaper. If essentially the entire visible model has changed, an API that enumerates or computes geometry for a huge index range can scale with the total model size even though the view can only display a small fraction of those rows. Prefer a notification whose semantics match the actual scope while preserving required view state such as selection and current row.
+
+Merged master MR !15174, authored and merged by John Thacker, works around a Qt 6 `QAbstractItemView::dataChanged` pessimization in the packet list. For an all-packets refresh, Qt 6 computes the union of the changed-index viewport rectangles, causing measured cost to grow from about one second at 1.4 million packets to about nine seconds at 12 million. The accepted implementation emits `layoutAboutToBeChanged()` / `layoutChanged()` instead, which refreshes the view while preserving current/selected rows and remained around 5–8 ms in the reported tests. The same fix was then merged to release-4.2 as !15177 and release-4.0 as !15178.
+
+**Implementation rule:** when a model-wide update is intentional, use a model notification that expresses model-wide invalidation without forcing per-index work merely for precision the consumer cannot exploit. Verify which user state each notification preserves before substituting reset/layout/data-change signals.
+
+**Performance rule:** benchmark model notifications at realistic large capture sizes and reason about the library implementation's complexity, not just Wireshark's own loop count. A call that looks constant-sized in application code can trigger work proportional to millions of rows inside Qt.
+
+**Confidence:** Very high. Merged master performance fix authored and merged by John Thacker, backed by concrete scaling measurements and subsequently carried to two maintained release branches.
