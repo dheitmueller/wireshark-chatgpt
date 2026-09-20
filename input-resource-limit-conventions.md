@@ -43,3 +43,15 @@ Merged master MR !16237 fixes NFSv4 decoding after a malformed capture could dri
 **Testing rule:** for resource-amplification bugs, keep a minimal malformed-input reproducer when practical and use allocation diagnostics, Valgrind, sanitizers, or equivalent tooling to verify that the excessive request occurs before the fix and is prevented afterward.
 
 **Confidence:** Very high. Merged master resource-exhaustion fix with a concrete reproducer and dynamic-analysis evidence, accepted upstream.
+
+## Bound recursive grammar depth and transient parser bookkeeping
+
+Resource limits must cover parser control state as well as final allocations. Recursive type grammars can exhaust the call stack or loop forever during generator analysis, while parser bookkeeping that is logically single-use can accumulate until an otherwise small message exhausts an internal token pool.
+
+The merged PIDL upstream-sync series provides several independent examples. MR !16084 adds an explicit maximum NDR recursion depth (`NDR_RECURSION_CHECK`/`NDR_RECURSION_UNWIND`) after OSS-Fuzz found excessive recursive nesting. MR !16096 detects recursive type-list traversal and fails instead of recursing indefinitely through self-referential structures. MRs !16083 and !16089 change switch, array-size, and array-length bookkeeping tokens to be consumed once their final user has read them; the upstream fixes explicitly describe otherwise reaching the token-list limit and enabling memory/resource denial of service.
+
+**Implementation rule:** identify all attacker-controlled parser-state dimensions: nesting depth, recursion through type graphs, queued tokens, deferred lengths, and similar transient metadata. Give recursive operations an explicit depth or cycle guard, and release/consume one-shot parser state as soon as its semantic lifetime ends rather than retaining it for the rest of the message.
+
+**Testing rule:** fuzzing and malformed-input tests should exercise pathological nesting and repeated bookkeeping constructs, not just oversized byte strings or element counts. A parser that is byte-bounded can still be vulnerable through stack depth or accumulated control state.
+
+**Confidence:** Very high. Multiple merged John Thacker PIDL sync MRs carry upstream fuzz/security rationale, including explicit OSS-Fuzz findings and denial-of-service/resource-limit descriptions.
