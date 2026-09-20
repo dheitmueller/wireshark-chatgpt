@@ -71,3 +71,13 @@ Merged master MR !21494 fixes a NOE field for which the existing call claimed a 
 **Implementation rule:** audit the whole field contract together: tvbuff span, endianness/encoding, extracted C domain, `hf_` width/signedness, mask, and format string. Prefer `proto_tree_add_item()` or another semantic helper when it can perform the wire extraction directly. Do not demand byte-count equality mechanically when a protocol version legitimately encodes the same semantic field more narrowly, but never rely on a wider extraction being silently narrowed by the field definition.
 
 **Confidence:** Very high. Merged master correctness fix plus direct Martin Mathieson explanation of the checker boundary and Anders Broman review of the accepted simpler API.
+
+## Normalize unifying filter fields across equivalent wire representations
+
+A display-filter field deliberately introduced to unify multiple directions, encodings, or protocol variants should expose one normalized semantic value domain. Do not populate such a field with one branch's raw codepoint when another branch expresses the same logical identifier differently; that defeats the purpose of the unified filter.
+
+Merged master MR !16118 adds a single hidden MAC-LTE LCID field intended to let users filter a logical channel regardless of direction. Pascal Quantin caught that the first implementation did not cover extended LCIDs. The review then distinguished the raw extended-LCID codepoint from the logical extended-LCID index and concluded that the unifying field should carry the same semantic index across the ordinary and extended cases. Martin Mathieson revised the implementation accordingly before merge.
+
+**Implementation rule:** when one `hf_` field intentionally provides a common filter over several wire forms, normalize every form to the same protocol-level identifier before adding that field. Keep raw/codepoint-specific fields separately when those representations are independently useful, but do not leak representation-specific numbering into the normalized filter contract.
+
+**Confidence:** Very high. Merged master change with explicit protocol-expert review from Pascal Quantin and an accepted revision by Martin Mathieson addressing the semantic mismatch.
