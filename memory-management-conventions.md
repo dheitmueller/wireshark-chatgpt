@@ -13,3 +13,15 @@ This file records durable memory-management lessons extracted from upstream Wire
 
 - A data structure's removal operation must satisfy the lookup semantics promised by all of its APIs. Merged MR !17658 replaced wmem tree's prior "fake removal" for 32-bit keys with actual red-black-tree deletion because leaving a tombstoned node in place broke predecessor-style `wmem_tree_lookup32_le()` lookup: the removed node could be found without backtracking to the next valid node.
 - When modifying a core container, test exact lookup, ordered/predecessor lookup, removal, and structural rebalancing rather than validating only the most obvious access path.
+
+## Size allocations from the object actually being allocated
+
+Pointer depth is part of an allocation contract. A `sizeof` expression taken at the wrong indirection level can accidentally produce the expected byte count on today's platforms when the two candidate types are both pointers, while still expressing the wrong object and becoming fragile if the type shape changes.
+
+During review of merged MR !16393, John Thacker relayed Coverity's warning that an allocation through a pointer-to-pointer-to-pointer parameter should use the size of the actual array element. Guy Harris emphasized that `sizeof *X` and `sizeof **X` only happened to be equal because all relevant pointer representations have the same size on supported platforms; he explicitly said that should not be relied upon and suggested `g_new()`. Guy also suggested `GPtrArray` because the result was a variable-sized array of pointers. The author acknowledged that an earlier pointer type had made the stale `sizeof` expression once correct and followed up in merged !16407 by converting the candidate collection to `GPtrArray`.
+
+**Implementation rule:** derive allocation size from the type of the element actually stored, preferably with a typed allocator such as `g_new()` when using GLib allocation. Do not preserve a `sizeof *ptr` expression mechanically after changing pointer depth just because the resulting numeric size is currently identical.
+
+**Container rule:** when the object is semantically a variable-sized collection of pointers, consider a pointer-array abstraction such as `GPtrArray` rather than open-coding pointer-count allocation and growth. The container makes the element shape and resizing contract explicit.
+
+**Confidence:** Extremely high. Direct Guy Harris review on a merged MR, independently identified by Coverity/John Thacker, with the suggested container direction implemented in the merged follow-up !16407.
