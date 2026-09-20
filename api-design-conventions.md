@@ -103,3 +103,13 @@ Merged MR !10048, authored by Guy Harris, changes the data parameter of `wtap_bu
 **Implementation rule:** make non-mutating byte/string inputs const-correct at the API boundary. For fixed compile-time objects feeding bounded length fields, prefer representations that preserve compile-time size information rather than hiding it behind a pointer and recovering length dynamically.
 
 **Confidence:** Extremely high. Merged API correction authored by Guy Harris, with the competing closed proposal explicitly superseded by the accepted implementation.
+
+## Keep dissector headers limited to genuine cross-file contracts
+
+A header is an interface boundary. Internal analysis structures, implementation-only state, and helpers should not be placed there merely because a similar large dissector exposes analogous internals. Put only definitions that another compilation unit or subdissector genuinely needs in the header; keep the rest file-local in the `.c` implementation.
+
+Merged master MR !15440 added the IBM i TRCCNN RDMA dissector. During substantive review, Martin Mathieson asked whether the analysis structures in `packet-irdma.h` were actually needed outside the dissector. The contributor explained that only the per-packet data passed to potential subdissectors was cross-file contract material; Martin recommended moving the rest into `packet-irdma.c`, and the contributor did so before merge.
+
+**Implementation rule:** design dissector headers from actual consumers outward. Expose the minimal shared data required by subdissectors or other source files, and keep private flow-analysis/state structures and implementation details in the source file. Do not copy another dissector's header surface without verifying that the same sharing requirement exists.
+
+**Confidence:** Very high. Direct maintainer review on a merged new dissector, with the requested encapsulation cleanup incorporated before merge.
