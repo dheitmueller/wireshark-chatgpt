@@ -23,3 +23,15 @@ Merged master MR !23078, authored by John Thacker and merged by Anders Broman, r
 **Review rule:** treat `tvb_get_ptr(..., -1)` and raw scans over TVBuff-derived pointers as red flags. Verify not only that the starting offset is valid, but that every downstream operation is bounded by captured data.
 
 **Confidence:** Very high. Merged master API-safety cleanup authored by John Thacker, independently reinforced by the accepted SOCKS conversion to a TVBuff-native helper.
+
+## Do not equate a non-NULL TVBuff with the presence of backing bytes
+
+A TVBuff can be a valid object representing an empty result. In that state, the TVBuff pointer itself is non-NULL while its reported length is zero and there may be no backing data pointer to return. APIs that require an addressable byte range must therefore be gated by the TVBuff's semantic length/availability, not merely by object existence.
+
+Merged master MR !16192 fixes the packet-bytes dialog's decompression path after valid empty decompression results could produce a non-NULL TVBuff with zero reported length and `real_data == NULL`. The old code tested only `uncompr_tvb` before calling `tvb_get_ptr()` and could hit an assertion; the accepted code additionally requires `tvb_reported_length(uncompr_tvb) > 0` before asking for raw bytes.
+
+**Implementation rule:** when an operation can legitimately produce an empty TVBuff, treat object validity and byte availability as separate predicates. Check the appropriate length/availability condition before calling pointer-returning or byte-reading APIs that require at least one byte.
+
+**Review rule:** nullable-object checks are not a substitute for empty-data checks. Audit decompression, transformation, subset, and synthetic-TVBuff paths especially, because a successful transformation may validly yield an empty buffer.
+
+**Confidence:** High. Merged master crash/assertion fix with a concrete valid-empty TVBuff state.
