@@ -37,6 +37,7 @@ Merged MR !25977 is a good example of how to communicate validation in the MR de
 
 ## Structural pre-submit checks
 
+- For every generated patch series, after rebasing onto the intended target branch, run `./tools/check_typed_item_calls.py --consecutive --label --mask --check-bitmask-fields --commits <N>`, where `<N>` is the number of commits in the proposed MR. Require `0 warnings` and `0 errors` before considering the series submission-ready. This catches invalid field registrations and typed protocol-tree API usage, including maskless `FT_BOOLEAN` fields incorrectly registered with a literal width instead of `BASE_NONE`.
 - When code declares/uses a reassembly table, verify that the table is initialized/registered along every required lifecycle path. Merged MR !25984 fixed an unregistered Bluetooth BR/EDR reassembly table. The review immediately turned the recurring structural mistake into tooling: merged MR !25986 extended `check_typed_item_calls.py` to detect unregistered reassembly tables. Run the repository checker rather than relying solely on manual review, and treat failures here as structural correctness bugs.
 - More generally, when a review uncovers a syntactically recognizable class of runtime defect, prefer extending an existing Wireshark checker so future instances fail pre-submit. !25984 → !25986 is a strong maintainer-backed example of converting review knowledge into executable project policy.
 
