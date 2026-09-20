@@ -83,3 +83,15 @@ Merged master MR !15786 fixes an SPRT crash caused by SDP creating an RTP conver
 **Review rule:** test stateful heuristic/conversation changes with redissection, especially when setup information can point to a frame number earlier than the packet that supplied the setup. A clean first pass does not prove later passes have the same protocol path.
 
 **Confidence:** Very high. Merged master crash fix authored and merged by John Thacker with the first-pass/second-pass failure mode stated explicitly.
+
+## Fully initialize context structures before passing them to shared subdissectors
+
+A structure passed as dissector data is an interface contract between the producer and the downstream helper. When that shared structure gains a field, every producer must be audited; leaving a new member uninitialized can make downstream behavior depend on stack residue even if the producer itself does not use the field.
+
+Merged master MR !15705, authored and merged by John Thacker, fixes the CAN-ETH dissector after the shared `can_info` structure gained a `bus_id` member. CAN-ETH had not been updated and handed the structure to `socketcan_call_subdissectors()` with fields left indeterminate. The accepted change explicitly initializes the CAN type, bus ID, and length before the downstream call.
+
+**Implementation rule:** before passing a context/metadata structure across a dissector boundary, initialize every member that the receiving API may inspect. When zero is a valid neutral default, zero-initializing the whole local aggregate and then overriding protocol-specific members is often the safest shape; where nonzero/sentinel defaults are required, set them explicitly.
+
+**Review rule:** changes to shared dissector-data structures require a producer audit, not just updates to the consumer that motivated the new member. Search all construction sites and confirm that new members receive semantically valid defaults before any shared helper sees the object.
+
+**Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker for a concrete shared-structure evolution bug.
