@@ -12,6 +12,18 @@ Merged MR !25732 was authored and merged by Guy Harris. It propagates libpcap ac
 
 **Confidence:** Extremely high. Merged master capture architecture authored and merged by Guy Harris.
 
+## Keep consuming asynchronous IPC records until the command reaches a terminal response
+
+A framed child-process protocol can carry informational or logging records while a synchronous command is still in progress. Receiving such a record does not mean that the command has completed.
+
+Merged master MR !15927, authored and merged by John Thacker, fixes the dumpcap capture-sync command path after noisy logging could place an `SP_LOG_MSG` ahead of the command's `SP_SUCCESS` or `SP_ERROR_MSG`. The old code read one framed message and returned, which could make interface discovery fail or even lead to a crash. The accepted implementation processes the log record and continues reading complete sync-pipe frames until it reaches a terminal command result; EOF or a transport read failure remains a genuine terminal failure.
+
+**Implementation rule:** in request/response IPC that permits asynchronous side-channel records, classify protocol messages as intermediate versus terminal. Consume and handle intermediate log/status messages without completing the transaction, and continue until the protocol-defined success/failure response or an actual transport failure arrives.
+
+**Testing rule:** exercise command paths with logging/status chatter enabled so an intermediate record is deliberately interleaved before the terminal response. A quiet default run does not test the framing/control-flow contract.
+
+**Confidence:** Very high. Merged master capture-process correction authored and merged by John Thacker, with an analogous existing loop cited in the MR rationale.
+
 ## Return success/failure directly when the callee owns the determination
 
 Do not force callers to infer whether a helper succeeded by examining platform-specific side effects or conditionally compiled state when the helper already knows the answer.
