@@ -43,3 +43,15 @@ Merged MR !16081 enables Perl warnings across PIDL and fixes several issues they
 **Review/tooling rule:** when enabling stricter compiler, interpreter, or static-analysis diagnostics, classify each warning by semantic cause. Prefer a correctness fix or a more precise representation over a cast/suppression that merely makes the warning disappear. A warning-enablement MR may legitimately discover functional defects; call those out explicitly so reviewers do not mistake them for mechanical noise.
 
 **Confidence:** Very high. Merged John Thacker upstream-sync work where enabling warnings directly exposed and fixed a generator logic bug.
+
+## Suppress an analyzer warning locally only after proving the warned-about behavior is intentional and bounded
+
+A static-analysis diagnostic should not be disabled globally merely because a valid implementation intentionally triggers it. First establish the semantic invariant that makes the construct safe; then use the narrowest supported suppression at the exact site, leaving the checker active everywhere else.
+
+Merged master MR !15806 adds RTPS pre-shared-key decryption. Decrypted secure content is handed back to the normal submessage dissector, which creates an intentional recursive call graph and triggered clang-tidy's `misc-no-recursion` check. The contributor explained the protocol bound: PSK encryption is allowed only at the RTPS message level, so the decrypted submessage cannot legitimately contain another PSK-encrypted layer; the implementation also tracks that it is already dissecting decrypted content so it does not re-enter decryption. Gerald Combs then requested `// NOLINTNEXTLINE(misc-no-recursion)` immediately before the affected function, and the localized suppression was accepted.
+
+**Implementation rule:** before suppressing an analyzer finding, encode or document the invariant that prevents the warned-about failure mode. Prefer a one-line/site-specific suppression for the exact checker over broad file-, target-, or project-wide disabling.
+
+**Review rule:** a suppression is not evidence of correctness. Review the semantic bound independently—for recursion, prove depth/progress or enforce a guard; for aliasing, lifetime, or arithmetic warnings, establish the corresponding invariant—then ensure the suppression covers no more code than necessary.
+
+**Confidence:** Very high. Merged master feature with an explicit safety argument from the contributor and direct Gerald Combs guidance on the accepted localized clang-tidy suppression.
