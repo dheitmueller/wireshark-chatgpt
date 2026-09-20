@@ -29,3 +29,15 @@ A namespace change can be compatibility-sensitive because display-filter abbrevi
 **Evidence:** merged master MR !18907. Lars Völker reported roughly a 10x profile-switch improvement for large configurations (about 10 seconds to 1 second) from the bulk deregistration path; review explicitly raised the compatibility impact of the Signal PDU filter-prefix change, and the author explained that the narrower prefix was required to avoid deregistering unrelated fields and to prevent filter-name collisions.
 
 **Confidence:** High. The implementation and namespace change were merged after explicit discussion of both compatibility and ownership consequences.
+
+## Re-register a mutated dynamic declaration set as a replacement, not an append
+
+For scripting or other dynamic registration APIs, changing the declaration list after initial registration creates a replacement lifecycle problem. Existing registered fields or expert entries remain tied to the old arrays; simply appending new declarations can leave duplicate registrations, stale IDs, or backing arrays that cannot safely be reclaimed.
+
+Merged master MR !15750 makes newly assigned Lua `Proto.fields` and `Proto.experts` visible after running code in the Evaluate window. If a `Proto` was already registered, the accepted implementation first deregisters the existing field/expert registration set and hands the old backing arrays to epan's deferred deregistered-data mechanism before constructing and registering the replacement arrays. John Thacker approved the merged change.
+
+**Implementation rule:** when a dynamic declaration set can be mutated after registration, treat re-commit as replacement: deregister the previous registered objects through the supported API, preserve their backing storage for the required deferred lifetime, then register the new complete set. Do not assume that updating the script-visible collection updates the registration framework in place.
+
+**Review implication:** exercise repeated mutation/commit cycles, including adding fields after initial registration. Check both registration identity (`hf_id`/expert IDs) and backing-storage lifetime; a result that merely makes the newest field visible can still contain a latent use-after-free or duplicate registration.
+
+**Confidence:** Very high. Merged master WSLua lifecycle fix with explicit comments tying the replacement arrays to epan's deregistration lifetime rules, approved by John Thacker.
