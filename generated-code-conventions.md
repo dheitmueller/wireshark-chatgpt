@@ -39,3 +39,15 @@ Merged MR !21811 enables ASN.1 constraint checking by default in the Wireshark g
 **Implementation rule:** when promoting an optional generator feature to the default, keep existing enable-option semantics compatible during migration. Prefer an explicit inverse option for temporary opt-out, or remove the obsolete enable option once migration is complete; do not reuse the old spelling to mean the opposite operation. Also audit helper symbol visibility and generated-call surfaces when a formerly optional generation path becomes universal.
 
 **Confidence:** High. The default-on constraint-checking change merged, and the compatibility concern comes from explicit post-merge John Thacker review with a stated migration direction from Stig Bjørlykke.
+
+## Change the authoritative generator input and commit the regenerated artifact together
+
+When generated dissector output is checked into the repository, a correct submission has two parts: change the authoritative ASN.1/template/generator input and include the resulting generated source in the same MR. Editing only the generated source is wrong because regeneration will discard the change; omitting the regenerated artifact is also wrong because reviewers and CI need the checked-in tree to reflect the authoritative inputs.
+
+Closed MR !16228 attempted to add ITS VAM support by editing generated `packet-its.c` directly. Martin Mathieson pointed out that ITS is generated and directed the contributor to make the change under `epan/dissectors/asn1/its` instead. The corrected merged successor !16245 updates the generator-side input, and Martin explicitly asked that the regenerated `packet-its.c` be included in the MR even though the pipeline can regenerate and verify it. The contributor did so before merge.
+
+**Implementation rule:** identify the source of truth before editing generated dissectors. Modify that source, run the supported regeneration path, and commit both the authoritative input change and the expected generated output when that output is version-controlled. CI regeneration is a verification mechanism, not a substitute for submitting the generated artifact.
+
+**Review rule:** a diff touching generated source without its authoritative input is presumptively incomplete; likewise, an input-only change that should alter committed generated output should be checked for a missing regeneration.
+
+**Confidence:** Very high. The incorrect direct-edit MR was closed, the maintainer supplied the correct workflow, and the replacement MR using that workflow was merged.
