@@ -91,3 +91,13 @@ Merged master MR !23098, authored and merged by Martin Mathieson, fixes `check_c
 **Implementation rule:** aggregate checker findings into the command's final status and return nonzero whenever a violation classified as an error was found. Test both halves of the contract: a bad fixture should emit the expected diagnostic **and** fail, while a clean fixture should return success.
 
 **Confidence:** High. Merged master checker correction by a long-time maintainer, with the broken failure semantics stated directly in the MR title and repaired alongside the newly surfaced errors.
+
+## Optional-feature configurations need test execution, not merely successful builds
+
+A configuration intended to prove that Wireshark works without optional components is incomplete if CI only compiles that configuration. Runtime tests must either execute successfully without the feature or skip the feature-dependent cases deliberately; otherwise build-only coverage can miss hard runtime assumptions about optional support.
+
+Merged master MR !15824 fixes `test_sharkd_req_follow_http2` so it is skipped when Wireshark was built without HTTP/2 support. John Thacker explicitly observed that Wireshark already had a CI "no options" build, but that job did not run the tests, and suggested that it perhaps should. The fix was also backported to release-4.2 as !15825.
+
+**Implementation rule:** for supported optional-feature build matrices, run the test suite in representative feature-disabled configurations when practical. Feature-specific tests should detect the corresponding capability and skip intentionally, while tests for unaffected functionality should still run; do not treat compilation alone as proof that the feature-disabled runtime is supported.
+
+**Confidence:** Very high. Merged master testing correction approved and merged by John Thacker, with direct maintainer commentary identifying the build-only CI coverage gap.
