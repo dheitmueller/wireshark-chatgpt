@@ -87,6 +87,11 @@ Before implementing new functionality, locate several analogous dissectors in th
 - Keep wire-backed values and derived values distinct in the protocol tree. A raw offset/flag/count should be attached to the bytes that actually encode it; a value computed from that field plus other state should be a separate item and marked generated with `proto_item_set_generated()` rather than pretending that the computed value occupies those packet bytes. Merged MR !25855 fixes UET PSN presentation in exactly this way: the on-wire PSN offset is dissected at its true byte position and the resulting calculated PSN is shown as a generated field.
 - When correcting an `hf_` type, mask, or filter name, explicitly consider saved display filters and coloring rules as part of compatibility. MR !26223 documented removed fields, changed field types, and mask changes, including cases where a formerly Boolean filter expression would silently stop matching after the field became the correct multi-bit enum. Correct protocol semantics take priority, but user-visible filter breakage should be identified rather than accidental.
 
+## Typed field registration and validation
+
+- For an `FT_BOOLEAN` header field with no mask, use `BASE_NONE` for the display value. A literal width such as `8` is not a generic way to describe a Boolean field's bit width; it is appropriate only where the field/mask semantics require it. This applies even when the field is populated with `proto_tree_add_bits_item()`. The ST 2038 MR exposed this with `hf_st2038_c_not_y`, registered as `FT_BOOLEAN` with display value `8` and mask `0`; the typed-item checker reported: `hf_st2038_c_not_y type is FT_BOOLEAN, no mask set (0) - display should be BASE_NONE, is instead 8`.
+- Before submitting dissector changes, run the typed-item checker over the proposed commits with `./tools/check_typed_item_calls.py --consecutive --label --mask --check-bitmask-fields --commits <N>`. Treat this as a pre-submit validation step for field registrations and typed protocol-tree API usage, not merely as an optional cleanup check.
+
 ## Compiler hygiene
 
 - Wireshark builds commonly treat warnings as errors. Do not leave parsed-but-unused variables such as temporary bitfields unless they are actually consumed.
