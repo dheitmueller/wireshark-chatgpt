@@ -8,11 +8,13 @@ A dissector that recognizes a protocol unit ending before the enclosing frame mu
 
 Merged MR !15859 fixes LLDP after IEEE 802.1AB made the End-of-LLDPDU TLV optional. The old parser could consume the rest of the frame when the terminator was absent and could also return one byte too little when the terminator was present, confusing downstream dissectors. The accepted implementation fixes the consumed-length result, defaults to leaving unrecognized trailing bytes unclaimed, and refuses to call an unknown TLV valid when its declared length would run beyond the reported tvbuff. A user preference can opt back into consuming otherwise unrecognized bytes as an unknown TLV.
 
-**Implementation rule:** make the dissector's return value and any subset tvbuff boundaries match the bytes actually recognized as belonging to the protocol. If an unknown element cannot be structurally complete within the available protocol data, stop rather than treating all remaining bytes as that element.
+Merged master MR !15363, authored and merged by Guy Harris, provides high-authority corroboration from TIPC. Its tvbuff can contain bytes beyond the protocol-declared message. Filler used for MTU discovery therefore must be bounded by the TIPC message size (`msg_size - offset`), not by `tvb_reported_length_remaining()`, which can include unrelated trailing junk.
+
+**Implementation rule:** make the dissector's return value and any subset tvbuff boundaries match the bytes actually recognized as belonging to the protocol. If an unknown element cannot be structurally complete within the available protocol data, stop rather than treating all remaining bytes as that element. When the protocol supplies an authoritative unit length, compute protocol-local padding/filler against that length rather than assuming the enclosing tvbuff ends at the same boundary.
 
 **Compatibility rule:** if historical behavior greedily consumed ambiguous trailing data, a compatibility preference may preserve that behavior, but conservative non-consumption should be preferred when it lets enclosing or following dissectors recover their own data correctly.
 
-**Confidence:** Very high. Merged master parser-boundary correction whose MR description states both the old over-consumption/under-return failure modes and the accepted conservative behavior.
+**Confidence:** Extremely high. Merged LLDP boundary correction plus an independently merged master fix authored and merged by Guy Harris showing that protocol-declared length outranks enclosing tvbuff length.
 
 ## Guard and failure paths must not invent a consumed length
 
