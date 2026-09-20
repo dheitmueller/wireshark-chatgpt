@@ -8,11 +8,13 @@ Real implementations can disagree with protocol documentation, and even an offic
 
 Merged MR !15539 reverts an earlier MySQL multibyte-collation interpretation after evidence showed a three-way inconsistency: current MySQL documentation and server behavior treated the handshake collation as one byte, while Connector/Python emitted two bytes and could therefore advertise a collation ID the server itself did not consume as such. The MR documents the ambiguity in detail and explicitly favors following documentation where possible while tolerating released client/server behavior where needed. The accepted outcome was to revert the broad interpretation rather than institutionalize an uncertain wire format.
 
+The immediately preceding merged MR !15464 is useful high-authority cautionary evidence for the same rule, but not as the final wire interpretation. During review, Guy Harris challenged the proposed two-byte handshake interpretation by pointing to evidence that the MySQL server reads one byte as documented and that the observed two-byte emission came from an unfixed Connector/Python bug. !15464 merged before that ambiguity was fully resolved and was later superseded by !15539, so its history is evidence for scrutinizing implementation-specific observations rather than for preserving its accepted code path.
+
 **Implementation rule:** use the documented protocol contract as the default interpretation. When released implementations violate or extend it, support the deviation narrowly when interoperability value justifies it, and keep the compatibility path distinguishable from the normative interpretation. Avoid changing a common field's fundamental width or semantics solely because one implementation emits a different representation.
 
 **Review rule:** when specification and implementation evidence conflict, identify the exact actors and bytes involved, compare both sender and receiver behavior where possible, and document the uncertainty. Reverting or deferring a speculative generalization is preferable to turning a localized quirk into an undocumented dissector rule.
 
-**Confidence:** High. Merged master revert with detailed empirical evidence from MySQL server and official Connector/Python behavior and an explicit rationale for preferring documented semantics while retaining room for real-world compatibility.
+**Confidence:** Very high. Merged master revert with detailed empirical evidence from MySQL server and official Connector/Python behavior, strengthened by direct Guy Harris review of the superseded predecessor, and an explicit rationale for preferring documented semantics while retaining room for real-world compatibility.
 
 ## Do not use fields the current protocol says to ignore as dissection gates
 
