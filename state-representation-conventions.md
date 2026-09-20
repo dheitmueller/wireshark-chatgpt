@@ -43,3 +43,15 @@ Merged !20146 replaces the relatively small candump Flex/Lemon parser with strai
 **Architecture rule:** do not preserve abstraction machinery merely because it already exists when that machinery obscures a small grammar and blocks convergence with sibling implementations. Conversely, simplification should be justified by the actual grammar and a concrete reuse direction; it is not a blanket preference for hand-written parsers over parser generators.
 
 **Confidence:** High. Two merged master changes forming an explicit refactoring sequence, although the MRs contain little substantive reviewer discussion.
+
+## Give captures that start midstream one coherent fallback state model
+
+Stateful protocol dissectors cannot assume that a capture contains the greeting, login, negotiation, or setup messages that normally establish feature flags. When those packets are missing, fall back from one centrally defined, conservative state model rather than sprinkling independent guesses through individual parse branches.
+
+Closed MR !15738 tried to improve MySQL/MariaDB mid-conversation captures by assuming one capability flag (`MYSQL_CAPS_DE`) when the login packet was absent. John Thacker questioned whether the same assumption needed to apply at several other capability checks and explored whether packet structure could resolve the ambiguity instead. The proposal was then superseded by merged master MR !15741, which establishes a minimal default set of capability flags for conversations whose greeting/login was not captured, while acknowledging that genuinely ambiguous features can still require limited inference.
+
+**Implementation rule:** initialize missing negotiated state once at the conversation/state boundary with the smallest coherent baseline that permits useful dissection, and then refine that state when authoritative packets are observed. Do not make the same missing-handshake condition mean different things in different parser branches.
+
+**Review rule:** test stateful dissectors with captures that begin after setup as well as with complete sessions. When two wire interpretations remain indistinguishable without the omitted negotiation, document the ambiguity and prefer a conservative project-wide default over ad-hoc branch-local guesses.
+
+**Confidence:** Very high. The weaker single-flag proposal was explicitly superseded after substantive John Thacker review by a merged alternative that centralized the fallback state.
