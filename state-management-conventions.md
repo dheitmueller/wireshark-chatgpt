@@ -33,3 +33,15 @@ Merged MR !21066 (`HTTP2: fix updating of existing streams' window`) fixes exact
 **Implementation rule:** for state transitions of the form `delta = new - old`, preserve `old` until every dependent update has consumed it. Review adjacent assignments when state-machine arithmetic unexpectedly produces identity/zero transitions.
 
 **Confidence:** Very high. Merged master correctness fix approved and merged by John Thacker.
+
+## Commit speculative state transitions only after the evidence that validates them succeeds
+
+A packet can suggest a new protocol state without proving it. If accepting that suggestion changes persistent keys, cipher phases, sequence epochs, or other state used for later packets, do not mutate the canonical state until the operation that validates the candidate has succeeded. Malformed data, padding, packet loss, or a false classification must not permanently advance the state machine.
+
+Merged master MR !15365, authored by John Thacker, fixes QUIC key-phase handling. A short-header candidate can appear to signal a key phase change after header protection is removed, including when random/padding bytes are mistaken for a packet. The old path could advance to the new cipher before payload decryption proved the phase change, causing subsequent genuine packets from the original phase to be treated as a later generation. The accepted implementation prepares a candidate cipher, attempts decryption, and only then commits the cipher/key rotation on success; on failure the candidate is discarded and the previous state remains authoritative.
+
+**Implementation rule:** treat unvalidated state changes transactionally: derive/allocate the candidate state separately, validate it using the protocol's authoritative check, then commit it atomically. On validation failure, release the candidate and leave the previously accepted state unchanged. This applies especially to cryptographic phases, negotiated modes, inferred sequence generations, and other transitions where one false positive can poison all later dissection.
+
+**Review rule:** for state transitions driven by packet contents, identify the point at which the packet actually proves the new state. Check that persistent mutation occurs after that point rather than after an earlier hint/discriminator, and add negative tests where the hint is present but validation fails.
+
+**Confidence:** Very high. Merged master correctness fix authored by John Thacker with the false-header/padding failure mode and required rollback semantics described explicitly.
