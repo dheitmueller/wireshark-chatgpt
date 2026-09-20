@@ -37,3 +37,16 @@ Practical guidance:
 - If heuristic inspection is useful specifically to override unreliable metadata, make that precedence change explicit and user-configurable.
 - Choose the default with protocol interoperability and specification guidance in mind, not merely whichever path produces the richest dissection on a sample capture.
 - When probing a heuristic requires temporarily changing `packet_info` or other shared dissection state, save and restore that state around the probe.
+
+## Compatibility relaxations that weaken a heuristic should be opt-in
+
+Real implementations sometimes violate a protocol requirement in a way that users still need Wireshark to decode. If accepting that nonconformance makes a heuristic materially less selective, keep the standards-compliant validation as the default and expose the compatibility relaxation as an explicit preference rather than weakening recognition for everyone.
+
+Merged MR !15877, authored and merged by John Thacker, handles ESP NULL-encryption implementations that use padding forbidden by RFC 4303. Wireshark had begun validating the required padding in its NULL heuristic; the accepted compatibility fix adds preference choices that can also accept all-zero or arbitrary padding, but deliberately defaults to the RFC-compliant check because looser padding increases false positives. Merged !15895 independently reinforces the same recognition philosophy by adding several cheap Ethernet structural checks to a pseudowire heuristic instead of accepting more ambiguous traffic.
+
+Practical guidance:
+
+- Distinguish interoperability tolerance from protocol recognition policy: a broken peer can justify an opt-in compatibility mode without justifying a weaker default heuristic.
+- Keep the strict/default path aligned with normative protocol constraints when those constraints provide useful discrimination.
+- When adding a relaxation, document the false-positive tradeoff so the preference is not mistaken for an equivalent validation mode.
+- Prefer an enum or similarly explicit policy setting when there are meaningful levels of tolerance rather than a single opaque on/off switch.
