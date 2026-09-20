@@ -95,3 +95,15 @@ Merged master MR !15705, authored and merged by John Thacker, fixes the CAN-ETH 
 **Review rule:** changes to shared dissector-data structures require a producer audit, not just updates to the consumer that motivated the new member. Search all construction sites and confirm that new members receive semantically valid defaults before any shared helper sees the object.
 
 **Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker for a concrete shared-structure evolution bug.
+
+## Preserve enclosing security/encoding context when deciding whether nested content is decodable
+
+A nested field's nominal type does not imply that its bytes are available in plaintext. When an enclosing protocol layer establishes security, compression, or another representation state that governs a child container, the child-dissection decision must use that outer context before invoking the normal nested dissector.
+
+Merged master MR !15355, authored and merged by Pascal Quantin, fixes NAS-5GS message-container dissection. The container semantically carries a plain NAS message, but if the enclosing NAS message is ciphered and Wireshark has not null-deciphered it, those bytes cannot safely be recursively dissected as NAS. The accepted implementation records the outer security-header type in the per-packet NAS private data and renders the container as encrypted data unless the outer state proves plaintext is available. The same fix was accepted on release-4.2 and release-4.0 in !15357 and !15358.
+
+**Implementation rule:** carry authoritative enclosing decode/security state through the established per-packet/dissector context and consult it at nested-container boundaries. Do not call a child dissector solely from the child's declared semantic type when the outer layer says its representation is encrypted, compressed, incomplete, or otherwise not yet decoded.
+
+**Review rule:** for recursive/container dissectors, test both the ordinary decoded case and a case where the same inner IE/type appears under an enclosing state that makes its bytes opaque. Verify that the opaque case remains data rather than being misinterpreted as cleartext protocol structure.
+
+**Confidence:** Extremely high. Merged master correctness fix by the protocol maintainer plus two stable backports.
