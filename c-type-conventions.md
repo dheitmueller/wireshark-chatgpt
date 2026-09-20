@@ -2,15 +2,17 @@
 
 This file records durable type-usage conventions extracted from accepted Wireshark review. Current upstream source and coding guidance remain authoritative.
 
-## Prefer standard C fixed-width integer types in Wireshark-owned dissector code
+## Prefer standard C types in Wireshark-owned APIs and dissector code
 
-Wireshark-owned code should not introduce GLib integer aliases where standard C integer types express the value domain directly. Use types such as `uint8_t` for protocol-width values unless an external API contract requires a library-defined type.
+Wireshark-owned APIs and code should not introduce or retain GLib scalar aliases where standard C types express the value domain directly. Use fixed-width types such as `uint8_t` and `uint32_t` for protocol-width or explicitly sized integer values, and use standard `bool` for Wireshark-owned boolean contracts unless an external API requires its own scalar type.
 
 In merged MR !24689, Jaap Keuter reviewed new ENIP dissector code and explicitly requested replacing the newly introduced GLib types with `uint8_t` throughout the change, noting that Wireshark was no longer using those GLib types. Michael Mann pointed the contributor to `tools/convert-glib-types.py`; the contributor applied the review, Anders Broman approved, and the MR merged.
 
-**Implementation rule:** for Wireshark-internal protocol values, prefer the project's standard C/fixed-width types rather than legacy GLib scalar aliases. Preserve dependency-defined scalar types at true external API boundaries when the called API's signature requires them; do not mechanically convert across an ABI/API contract.
+Merged MR !15474 provides earlier and broader evidence at a core Wireshark API boundary. Gerald Combs changed the preferences API from GLib scalar types to C99/C standard types, including `guint32` to `uint32_t` and `gboolean` to `bool`; Anders Broman approved and merged the change. This shows that the standard-type preference is not limited to dissector-local variables and can apply to Wireshark-owned interfaces themselves.
 
-**Confidence:** Very high for new Wireshark-owned dissector code. Direct Jaap Keuter review on a merged MR, consistent with the existing notebook distinction that external dependency API types must be preserved at their boundaries.
+**Implementation rule:** for Wireshark-owned protocol values and APIs, prefer the project's standard C/fixed-width types rather than legacy GLib scalar aliases. Preserve dependency-defined scalar types at true external API boundaries when the called API's signature requires them; do not mechanically convert across an ABI/API contract. In particular, use `bool` for a Wireshark-owned boolean contract but keep `gboolean`/`TRUE`/`FALSE` when calling a GLib API that declares that convention.
+
+**Confidence:** Very high. Independent merged evidence from a modern dissector review plus a core preferences-API conversion authored by Gerald Combs and approved/merged by Anders Broman.
 
 ## Do not assume the underlying C type of typedefs such as `time_t` when formatting
 
