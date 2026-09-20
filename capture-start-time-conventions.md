@@ -13,3 +13,13 @@ Merged master MR !21333, authored by John Thacker, adds an explicit `file_start_
 **Review rule:** when changing timestamp presentation or capture statistics, identify which time quantity is actually intended: explicit file start, first timestamped record, first packet, or another event. Do not treat those concepts as interchangeable merely because they often coincide in common captures.
 
 **Confidence:** Very high. Merged master Wiretap state-modeling change authored by John Thacker and accepted upstream.
+
+## Name packet-derived extrema for what they actually measure
+
+The minimum and maximum packet timestamps observed in a capture are packet-time statistics, not proof of the capture session's actual start/end and not necessarily the timestamps of the ordinally first/last records when capture records are out of time order.
+
+Merged master MR !16271, authored and merged by Guy Harris, deliberately changes `capinfos` terminology from “capture start/end” and “first/last packet” to “earliest/latest packet”. Its rationale is that packet contents cannot reliably establish the capture boundaries and record order need not be chronological.
+
+**Implementation rule:** label packet-derived timestamp minima/maxima as earliest/latest packet times unless an independent data source establishes stronger semantics. Do not let UI text, help text, documentation, or variable names claim capture boundaries or ordinal position that the data does not prove.
+
+**Confidence:** Extremely high. Merged master change authored and merged by Guy Harris, directly reinforcing the distinction above between file/session metadata and packet timestamps.
