@@ -13,3 +13,15 @@ Merged MR !21128 fixes a crash/warning path by replacing `disconnect(object, nul
 **Review implication:** when a Qt crash appears after object destruction or reconnection, inspect broad `disconnect()` calls as well as missing connections. A cleanup operation can be over-broad and silently remove the very destruction notification that makes another relationship safe.
 
 **Confidence:** Very high. Merged correctness fix with a concrete failure mechanism; the superseded sibling was explicitly down-weighted.
+
+## Re-audit AutoConnection semantics when event-loop or lifetime structure changes
+
+`Qt::AutoConnection` is not a fixed delivery guarantee. Refactoring a dialog from a nested `exec()` event loop to non-blocking lifetime management can turn a previously deferred-looking interaction into a synchronous direct call, changing reentrancy and destruction behavior even if the signal/slot declaration itself is untouched.
+
+Merged release MRs !15210 and !15211, authored and merged by John Thacker, carry the accepted Time Shift crash fix. After the nested dialog event loop was removed, the `timeShifted` connection became a direct call into `PacketList::applyTimeShift()`. Redissection could run while the `WA_DeleteOnClose` dialog was closed and destroyed; when control eventually returned, the dialog attempted to update widgets that no longer existed. The fix makes the connection explicitly `Qt::QueuedConnection`, breaking that synchronous call stack and allowing the emitting operation to complete without later touching a deleted dialog.
+
+**Implementation rule:** after changing modal/nested event loops, thread affinity, `DeleteOnClose`, or other object-lifetime structure, re-evaluate every nearby `AutoConnection` whose slot can perform long-running, reentrant, or event-processing work. If correctness requires deferred delivery, state that requirement explicitly with `Qt::QueuedConnection` instead of relying on the old event-loop shape to provide it accidentally.
+
+**Review implication:** for crash reports involving a dialog closed while redissection, retap, export, or another long operation is active, inspect both object ownership and signal delivery mode. A lifetime-safe design needs the connection type and the object's destruction policy to agree.
+
+**Confidence:** Very high. The accepted fix was authored by John Thacker and carried into both maintained release branches; the failure mechanism is explicitly documented in the commit/MR description.
