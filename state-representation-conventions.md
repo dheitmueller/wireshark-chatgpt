@@ -55,3 +55,15 @@ Closed MR !15738 tried to improve MySQL/MariaDB mid-conversation captures by ass
 **Review rule:** test stateful dissectors with captures that begin after setup as well as with complete sessions. When two wire interpretations remain indistinguishable without the omitted negotiation, document the ambiguity and prefer a conservative project-wide default over ad-hoc branch-local guesses.
 
 **Confidence:** Very high. The weaker single-flag proposal was explicitly superseded after substantive John Thacker review by a merged alternative that centralized the fallback state.
+
+## Choose invalid-state sentinels outside the valid value domain
+
+A sentinel used for “unknown”, “not present”, or “invalid” state must not collide with a value that the protocol or application can legitimately produce. Reusing a familiar zero value as a stand-in for absence is unsafe when zero itself has valid semantics.
+
+Merged master MR !15667 changes SMB2 request/response frame bookkeeping to use `UINT32_MAX` for invalid `frame_req` / `frame_res` state because frame number 0 can be valid in the surrounding logic. The change was part of the accepted SMB2/Kerberos decryption series merged by Anders Broman.
+
+**Implementation rule:** define absence/error sentinels from the semantic domain, not by habit. Before choosing 0, -1, a maximum integer, or another magic value, verify that the chosen representation is impossible for every valid producer and preserved correctly by conversions and storage types. Prefer an explicit validity flag or richer type when the value domain leaves no unambiguous sentinel.
+
+**Review rule:** when a state field doubles as both data and validity marker, audit all producers and comparisons for legitimate boundary values. A sentinel collision can make valid state appear missing and can be especially hard to diagnose when only captures near the boundary exercise it.
+
+**Confidence:** High. Merged master correctness change in a multi-commit protocol series; the commit message explicitly records the reason for abandoning zero as the invalid marker.
