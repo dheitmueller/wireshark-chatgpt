@@ -25,3 +25,15 @@ Merged MR !26541 adds exactly those checks to the UMTS FP dissector for `fp_info
 **Implementation rule:** when a consumer receives a count-plus-fixed-array structure and will index the array using that count, validate `count <= capacity` at the consuming boundary before iteration or indexing. Producer-side validation is valuable but does not replace the consumer's own memory-safety check, especially for shared structures with multiple producers.
 
 **Confidence:** Very high. Merged master hardening authored by John Thacker, approved by Anders Broman, with two accepted stable-branch backports.
+
+## Prefer `array_length()` to open-coded compile-time array arithmetic
+
+When the object is a true compile-time C array, use Wireshark's common `array_length()` helper rather than repeating `sizeof(array) / sizeof(TYPE)`, `sizeof(array) / sizeof(array[0])`, or local duplicate macros. The project-wide helper makes the intent explicit, follows the declared element type automatically, and avoids stale type names when declarations change.
+
+Merged MR !15706 centralized the helper and removed several duplicate array-count definitions, and merged follow-up !15727 replaced a wide range of manual `sizeof` expressions with `array_length()`. The latter explicitly left alone cases where division by another type's size was semantically computing records or samples that fit in a buffer rather than counting array elements. Merged MR !15715 provides a correctness example alongside the style cleanup: LTE RRC lookup helpers previously returned the *index* of the final element on an out-of-range input instead of the final element's value; rewriting the lookup as `vals[MIN(idx, array_length(vals) - 1)]` made the intended bound and return semantics clear.
+
+**Implementation rule:** use `array_length(array)` for the number of elements in a real fixed array whose extent is available at the call site. Do not mechanically replace arbitrary `sizeof(X) / sizeof(Y)` expressions unless `Y` is actually the element type of `X`; some such divisions express a different unit conversion and must remain explicit.
+
+**Review rule:** bulk array-count cleanup should separate mechanical replacements from semantic fixes. Verify any changed out-of-range behavior independently, and keep the existing rule above in mind: `array_length()` is correct only before array-to-pointer decay.
+
+**Confidence:** Very high. Three merged master MRs, including a broad accepted cleanup and an independently merged correctness fix.
