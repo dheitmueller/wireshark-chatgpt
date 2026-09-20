@@ -71,3 +71,15 @@ Merged master MR !20435, authored and merged by John Thacker, fixes DTLS 1.2 han
 **Implementation rule:** determine the lifetime of every sequence-number namespace. When a protocol generation event resets or reuses the sequence space, include that generation/epoch/session discriminator in the reassembly key rather than treating the raw sequence number as globally unique. Do not add dimensions that the protocol version does not actually use; model the version-specific identity semantics.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker with the reset/collision mechanism stated directly.
+
+## Key reassembly by stable protocol/session identity when transport endpoints can migrate
+
+Addresses and ports are convenient default reassembly discriminators only when the protocol guarantees they remain part of a message's identity. Protocols such as QUIC can migrate an established connection to new endpoints while higher-layer data remains in the same logical session, so transport tuples can change in the middle of one fragmented message.
+
+Merged master MR !15380, authored and merged by John Thacker, fixes TLS handshake reassembly across QUIC connection migration. TLS fragments before and after migration belong to the same handshake, but a tuple-derived reassembly key split them into different records. The accepted implementation supplies custom reassembly-table key functions using the stable `SslSession *`, the handshake reassembly ID, and direction. Merged stable-branch MR !15353 independently fixes the complementary QUIC association problem for zero-length connection IDs by attaching an already identified QUIC connection to the newly encountered conversation after migration.
+
+**Implementation rule:** build reassembly identity from protocol dimensions that remain invariant for the lifetime of the fragmented unit. If an established session can survive endpoint rebinding/migration, do not make addresses or ports mandatory parts of the reassembly key; use the protocol session/connection identity plus whatever direction, generation, and message ID dimensions actually distinguish concurrent reassemblies.
+
+**Review rule:** when adding reassembly for a protocol that supports migration, rebinding, tunneling changes, or other endpoint changes, test a fragmented unit that crosses the change. A correct single-tuple capture does not prove that the key models the protocol's true identity.
+
+**Confidence:** Extremely high. The master fix was authored and merged by John Thacker and documents the exact assertion failure caused by endpoint-based fragmentation; the stable QUIC migration fix corroborates the same identity model.
