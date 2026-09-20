@@ -23,3 +23,15 @@ Merged master MR !16271, authored and merged by Guy Harris, deliberately changes
 **Implementation rule:** label packet-derived timestamp minima/maxima as earliest/latest packet times unless an independent data source establishes stronger semantics. Do not let UI text, help text, documentation, or variable names claim capture boundaries or ordinal position that the data does not prove.
 
 **Confidence:** Extremely high. Merged master change authored and merged by Guy Harris, directly reinforcing the distinction above between file/session metadata and packet timestamps.
+
+## Represent a missing record timestamp as absence, not as a sentinel time
+
+A record for which the file format provides no timestamp does not have a timestamp of zero. Those are different states. Encoding absence as a numeric sentinel can leak false time semantics into relative-time calculations, display, sorting, serialization, and downstream consumers.
+
+Merged master MR !16179, authored and merged by Guy Harris, corrects BLF metadata records by clearing `WTAP_HAS_TS` unless the record actually carries a recognized timestamp form. The same change keeps the relative-to-capture-start value invalid when no timestamp exists. During review, Guy explicitly rejected assigning timestamp zero and instead required that the record be marked as not having a timestamp at all.
+
+**Implementation rule:** use Wiretap presence/validity flags to represent whether optional time metadata exists. Do not synthesize a zero/epoch/sentinel timestamp merely to populate a field. Any derived timestamp-dependent property must remain absent or invalid when its source timestamp is absent.
+
+**Review rule:** if preserving the absence state exposes a bug in a downstream writer, reader, or UI path, fix that layer rather than corrupting the producer's data model to accommodate it.
+
+**Confidence:** Extremely high. Merged master change authored and merged by Guy Harris, with the absence-vs-sentinel distinction stated explicitly in review.
