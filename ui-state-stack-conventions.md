@@ -13,3 +13,15 @@ Merged master MR !15835, authored and merged by John Thacker, fixes `LabelStack`
 **Review rule:** exercise nested temporary-state transitions, not only the steady state. Verify that after push/pop the complete underlying presentation is restored, including secondary attributes such as tooltips, styling, icons, or accessibility metadata when they belong to the same logical state.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with the lost-tooltip push/pop failure mode stated explicitly in the commit.
+
+## Drive stacked UI state from the lifecycle event that actually owns the transition
+
+When an operation emits lifecycle callbacks, update the visible state in the callback that represents the real transition rather than immediately before or after the function that happened to initiate it. This matters when one operation can produce repeated transitions, such as capture file rotation in multiple-file mode.
+
+Merged master MR !15777 moves the live-capture status push into the `CapturePrepared` and capture-update-started event handlers. `capture_start()` itself already triggers `CapturePrepared`, and multiple-file capture can later switch files without returning through the original call site. Updating the status after `capture_start()` therefore modeled the initiating call rather than the actual capture/file lifecycle and left the stack incorrect after rotation.
+
+**Implementation rule:** attach push/pop operations to the event boundary that defines the state, including repeated instances of that event. Avoid duplicating a state transition around both an initiating API call and the callback it triggers.
+
+**Review rule:** for event-driven UI state, test repeated transitions such as capture restart/file rotation, not just the first start/stop pair. Verify that every push has a lifecycle-matched replacement or pop and that indirect callbacks do not create duplicate entries.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker with the lifecycle mismatch described directly in the MR.
