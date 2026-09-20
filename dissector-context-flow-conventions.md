@@ -71,3 +71,15 @@ Merged master MR !24476 fixes IP over X.25 by clearing inherited `pinfo->conv_el
 **Implementation rule:** when a nested protocol changes the identity domain used for conversation lookup, ensure lower-layer conversation selectors no longer participate in upper-layer lookup unless they are explicitly part of the new layer's identity. Prefer an API that models this scope transition; if a workaround is necessary, document why and do not generalize the mechanism beyond the proven case.
 
 **Confidence:** Very high for the scoping invariant. Merged master fix authored by John Thacker plus two stable backports; the implementation itself is explicitly documented as provisional.
+
+## Tolerate classification changes between the first pass and redissection
+
+Conversation setup discovered later in a capture can legitimately change how an earlier packet is classified on a subsequent dissection pass. Code reached only after that reclassification must not assume that protocol-private conversation state was necessarily created when the packet was first visited.
+
+Merged master MR !15786 fixes an SPRT crash caused by SDP creating an RTP conversation whose setup frame precedes the current frame. On a later pass, packets in the intervening range can be dispatched differently than they were initially; SPRT therefore may run without finding the private conversation data that its old path assumed already existed. The accepted fix detects the missing state and establishes the SPRT conversation data before continuing, and the RTP change documents that backdated conversation setup can alter later-pass dissection.
+
+**Implementation rule:** when a dissector can become newly selected because of conversation state learned later, make its required conversation-private initialization idempotent/recoverable. Treat `visited` as evidence that a frame was dissected before, not proof that this particular protocol path or its private state existed on that earlier pass.
+
+**Review rule:** test stateful heuristic/conversation changes with redissection, especially when setup information can point to a frame number earlier than the packet that supplied the setup. A clean first pass does not prove later passes have the same protocol path.
+
+**Confidence:** Very high. Merged master crash fix authored and merged by John Thacker with the first-pass/second-pass failure mode stated explicitly.
