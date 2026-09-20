@@ -33,3 +33,13 @@ During merged MR !16268, Martin Mathieson explicitly asked what manual fixes wer
 **Review/submission rule:** for large scripted refactors, make the mechanical transform reproducible and isolate or explicitly enumerate every manual semantic fix. Prefer separate commits or focused follow-up MRs when a hand change has its own correctness argument. Review dependency/API contracts for those edits; do not accept successful compilation as proof of semantic correctness.
 
 **Confidence:** High. Direct maintainer review on a merged bulk refactor, corroborated by an adjacent merged example; the closed MR is used only as secondary evidence.
+
+## Treat newly enabled warnings as bug-discovery signals, not merely cleanup work
+
+Turning on a warning class in a mature generator or build path can expose real semantic bugs that had been hidden by permissive language behavior. Warning-enablement work should therefore inspect and understand each nontrivial diagnostic rather than mechanically suppressing it or casting it away.
+
+Merged MR !16081 enables Perl warnings across PIDL and fixes several issues they expose. In particular, the warning cleanup reveals that hexadecimal range bounds represented as strings were being treated numerically as zero in generator logic; the accepted change adds explicit integer parsing rather than silencing the diagnostic. The same upstream-sync batch also fixes precedence and initialization problems found while making the code warning-clean. Adjacent merged MR !16080 fixes another concrete `undef`/empty-array problem needed for warning-clean execution.
+
+**Review/tooling rule:** when enabling stricter compiler, interpreter, or static-analysis diagnostics, classify each warning by semantic cause. Prefer a correctness fix or a more precise representation over a cast/suppression that merely makes the warning disappear. A warning-enablement MR may legitimately discover functional defects; call those out explicitly so reviewers do not mistake them for mechanical noise.
+
+**Confidence:** Very high. Merged John Thacker upstream-sync work where enabling warnings directly exposed and fixed a generator logic bug.
