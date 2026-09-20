@@ -77,3 +77,15 @@ Merged master MR !19990, authored and merged by Guy Harris, adds the file type t
 **Implementation rule:** put the authoritative domain discriminator on the object whose validity depends on it, initialize it when the object is created, and validate it at serialization/consumption boundaries. When rejecting an incompatible record, pair the stable error code with enough diagnostic context to identify the actual violated contract.
 
 **Confidence:** Extremely high. Broad merged Wiretap contract cleanup authored and merged by Guy Harris.
+
+## Use the enum/type family that matches the API's semantic domain
+
+Do not pass a constant from a neighboring enum or type domain merely because its current numeric representation happens to match what the callee accepts. Domain-specific names are part of the API contract: using the right family documents the abstraction being expressed and keeps call sites correct if currently equivalent domains diverge later.
+
+Merged master MR !15712 changes conversation API call sites from `ENDPOINT_FOO` constants to the corresponding `CONVERSATION_FOO` constants. The MR explicitly notes that there was no functional difference at the time, but that the distinction could become important in the future. The accepted change therefore treats semantic type/domain correctness as worthwhile even before a runtime difference exists.
+
+**Implementation rule:** select enum values, flags, and typedef families according to the parameter's conceptual domain, not representation compatibility. If two domains intentionally share numeric values today, do not use that coincidence as a substitute for the API's semantic vocabulary.
+
+**Review rule:** when a compiler permits cross-domain constants because both are integer-like, still audit the call for semantic-domain mismatch. Such mismatches are inexpensive to fix early and can become latent bugs when either enum grows or changes representation.
+
+**Confidence:** Very high. Merged master cleanup whose rationale explicitly identifies future semantic divergence as the reason to use the correct domain.
