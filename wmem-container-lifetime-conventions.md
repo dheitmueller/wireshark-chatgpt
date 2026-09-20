@@ -13,3 +13,15 @@ Merged MR !20650, authored and merged by John Thacker, fixes RTP code that direc
 **Review rule:** repeated explicit destruction of scope-managed containers is a signal to reconsider the allocation scope or data-structure choice. Audit container metadata, backing arrays, keys, values, callbacks, and any non-wmem side allocations rather than checking only the top-level pointer.
 
 **Confidence:** Extremely high. A concentrated series of merged master changes authored by John Thacker establishes both the implementation fix and the public API guidance, with Gerald Combs also accepting the callback-lifetime correction.
+
+## Create auto-reset container roots at the lifetime of their persistent scope
+
+`wmem_*_new_autoreset()` separates the lifetime of the container object from the lifetime of the data it automatically clears. When the container itself is allocated in `wmem_epan_scope()` and its contents reset with `wmem_file_scope()`, recreating the container from a per-file init routine does not make the old epan-scope container metadata disappear; it leaves an additional persistent root behind on each initialization.
+
+Merged master MR !16225 fixes NBAP by creating its auto-reset maps once during protocol registration instead of recreating them from the per-file init routine. Merged master MR !16205 applies the same correction to RRC's U-RNTI/C-RNTI map and states the lifetime issue explicitly: either create the epan-scope container once or explicitly destroy its metadata rather than leaking another persistent container each time the file-scope state is reset.
+
+**Implementation rule:** place creation of an auto-reset wmem container in an initialization phase that matches the allocator used for the container object. If the root is epan-scope and only its contents are file-scope, create the root once at protocol registration and rely on the auto-reset allocator for per-file clearing. Do not confuse reset of the contents with destruction of the container's longer-lived metadata.
+
+**Review rule:** for every `wmem_*_new_autoreset(parent_scope, reset_scope)` call, audit both lifetimes independently. A call inside a repeated init routine is suspicious when `parent_scope` outlives that routine's reset cycle.
+
+**Confidence:** Very high. Two independent merged master fixes in the same period, one merged by Pascal Quantin and one by Anders Broman, converge on the same lifetime rule.
