@@ -42,6 +42,18 @@ Merged MR !25595 adds HTTP request-target whitespace diagnostics. During review,
 
 **Confidence:** Very high. Direct maintainer correction incorporated into a merged master MR.
 
+## Delay diagnostics whose truth depends on future packets until correlation has had a complete pass
+
+The rule above does not mean every diagnostic should be emitted on the first pass. A warning that asserts the *absence of a future-correlated event* is not yet justified while the capture is still being analyzed forward. The distinction is between suppressing an already-known visible result and deferring a conclusion whose evidence set is incomplete.
+
+Merged master MR !14170 adds DNS expert information for a query with no matching response. It emits the missing-response warning only when the query is revisited after the first pass. By that point later DNS packets have had an opportunity to populate the transaction's response-frame correlation; on the initial forward pass, `rep_frame == 0` merely means that a response has not been seen *yet*.
+
+**Implementation rule:** if a diagnostic means “no later counterpart exists,” “never completed,” or another negative conclusion that requires knowledge of the rest of the capture, defer the decision until the relevant correlation pass is complete. Once that conclusion is established, recreate the expert/tree result on applicable redissection passes just like other visible diagnostics.
+
+**Review/testing rule:** include both a genuinely missing-counterpart case and a case where the counterpart appears later in the capture. Verify that the first packet is not falsely warned during forward analysis and that the warning is present after redissection only for the truly unmatched case.
+
+**Confidence:** High. Merged master DNS transaction-analysis behavior approved by Martin Mathieson; the pass guard directly expresses the incomplete-evidence distinction.
+
 ## Restore shared metadata after a nested call that needs temporary context
 
 Sometimes a nested dissector legitimately needs a different view of shared packet/record metadata than the enclosing layer. If the caller temporarily changes that shared metadata, the change must be scoped to the child call and the original value restored before control returns to the enclosing path.
