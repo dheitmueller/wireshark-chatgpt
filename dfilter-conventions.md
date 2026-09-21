@@ -63,3 +63,15 @@ Merged master MR !14789, authored and merged by John Thacker, fixes a crash when
 **Testing rule:** negative display-filter tests should include syntactically valid but semantically invalid combinations for literals, fields, function results, and other parser-supported operand forms, and should assert a diagnostic rather than merely absence of a successful compile.
 
 **Confidence:** Very high. Merged master robustness fix authored and merged by John Thacker.
+
+## Treat valid field-display flags as composable dimensions when the API permits combinations
+
+A field can legally combine display/value-string traits. Code that interprets `hfinfo->display` must not accidentally model those traits as mutually exclusive if the registration API permits combinations such as a 64-bit value-string table that is also an extended string table. Both the string-to-value semantic checker and the value-to-string execution path must agree on the combined representation.
+
+Merged master MR !14506, authored and merged by John Thacker, fixes display-filter matching for `BASE_VAL64_STRING | BASE_EXT_STRING`. The old branch ordering handled an extended table as the 32-bit `value_string_ext` form and therefore failed for valid 64-bit extended tables; the semantic checker likewise needed to unwrap `val64_string_ext` before searching by text. The accepted fix handles both flags together in both directions. John used the IAX2 Wiki sample as a concrete reproducer: `iax2.voice.codec == "GSM compression"` changes from an impossible-value error to a valid `FT_UINT64` comparison.
+
+**Implementation rule:** when flag bits describe orthogonal properties, branch on their legal combinations rather than assuming a single winning flag. Audit all conversion paths that consume the metadata so compile-time name resolution and runtime formatting use the same representation.
+
+**Testing rule:** use at least one real registered field for each nontrivial supported flag combination, and test both symbolic-to-numeric filter compilation and numeric-to-symbolic matching/formatting where applicable. A synthetic unit test of one helper can miss disagreement between semantic checking and execution.
+
+**Confidence:** Very high. Merged master display-filter fix authored and merged by John Thacker with a concrete sample-capture/`dftest` reproducer.
