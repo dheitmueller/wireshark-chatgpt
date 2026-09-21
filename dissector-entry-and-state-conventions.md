@@ -30,3 +30,15 @@ These conventions capture durable lessons about how dissectors are entered, how 
 - When a registry/table already describes a family of wire objects, make it the authoritative source for operations that are properties of those objects instead of maintaining parallel switch statements or manual index constants.
 - Merged !20189, authored and merged by Guy Harris, moves standard pcapng block behavior into `pcapng_block_type_information_t`, replaces several block-type switches with table lookup, stores option-table and internal-block properties in the registration record, rejects duplicate block-type registration, and removes manually maintained `BT_INDEX_` values.
 - Table-driven registration reduces synchronization bugs: adding or changing a type should update one authoritative description rather than requiring matching edits to a registry, switch statements, index enums, and option tables.
+
+## Register a dissector-table key only when the key actually names that protocol
+
+A registration in a single-value dissector table is a semantic ownership claim, not a convenient fallback for a similar protocol. Competing registrations for the same key can displace one another, so registering a dissector under an encapsulation or selector that does not actually denote it can silently route valid traffic to the wrong dissector.
+
+Merged master MR !14057, authored and merged by Guy Harris, removes the X.75 dissector's registration for `WTAP_ENCAP_LAPB`. X.75 uses LAPB-like framing, but a capture whose encapsulation is explicitly LAPB should be handed to the LAPB dissector; registering X.75 on that same `wtap_encap` value caused the two dissectors to compete for one selector. Merged release-4.2 backport !14058 carries the same correction.
+
+**Registration rule:** before calling `dissector_add_*()` for a fixed selector, verify that the selector's documented semantics uniquely identify the protocol being registered. Protocol similarity is not sufficient. If one selector can legitimately represent multiple interpretations, use a distinct encapsulation, Decode As, heuristic selection, or another explicit dispatch layer rather than registering multiple unrelated dissectors as though they own the same value.
+
+**Review rule:** when adding or changing a fixed dissector-table registration, check the existing registrations for that table/key and ask what the key itself promises. Treat a duplicate or overlapping registration as a potential correctness conflict, not merely a discovery convenience.
+
+**Confidence:** Extremely high. Merged master correction authored and merged by Guy Harris, with an accepted release backport.
