@@ -29,3 +29,17 @@ Merged master MR !14784, authored by Jaap Keuter and committed by John Thacker, 
 **Testing rule:** include request, repeated/retransmitted request with the same transaction identifier, and response in one test. Verify that every request-side frame points to the response and that the response points back to the appropriate request while response timing is attached only to the actual response.
 
 **Confidence:** Very high. Merged master correctness fix by Jaap Keuter, committed by John Thacker, with stable-branch propagation.
+
+## Match multiple outstanding ordered requests with the protocol's queue semantics
+
+A protocol can permit more than one outstanding request without carrying an independent transaction identifier for each exchange. If replies are nevertheless defined to arrive in request order, the pending-request structure is semantically a FIFO queue. Treating it as a stack reverses associations as soon as two requests are outstanding at once.
+
+Merged master MR !14615 corrects HTTP request/response correlation for asynchronous but ordered traffic after the implementation had effectively matched outstanding requests LIFO rather than FIFO. The long review also exposed adjacent state-management hazards: John Thacker found paths where the current correlation record could be NULL in fuzzed input, newly introduced `GSList` state was not freed, and Range/Content-Range state could be marked valid even when parsing failed. He reproduced the leak with both Valgrind and LeakSanitizer on a fuzz capture and recommended using wmem-managed containers when their lifetime naturally matches dissection state.
+
+**Implementation rule:** derive the pending-operation data structure from the protocol's ordering contract. For an ordered pipelined protocol without per-transaction IDs, enqueue requests and match replies to the oldest still-unmatched request. Do not use insertion convenience or traversal direction to choose queue versus stack semantics.
+
+**State-validity rule:** only publish correlation or parsed-subfeature state after the parse that establishes it has succeeded. Keep nullable lookup results guarded on malformed or fuzzed traffic; a normal capture invariant is not necessarily a safe parser invariant.
+
+**Lifetime/testing rule:** request-tracking containers must have an explicit capture/conversation lifetime. Prefer the appropriate wmem scope when it naturally owns the state, or prove explicit cleanup on every terminal path. Exercise multiple outstanding requests, missing responses, malformed correlation metadata, and end-of-capture cleanup; use leak/sanitizer tooling when correlation changes allocate new persistent state.
+
+**Confidence:** Very high. The master change merged after extensive review, and John Thacker's concrete fuzz, Valgrind, LeakSanitizer, nullability, and lifetime findings materially shaped the final implementation.
