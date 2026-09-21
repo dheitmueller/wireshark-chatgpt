@@ -13,3 +13,15 @@ Merged master MR !22283, also authored by John Thacker, adds the complementary c
 **Reassembly rule:** distinguish expected aggregate length from bytes actually captured. Copy and advance state by real fragment lengths, and do not hand a reassembled buffer to downstream dissection until the bookkeeping proves the expected aggregate has actually been filled.
 
 **Confidence:** Very high. Two adjacent merged master fixes authored by John Thacker, both backported to release branches; one is explicitly validated against a known failing capture.
+
+## Custom reassembly must preserve framework dependency bookkeeping
+
+Wireshark's standard reassembly facilities provide more than byte concatenation. They also participate in cross-frame bookkeeping that other features rely on. A dissector that implements its own equivalent reassembly or unchunking cannot assume that reconstructing the payload alone reproduces all framework semantics.
+
+Merged master MR !14014, authored and merged by John Thacker, fixes RTMPT's custom unchunking path. RTMPT does not use the native reassembly API, so it now records every frame contributing bytes to a reconstructed packet and calls `mark_frame_as_depended_upon()` for those frames when the packet completes. Without that bookkeeping, exporting selected packets could include the final reconstructed packet while omitting earlier frames required to reconstruct it.
+
+**Implementation rule:** when a dissector bypasses Wireshark's normal reassembly machinery, audit the framework behavior the custom path is replacing, not just the reconstructed bytes. In particular, preserve contributing-frame dependency information when later operations such as packet export need the original fragments.
+
+**Testing rule:** for custom reassembly, test a selection/export workflow in addition to successful dissection. Selecting the frame that exposes the completed higher-level PDU should retain every earlier frame needed to reconstruct that PDU.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker; the behavior is directly tied to Wireshark's packet-export semantics.
