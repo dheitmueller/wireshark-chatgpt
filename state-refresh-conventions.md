@@ -59,3 +59,15 @@ Merged master MR !14779 changes SOME/IP's UAT update/reset paths to mark the mod
 **Testing rule:** for configuration-derived registrations, test edits and profile switches while the protocol is not actively bound or otherwise in use, then verify that the dynamic field namespace is correct when the dissector is subsequently enabled.
 
 **Confidence:** Very high. Both are merged master lifecycle fixes; !14779 was merged by John Thacker and !14793 by Gerald Combs, and the accepted code explicitly documents the previously missing unbound-protocol path.
+
+## Emit change notifications only for real changes and keep effect metadata nonzero
+
+Preference effect flags are not decorative metadata: they are the framework's record that a preference mutation has observable consequences and they drive downstream refresh decisions. A zero effect mask for a mutable preference prevents the application from knowing what changed, while emitting a broad change signal after a no-op makes downstream consumers behave as though state actually changed.
+
+Merged master MR !14561, authored and merged by John Thacker, enforces the existing preference API contract by treating attempts to set preference or module effect flags to zero as an error. The same change stops `PreferencesDialog` from queuing `PreferencesChanged` when its accumulated change/effect mask is zero. The MR explicitly calls out Lua as one consumer that needs the effect information to know that a preference changed.
+
+**Implementation rule:** mutable preferences and preference modules must carry nonzero effect flags describing the refresh work their changes require. Aggregate those flags across actual edits and use the aggregate both to select downstream work and to decide whether a change notification should be emitted at all.
+
+**Review rule:** distinguish the UI action "the user accepted the dialog" from the semantic event "configuration changed." Closing or accepting an editor with no modifications should not synthesize a state-change event merely because the dialog lifecycle completed.
+
+**Confidence:** Very high. Merged master preference-lifecycle correction authored and merged by John Thacker, enforcing a pre-existing documented API requirement and using it to suppress a false no-op notification.
