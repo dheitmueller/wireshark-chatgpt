@@ -14,7 +14,20 @@ Merged MR !24298 fixes lifetime/uninitialized-state problems in the JSON wiretap
 
 When a parser API expects a NUL-terminated string but the source format supplies a length-delimited token, isolate exactly that token and provide explicit termination before calling the parser. Do not rely on unrelated bytes after the token to stop parsing. This rule applies even when the surrounding source buffer itself is valid and NUL-terminated: the semantic boundary is the token boundary, not the enclosing buffer boundary.
 
+## Split expressions only at real tokens in the intended nesting level
+
+Expression text cannot safely be decomposed by matching delimiter substrings without also respecting lexical token boundaries and grouping depth. An operator spelling may occur inside an identifier or inside a parenthesized subexpression where it does not delimit the outer construct being extracted.
+
+Merged master MR !14361, authored and merged by John Thacker, fixes custom-column expression splitting in two ways: textual `or` is recognized only as a standalone operator rather than as an arbitrary substring, and `or`/`||` operators inside parentheses are not treated as separators for the outer multi-field custom column. The MR also relies on the display-filter grammar's OR precedence to explain why top-level OR is the correct separator for the supported multi-field form.
+
+**Implementation rule:** when extracting top-level components from a language expression, tokenize or otherwise enforce the language's real operator boundaries and track grouping depth. Split only on operators that belong to the intended syntactic level. A regex is acceptable only if it actually models those lexical and nesting constraints; plain substring matching is not.
+
+**Review rule:** test operator spellings embedded in identifiers, nested parentheses, and combinations of nested and top-level operators. Check the grammar's precedence rather than assuming that a visually convenient separator has the semantics the caller needs.
+
+**Confidence:** Very high. Merged master parser/column fix authored and merged by John Thacker, with both token-boundary and parenthesis-depth requirements stated explicitly in the MR.
+
 ## Provenance
 
 - !24261: merged nested-TLS session fix; John Thacker identified the semantic-depth versus reinvocation distinction and drove the `p_set_proto_depth()` approach.
 - !24298: merged JSON wiretap fix; John Thacker explicitly raised the risk of passing the remainder of the JSON buffer to a C-string timestamp parser instead of a token-bounded copy.
+- !14361: merged custom-column expression fix authored and merged by John Thacker; top-level splitting was made token-aware and parenthesis-aware.
