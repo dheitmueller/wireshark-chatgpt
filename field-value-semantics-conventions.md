@@ -23,3 +23,15 @@ Merged master MR !14551, authored and merged by Martin Mathieson, audits cases r
 **Review rule:** checker warnings that a value does not fit a field mask should normally be treated as evidence of a semantic mismatch, not silenced with casts or a wider field. If an exceptional API path intentionally uses a different value domain, document why rather than relying on an apparently impossible table entry.
 
 **Confidence:** Very high. Merged master correctness cleanup authored and merged by Martin Mathieson, with multiple concrete field corrections and an intentionally documented exception.
+
+## Size a field for the value stored in the protocol tree, not only for its wire encoding
+
+A field's on-wire width and its semantic value range can differ when the dissector scales, converts, or otherwise transforms the encoded value before adding it to the protocol tree. The registered `FT_UINT*` width constrains display-filter constants and other typed operations on the tree value, so choosing the type solely from the number of bytes consumed on the wire can make valid displayed values impossible to filter.
+
+Merged master MR !14507, authored by John Thacker and merged by Anders Broman, fixes GTP QoS fields that occupy one octet on the wire but are multiplied by protocol-defined factors before being added with `proto_tree_add_uint[_format_value]`. Values such as a maximum SDU size of 1500 were visible in the tree but the `FT_UINT8` registration caused `dftest` to reject `gtp.qos_max_sdu_size == 1500` as out of range. The accepted change registers the affected fields as `FT_UINT16` and documents why their semantic width exceeds their encoded width.
+
+**Implementation rule:** choose the registered field type from the full range of values that can actually be added to that field after decoding and transformation. Wire length still determines how bytes are read, but it does not by itself determine the correct `hf_` value type.
+
+**Testing rule:** when a compact wire encoding expands to larger logical values, exercise a representative value above the raw encoding's numeric range with `dftest` or an equivalent display-filter test. A tree display that looks correct is not sufficient if the field's type metadata makes that value unfilterable.
+
+**Confidence:** Very high. Merged master correctness fix authored by John Thacker, approved/merged by Anders Broman, with a concrete before/after `dftest` reproducer.
