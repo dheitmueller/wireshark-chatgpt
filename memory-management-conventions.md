@@ -37,3 +37,17 @@ Merged master MR !15925 removes `G_GNUC_MALLOC` from `wmem_realloc()` and `wmem_
 **Review rule:** when changing compiler attributes on memory APIs, treat the change as a correctness/optimization-contract change rather than cosmetic annotation cleanup. Check the compiler's documented semantics and audit callers only after the declaration accurately describes the function.
 
 **Confidence:** Very high. Merged master correction accepted by Anders Broman, with the MR explicitly tied to GCC's documented attribute semantics.
+
+## Allocate retained UI/statistics data for the consumer's lifetime, not the capture's lifetime
+
+The right allocation scope is determined by the object that retains a pointer, not by the operation that happened to produce the value. Statistics windows and other UI objects can exist before a capture is opened and can remain alive after the capture closes, so `wmem_file_scope()` is not automatically safe for data they retain.
+
+Merged master MR !14194, authored and merged by John Thacker, fixes GTP/GTPv2 SRT state that used a file-scope `wmem_map`. A statistics window can be opened with no capture file and can outlive a file close; using file-scope state for the window therefore produced assertions/crashes in debug builds. The accepted implementation uses an independently owned GLib hash table and resets it with the statistics lifecycle instead.
+
+Merged master MR !14178 provides the same lesson at string granularity. SRT row labels derived from packet-scoped value-string formatting could outlive the packet. Review by John Thacker also rejected a file-scope allocation as insufficient because the statistics UI itself is not file-scoped. The accepted implementation uses a const/static value-string result whose lifetime safely covers the retained label.
+
+**Implementation rule:** trace every retained pointer to its longest-lived consumer. Packet-produced data retained by a dialog, tap, statistics model, or process-level registry must be copied or represented in storage that remains valid for that consumer's lifetime. Do not choose packet/file scope merely because the value originated during packet or file processing.
+
+**Review/testing rule:** exercise lifecycle edges: open the consumer before any capture, keep it open across capture close/reopen, and trigger redissection/reset. Debug builds are particularly useful because allocator-scope assertions can reveal lifetime mismatches that release builds only expose intermittently.
+
+**Confidence:** Very high. Two merged master fixes, one authored/merged by John Thacker and one with direct John Thacker review, both demonstrating the same consumer-lifetime invariant with concrete crashes.
