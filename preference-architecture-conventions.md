@@ -13,3 +13,15 @@ Merged master MR !23077, authored and merged by Michael Mann, refactors several 
 **Review rule:** when extracting preference functionality for another frontend or standalone file, audit hidden globals and allocator assumptions together. Removing a singleton API while leaving storage hard-wired to a global scope only partially decouples the subsystem.
 
 **Confidence:** Very high. Three adjacent merged master changes by Michael Mann form a coherent accepted refactor: generic preference-tree identity, explicit preference memory scope, and access to the owning tree's data scope.
+
+## Use the most semantic preference registration API available
+
+A preference whose value names another Wireshark framework object should be registered with the framework API for that semantic type rather than modeled as an arbitrary string when a typed registration helper exists. Besides documenting intent, the specialized API can apply the validation, lookup, UI behavior, and future framework semantics associated with that object class.
+
+Merged master MR !14555, authored and merged by John Thacker, changes SCCP's payload-dissector preference from `prefs_register_string_preference()` to `prefs_register_dissector_preference()`. The preference is semantically a dissector name, not free-form text; the accepted change also updates its description from "protocol" to "dissector" so the user-facing terminology matches the object being selected.
+
+**Implementation rule:** if a preference selects a dissector, enum, range, file, or another framework-recognized semantic object, prefer the corresponding specialized preference registration API over a generic string/integer representation. Keep the preference's label and help text aligned with the same semantic type.
+
+**Review rule:** when a generic preference contains an identifier later interpreted by a framework registry, check whether a typed preference API already centralizes that validation and lookup. Avoid reimplementing object-name validation at each consumer.
+
+**Confidence:** Very high. Merged master cleanup authored and merged by John Thacker, replacing an existing generic registration with the dedicated dissector-preference API.
