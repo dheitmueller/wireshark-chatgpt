@@ -19,3 +19,15 @@ Merged MR !26533 moves the Capture Options dialog's interface list from its own 
 **Architecture rule:** for multiple views of the same domain collection, centralize the domain representation and reusable filtering/edit behavior in a model (and proxy model where appropriate); keep each view focused on presentation and view-specific interaction. Avoid parallel `QTreeWidget`/manual-population implementations when a shared model can represent the same state.
 
 **Confidence:** Very high. Merged architectural refactor authored by Gerald Combs and approved/merged by John Thacker, with an explicit goal of sharing one implementation across three UI surfaces.
+
+## Traverse the proxy model when an operation is defined by the currently visible rows
+
+A source model represents the underlying data set; a filter/sort proxy represents the user's current view of that set. Export, map-generation, or other actions whose semantics are “what is currently shown after filtering” must iterate the proxy rather than bypassing it and walking the source model directly. When domain-specific roles live on the source model, map each proxy index back to its source index for the data lookup.
+
+Merged master MR !14274, authored by John Thacker and merged by Anders Broman, fixes GeoIP map generation from the Conversations/Endpoints traffic tabs. The accepted code iterates `TrafficDataFilterProxy::rowCount()`, converts each proxy index with `mapToSource()`, and then reads the underlying `ATapDataModel`. It also separates helpers that return the proxy from helpers that return the source model, making the semantic distinction explicit in call sites.
+
+**Implementation rule:** decide whether an operation is view-relative or data-set-relative. Use the proxy for visible membership/order and the source model for canonical domain state or source-only roles. Do not silently bypass filtering by iterating the source merely because its API is more convenient.
+
+**Testing rule:** for view-relative export/action paths, apply a filter (and sorting where relevant) before invoking the operation and verify that the result contains the same rows—and, where semantically meaningful, the same order—as the visible proxy view.
+
+**Confidence:** Very high. Merged master model/view correctness fix authored by John Thacker and merged by Anders Broman.
