@@ -25,3 +25,15 @@ Merged master MR !14555, authored and merged by John Thacker, changes SCCP's pay
 **Review rule:** when a generic preference contains an identifier later interpreted by a framework registry, check whether a typed preference API already centralizes that validation and lookup. Avoid reimplementing object-name validation at each consumer.
 
 **Confidence:** Very high. Merged master cleanup authored and merged by John Thacker, replacing an existing generic registration with the dedicated dissector-preference API.
+
+## Migrate persisted preference representations with explicit read precedence and a compatibility window
+
+Changing the key or representation of a persisted preference is a compatibility change across Wireshark versions, profiles, and installations that may share configuration. Do not mark the old representation obsolete as soon as the new one exists if older and newer versions still need to consume the same preferences file.
+
+Merged master MR !14457, authored and merged by John Thacker, follows a change from format-based hidden-column preferences to index-based hidden-column preferences. The accepted compatibility path continues to write the older format-based representation, reads both old and new forms, and gives the new index-based preference explicit precedence when it was present; only when the new form was not read does it fall back to the deprecated format-based value.
+
+**Implementation rule:** for a persisted-preference migration, define three things deliberately: which representations are still written during the compatibility window, which representations are accepted on read, and the precedence when both are present. Preserve enough old-format output for supported older readers when forward/backward profile compatibility is a goal, and retain the old parser as a fallback until the compatibility window can actually end.
+
+**Review rule:** test preference migrations in both directions with realistic shared profiles: new Wireshark reading an old file, new Wireshark rereading a file containing both representations, and an older supported Wireshark reading a file last written by the new version. Do not rely on registration order or a vague "deprecated" marker to decide which value wins.
+
+**Confidence:** Very high. Merged master compatibility fix authored and merged by John Thacker; the MR description states the read precedence and continued old-format write policy explicitly.
