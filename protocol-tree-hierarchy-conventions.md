@@ -25,3 +25,15 @@ Merged master MR !14203, authored by John Thacker, fixes this in the protocol-tr
 **Review/testing rule:** when changing tree-faking or hidden-item logic, test not only display output but also late length/representation adjustment, referenced descendant fields, and consumers of protocol-item ranges such as hierarchy/statistics code.
 
 **Confidence:** Very high. Merged master protocol-tree correctness fix authored by John Thacker, with the identity ambiguity and downstream range consumer stated directly in the MR.
+
+## Treat protocol-tree presentation changes as externally observable until their scope is verified
+
+A reordering or formatting change in the packet-details tree may look cosmetic in the GUI, but protocol-tree structure is also exposed through command-line and export paths and can be consumed by scripts. Before describing a tree change as display-only, verify whether it changes field identity, field ordering, TShark/export output, or only the human-facing presentation.
+
+Merged master MR !14102 reorders IEEE 802.15.4 source and destination address fields for presentation consistency. During review, Graham Bloice explicitly raises the possibility that users post-process captures and distinguishes a genuinely display-only change from one that would alter fields or TShark-visible output. The merged change was accepted with the visible behavior documented in release notes. Merged !14097 independently reinforces the documentation side of the rule by changing how truncated values are rendered and recording the user-visible ellipsis behavior in the release notes.
+
+**Implementation rule:** classify presentation changes by their observable surface before treating them as cosmetic. Preserve field identities and machine-consumed semantics unless a compatibility change is intentional; if the change is genuinely limited to presentation, still consider whether it is visible enough to document for users.
+
+**Review/testing rule:** for tree reordering, label changes, or rendering changes, compare GUI packet details with relevant TShark/export output and display-filter behavior. Do not infer machine-output neutrality from visual simplicity alone.
+
+**Confidence:** High. The distinction was raised directly in review of a merged master change and is corroborated by another merged user-visible rendering change that was explicitly release-noted.

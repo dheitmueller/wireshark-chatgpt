@@ -25,3 +25,17 @@ Merged master MR !14295 updates DICOM generated material from the 2021b to 2024a
 **Review rule:** unexplained mass deletion from generated registries is a red flag even when the new source is authoritative and the generator exits successfully. Prefer generator/source fixes that explain the new structure over manually restoring generated output.
 
 **Confidence:** Extremely high. Merged master standards update with the missing-data risk identified by Guy Harris and corrected before acceptance.
+
+## Identify generated-versus-hand-maintained boundaries at the artifact level
+
+Do not assume an entire protocol subsystem is either generated or hand-written merely because one prominent file in that subsystem is generated. Source-of-truth boundaries can differ between registration tables, value definitions, packet parsing code, and local customization layers. A correct fix depends on identifying which artifact actually owns the behavior being changed.
+
+Merged master MR !14100 fixes X11 `ConfigureWindow` dissection. During review, Guy Harris explains that Wireshark's X11 support is mixed: `x11-register-info.h` is generated from protocol descriptions, while the corresponding dissection logic in `packet-x11.c` is hand-coded. Editing the hand-maintained dissector was therefore correct for the immediate bug. Guy also notes the preferable longer-term architecture: generate mechanical dissection from the XML description and use an explicit configuration/override layer, analogous to ASN.1/DCE-RPC `.cnf` handling, for intentional Wireshark-specific behavior.
+
+**Implementation rule:** before changing generated-looking protocol code, determine the source-of-truth boundary for the exact behavior. Modify authoritative inputs or generators for generated regions, and modify hand-maintained code directly where that code remains the owning source. Do not patch generated output merely because it is nearby, and do not force a hand-maintained behavioral fix into a generator that does not own that behavior.
+
+**Architecture rule:** where practical, keep mechanical protocol structure derived from the authoritative specification and express deliberate local deviations through a documented override/configuration mechanism. This makes regeneration reproducible while preserving intentional presentation or compatibility behavior without ad hoc edits to generated output.
+
+**Review rule:** when a subsystem mixes generated and manual artifacts, reviewers should ask which file is authoritative for each changed behavior and whether regeneration would overwrite the proposed change. The answer may legitimately differ within one protocol dissector.
+
+**Confidence:** Extremely high. The ownership/generation boundary and preferred future architecture were explained directly by Guy Harris on a merged master fix.

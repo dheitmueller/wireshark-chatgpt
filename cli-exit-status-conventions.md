@@ -25,3 +25,15 @@ Merged master MR !23569, authored and merged by Guy Harris, replaces a boolean p
 **Implementation rule:** make output-producing processing APIs capable of reporting output failure as a first-class result. Check the operation that can fail at the point it occurs, propagate that result through the processing loop, and stop work when the consumer or output medium can no longer accept data.
 
 **Confidence:** Extremely high. Merged master and supported-branch changes authored and merged by Guy Harris with explicit rationale for broken-pipe, ENOSPC, and quota failures.
+
+## Let parent processes interpret standardized child statuses semantically
+
+A child process's standardized exit status is part of the parent/child protocol. The parent should use the specific status to decide user-visible severity and recovery behavior instead of collapsing every nonzero result into the same warning or suppressing all failures to silence one expected condition.
+
+Merged master MR !14085 fixes noisy capture statistics handling when an unprivileged user has no capture interfaces. During review, John Thacker directs the change toward the project-defined `WS_EXIT_NO_INTERFACES` result: “no interfaces” is an expected environment condition that need not produce a default-priority console warning, while other subprocess failures can still represent real problems and remain visible. The accepted implementation therefore distinguishes that one semantic status rather than treating every nonzero return the same way.
+
+**Implementation rule:** when one Wireshark process launches another, have the child return project-defined semantic statuses and have the parent branch on those statuses where policy differs. Expected environmental outcomes may be quiet or informational; unexpected failures should retain appropriate warnings/errors.
+
+**Review rule:** if a subprocess warning is too noisy, do not solve it by ignoring arbitrary nonzero exits. Identify the specific expected status, suppress or downgrade only that case, and preserve diagnostics for the rest.
+
+**Confidence:** Very high. Merged master fix with the semantic exit-status approach explicitly driven by John Thacker's review.
