@@ -81,3 +81,15 @@ Merged MR !25598, authored and merged by John Thacker, adds `wmem_map_get_keys_s
 **Implementation rule:** unordered containers are appropriate for lookup, but not as an ordering contract. Before emitting order-sensitive external results, materialize the relevant keys/items and sort them with a comparator that reflects the semantic output order.
 
 **Confidence:** Very high. Merged master API and deterministic-output fix authored and merged by John Thacker.
+
+## If NULL semantically means an empty container, encode that contract once in the container API
+
+When callers legitimately have an optional map and query-like operations should behave exactly as they would on an empty map, prefer expressing that behavior in the common container API rather than scattering identical NULL guards across consumers. This does not imply that every operation should accept NULL: operations that require an actual container, such as insertion, may still reject it.
+
+Merged master MR !14305, authored by Gerald Combs and merged by Jaap Keuter, makes the relevant `wmem_map` lookup, membership, removal/steal, and iteration helpers NULL-tolerant while keeping insertion documented as requiring a real map. The same fix was accepted on maintained branches in !14306, !14307, and !14308. The API documentation explicitly distinguishes “May be NULL” from “Must not be NULL” rather than relying on accidental implementation behavior.
+
+**Implementation rule:** broaden NULL handling only when a single unambiguous semantic exists—for query/removal operations, “NULL container behaves like empty container” is often useful. Document the contract per operation, and do not turn mutating/construction operations into nullable APIs merely for consistency.
+
+**Review rule:** if many callers are repeating the same defensive NULL check because an optional collection is semantically empty when absent, consider centralizing the contract in the collection helper. Conversely, do not hide programmer errors where absence is not a valid state.
+
+**Confidence:** Very high. Merged master API change authored by project lead Gerald Combs, merged by Jaap Keuter, and propagated to multiple maintained branches.
