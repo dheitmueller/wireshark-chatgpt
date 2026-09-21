@@ -65,3 +65,15 @@ Practical guidance:
 - If neither packet-local evidence nor established state can distinguish the protocol reliably, decline the heuristic rather than claiming ambiguous traffic.
 
 **Confidence:** Very high. Merged master change authored and merged by John Thacker, with the false-positive/multiplexing constraint and the state requirement explained directly in the MR.
+
+## A heuristic's default policy must account for execution cost as well as false-positive risk
+
+A content heuristic can be semantically sound yet still be a poor default if it is expensive and registered at a broad dispatch point where it may run against large volumes of unrelated traffic. Default enablement is therefore a performance policy as well as a recognition-policy decision.
+
+Merged master MR !14463 adds an LTP heuristic while extending cancel/cancel-ack correlation. Anders Broman explicitly questioned enabling the heuristic by default because it could be CPU intensive; the author agreed and changed the registration before the MR was approved and merged. The review is useful because the concern is independent of whether the heuristic ultimately recognizes LTP correctly: a globally or broadly invoked candidate test can impose cost on captures that do not contain the protocol at all.
+
+**Implementation rule:** when adding a heuristic, consider expected invocation frequency and worst-case parsing cost before choosing `HEURISTIC_ENABLE`. If the check requires substantial parsing, repeated lookups, or other nontrivial work at a broad transport table, prefer opt-in/default-disabled registration unless there is strong evidence the cost is negligible. Where possible, first narrow dispatch using a stronger parent protocol, conversation state, or explicit binding.
+
+**Review rule:** assess both selectivity and cost. Positive sample captures demonstrate correctness after a match, but they do not measure the aggregate overhead of running the heuristic on unrelated traffic; benchmark or reason about the no-match path when registration is broad.
+
+**Confidence:** High. Direct Anders Broman review, author agreement/change, and merged result. The evidence establishes the default-policy principle even though exact acceptable cost remains protocol- and dispatch-context dependent.
