@@ -75,3 +75,15 @@ Merged master MR !15398, authored by John Thacker and merged by Anders Broman, f
 **Review rule:** for every new conversation proto-data field, ask whether the underlying endpoint tuple can be reused by multiple semantic owners. If it can, either key the state by the higher-level identity or attach it to a narrower state object whose lifetime matches that identity.
 
 **Confidence:** Very high. Merged master correctness fix authored by John Thacker; the MR description explicitly identifies transport-connection reuse as the bug and documents the accepted packet/file-scope split.
+
+## Do not let speculative lookup create a protocol session
+
+A helper that looks like a read/query operation may internally have get-or-create behavior. Calling such a helper speculatively while probing alternative protocol interpretations can therefore mutate conversation state even when that protocol is not actually present, causing later dissectors to observe a session that was invented by the probe itself.
+
+Merged master MR !15023, authored and merged by John Thacker and approved by Pascal Quantin, fixes JSON-3GPP handling for 5GC traffic. The code used `http2_get_header_value()` to look for HTTP/2 headers, but that path ultimately called `get_http2_session()` and created HTTP/2 session state even for OAI traffic carried over HTTP/1.1. The resulting synthetic state could confuse the HTTP dissector. The accepted implementation first verifies that HTTP/2 is actually a protocol in the frame before using the HTTP/2 helper and separately supports the real-world HTTP/1.1 variant. Release-4.2 MR !15040 carries the same fix.
+
+**Architecture rule:** before invoking a helper that may allocate or attach conversation/session state, establish authoritative evidence that the corresponding protocol context exists. Prefer distinct read-only lookup and get-or-create APIs when callers need both behaviors; a query-shaped helper should not silently create state during speculative dispatch.
+
+**Review rule:** audit the side effects of helper calls used in heuristics, fallback parsing, and multi-protocol dispatch. A function name such as `get_*` or `*_header_value` is not proof that the operation is observationally pure.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with an accepted stable backport.
