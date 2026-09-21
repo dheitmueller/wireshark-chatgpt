@@ -55,3 +55,17 @@ Merged !23047 additionally checks the return from `wtap_dump_file_tell()` even t
 **Implementation rule:** if correct serialization requires random access, declare that requirement in the writer's file-type metadata and let wiretap reject unsupported/non-seekable destinations before output begins. Still check individual seek/tell operations for failure rather than treating the capability declaration as proof that every operation must succeed.
 
 **Confidence:** Very high. The capability fix and its documentation were merged master changes authored by John Thacker and accepted by maintainers.
+
+## Prefer a native encapsulation when generated packets already have one
+
+When a wiretap reader parses a text or container format and generates an in-memory packet in a representation that already has a native `WTAP_ENCAP_*`, use that encapsulation directly. `WTAP_ENCAP_WIRESHARK_UPPER_PDU` plus exported-PDU tags is appropriate when the generated record truly needs metadata to identify a higher-layer dissector or carry information that the native packet format cannot represent; it should not be an extra wrapper around a packet whose native encapsulation is already sufficient.
+
+Merged master MR !14394, authored and merged by Guy Harris, changes the candump reader from `WTAP_ENCAP_WIRESHARK_UPPER_PDU` with dissector-name tags to `WTAP_ENCAP_SOCKETCAN`. The generated CAN/CAN FD records already contain the information necessary for normal SocketCAN dissection, so the exported-PDU tags were redundant. The same change renames `candump_write_packet()` to `candump_gen_packet()` because the helper constructs a packet in memory rather than writing a file.
+
+**Implementation rule:** choose the narrowest native wiretap encapsulation that faithfully represents the packet the reader produces. Add Upper-PDU metadata only when it carries information that is semantically necessary and not expressible by the native encapsulation. Avoid using exported-PDU tags merely as a dissector-selection shortcut.
+
+**Naming rule:** helper names should describe the operation they actually perform. A routine that generates or normalizes a packet record in memory is not a writer just because it is used by a capture reader.
+
+**Review rule:** when a reader synthesizes packets, compare its output record with the existing wiretap encapsulation catalog before adding a generic metadata wrapper. Verify that native encapsulation preserves the desired dissector selection and any byte-order contract.
+
+**Confidence:** Extremely high. Merged master wiretap cleanup authored and merged by Guy Harris, with the unnecessary metadata and naming mismatch both called out explicitly.
