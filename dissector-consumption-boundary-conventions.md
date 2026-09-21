@@ -27,3 +27,15 @@ Merged MR !15499 fixes exactly this in ZigBee TLV recursion handling. When the n
 **Review rule:** check the semantic contract of parser return values on failure as carefully as on success. A termination guard that prevents one resource failure can still create non-progress, backtracking, or ownership bugs if it reports an invented boundary.
 
 **Confidence:** Very high. Merged fuzz-found infinite-loop fix; the MR explicitly explains why the old return value was semantically false and how it interacted with caller backtracking.
+
+## Advance using the parser's validated effective length
+
+When a parsing helper validates, clamps, or otherwise normalizes an untrusted wire length, its returned consumed length is the authoritative boundary for the caller. The caller must not discard that result and later advance using the original packet field; doing so can reintroduce a negative, undersized, or otherwise bogus length that the helper deliberately corrected.
+
+Merged master MR !15047, authored and merged by John Thacker, fixes Mongo BSON handling. BSON document lengths are signed 32-bit values. `dissect_bson_document()` already sanity-checks malformed lengths and returns the effective length it safely used, but its callers advanced using the original `section_len` read from the packet. The accepted change assigns the helper's returned length back to `section_len` and advances with that value. Release-4.2 MR !15048, together with the already reviewed stable backports !15049 and !15050, carries the same correction across maintained branches.
+
+**Implementation rule:** if a helper both parses a region and returns how much input it safely consumed, treat that return value as the post-validation truth. Do not recompute progress from the pre-validation wire field unless the API explicitly documents the two values as equivalent.
+
+**Review rule:** trace length values across helper boundaries. Validation inside a callee is ineffective if later caller arithmetic still uses the unsanitized source value.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with multiple accepted stable-branch backports.
