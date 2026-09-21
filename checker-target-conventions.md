@@ -25,3 +25,15 @@ Merged master MR !15265 extends Debian's `headers-check.c` to include `<epan/dfi
 **Review rule:** distinguish "the library itself builds" from "the installed SDK surface builds for consumers." Header/API packaging changes need both properties validated.
 
 **Confidence:** High. Merged master packaging fix tied to a concrete downstream Debian failure and accepted by Anders Broman.
+
+## Checker rules must model the semantics of the API variant
+
+A static checker must understand what each API argument means rather than inferring correctness from superficial type or width relationships. In particular, APIs that decode bytes into a registered field have different source-span requirements from APIs that add an already decoded value while merely associating it with source bytes for highlighting/provenance.
+
+Merged master MR !15026, authored and merged by Martin Mathieson, corrects `check_typed_item_calls.py` so it does not apply a fixed-width source-length warning to `proto_tree_add_uint()`. That API receives the numeric value separately, so the tvbuff span need not have the same width as the destination field. Closed MR !15027 is useful negative evidence: it attempted to change several source spans to four bytes solely to satisfy the warning because the destination fields were `FT_IPv4`; Martin rejected that reasoning because the original source can legitimately be a full IPv6 address whose decoded IPv4 value is supplied separately. The checker, not the dissector, was wrong in that case.
+
+**Implementation rule:** encode checker rules per API family and parameter contract. Do not assume that a registered field's storage/display width dictates the length of every source span associated with that field when the value is passed explicitly.
+
+**Review rule:** when a checker warning suggests changing packet offsets or lengths, confirm that the warning models the called API's semantics before modifying wire parsing. A false-positive checker rule can otherwise turn valid source provenance into an actual dissection bug.
+
+**Confidence:** Very high. Accepted checker correction authored and merged by Martin Mathieson, reinforced by a directly related closed patch whose proposed wire-length changes were rejected as semantically incorrect.
