@@ -82,7 +82,7 @@ Outcome: **50 merged MRs**. There are no closed/unmerged or still-open MRs in th
 - !14374 hardens malformed-length handling so zero/progress-breaking lengths cannot trap parsing, reinforcing existing parser-progress and minimum-length conventions.
 - !14364/!14365 and !14369/!14370 are part of the same SocketCAN normalization sequence as the promoted encoding/pseudo-header rules and reinforce that byte order belongs to the actual capture encapsulation contract.
 - !14390 uses the semantically correct host-to-network conversion spelling even where the inverse operation would produce identical machine code, useful corroboration that API names should communicate direction/intent.
-- !14360 fixes reuse of a `proto_item *` for a nested child before the original item was finished. It is retained as corroborating tree-item identity/lifetime evidence; because its master counterpart lies below this run's frontier, no new notebook rule is promoted from the stable backport alone.
+- !14360 fixes reuse of a `proto_item *` for a nested child before the original item was finished. It is retained as corroborating tree-item identity/lifetime evidence; the issue is narrow and already consistent with existing object-identity/lifecycle guidance, so no duplicate notebook rule was added from this backport.
 
 ## Weighting notes
 
