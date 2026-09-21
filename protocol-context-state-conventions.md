@@ -25,3 +25,15 @@ Merged master MR !14844, authored by John Thacker and approved/merged by Alexis 
 **Testing rule:** version-sensitive dissector changes should exercise both the newly supported negotiation and previously supported captures. A new sample proving the new draft is insufficient if the same change alters the interpretation of common frames used by an older draft.
 
 **Confidence:** Very high. Merged master compatibility fix authored by John Thacker, with explicit before-merge regression detection, a new sample, a legacy sample, and maintainer approval.
+
+## Keep reverse-order, same-packet dependencies in packet-owned context
+
+Some protocols place a discriminator or selector after the payload whose interpretation depends on it. When both values are in the same packet, the dissector can defer only the dependent portion of decoding until the later field arrives; it does not need process-global state or persistent file-scope storage.
+
+Merged F1AP fixes !26576 (release-4.4) and !26575 (release-4.6), authored and merged by John Thacker, handle `UEContextRelease` where `RRCContainer` precedes the required `SRBID`. The accepted implementation stores the relevant subtree and TVB in `f1ap_private_data_t`, then completes the RRC decode when the later SRBID IE is seen. This also permits `f1ap_private_data_t` to return to `pinfo->pool` storage. The MR explicitly calls a dissector-level static `proto_tree *` an anti-pattern because proto trees are freed externally in `epan/proto.c`, and cites use-after-free failures from retaining them beyond their real lifetime.
+
+**Architecture rule:** when a dependency is resolved later in the same packet, retain only the minimum deferred context in packet-owned protocol data and resume decoding when the selector arrives. Do not promote same-packet scratch state to static/global or file-scope lifetime merely to bridge field ordering.
+
+**Lifetime rule:** `proto_tree *`, TVBs, and other packet-owned objects must not be retained in longer-lived static or global dissector state. The storage holding a pointer does not extend the pointee's lifetime; its owner must be scoped no broader than the object being referenced unless an explicit ownership mechanism says otherwise.
+
+**Confidence:** Very high. Accepted fixes on two maintained stable branches, authored and merged by John Thacker, with the ordering and lifetime rationale stated directly in the MR.
