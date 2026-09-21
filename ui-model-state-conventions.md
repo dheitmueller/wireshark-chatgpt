@@ -33,3 +33,15 @@ Merged master MR !15174, authored and merged by John Thacker, works around a Qt 
 **Performance rule:** benchmark model notifications at realistic large capture sizes and reason about the library implementation's complexity, not just Wireshark's own loop count. A call that looks constant-sized in application code can trigger work proportional to millions of rows inside Qt.
 
 **Confidence:** Very high. Merged master performance fix authored and merged by John Thacker, backed by concrete scaling measurements and subsequently carried to two maintained release branches.
+
+## Track expensive derived-state invalidation explicitly and recompute only when required
+
+When a UI view hides a graph, pane, or other derived presentation, changes that would require an expensive rescan should mark that derived state stale rather than performing work whose result is not currently observable. When the view becomes visible again, recompute only if the dirty state says the cached/tapped data is no longer valid; otherwise reuse the existing derived data and perform only the cheap presentation update.
+
+Merged master MRs !15108 and !15120, both authored by John Thacker, apply this to I/O Graph retapping. !15108 identifies a real semantic invalidation boundary: changing to or from a LOAD graph changes what information must be collected during tapping and therefore requires a retap. !15120 then records pending retap state for invisible graphs, avoids tap calculations while they are disabled, and retaps on re-enable only when the graph was actually marked stale; otherwise it merely replots.
+
+**Architecture rule:** separate the predicate “derived data is stale” from “the derived view is currently visible.” A semantic change should invalidate the cache even while hidden, but visibility alone should not force recomputation if the cached data still satisfies the current configuration.
+
+**Performance rule:** for expensive capture-wide operations such as retaps, prefer explicit dirty/invalidation state over unconditional refresh on every visibility or configuration transition. Ensure every configuration change that affects collected data sets the dirty state; changes that affect presentation only should not trigger a capture-wide recomputation.
+
+**Confidence:** Very high. Two merged master changes authored by John Thacker distinguish semantic retap requirements from visibility-driven work and implement explicit deferred invalidation.
