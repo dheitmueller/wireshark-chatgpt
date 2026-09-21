@@ -83,3 +83,43 @@ Merged master MR !14287, authored and merged by John Thacker, fixes `min()`/`max
 **Testing rule:** exercise absent fields through nested functions and intervening arithmetic/slicing operations, not only direct field loads, so tests cover registers that were never materialized into a concrete value container.
 
 **Confidence:** Very high. Merged master semantic and crash fix authored and merged by John Thacker with targeted regression tests.
+
+## Model language-change notifications by their semantic effect, not one implementation source
+
+A UI or analysis signal that means existing display-filter text may have changed validity should describe and be emitted for that semantic condition, not be narrowly tied to whichever subsystem first needed the signal. Dynamic field registration, loaded dictionaries, display-filter macros, and future user-defined syntax can all change the set of valid expressions.
+
+Merged master MR !14117, authored and merged by John Thacker, restores revalidation after display-filter macros are reloaded. During review, Guy Harris explicitly corrected the implementation-oriented description of the existing “fields changed” signal: dynamically generated fields do not all come from dissector UATs (RADIUS can generate them from FreeRADIUS files), and the real event is that something changed the syntax of valid display filters. That includes named fields, macros, and other user-defined syntactic items even when no dissector changes its registered fields.
+
+**Architecture rule:** name and document invalidation events by what consumers must reconsider. Every source that can change display-filter syntax or validity should trigger the same semantic invalidation path, and consumers such as filter editors and live-capture logic should revalidate from that event rather than knowing every producer.
+
+**Confidence:** Extremely high. Merged master lifecycle fix authored by John Thacker with direct architectural clarification from Guy Harris.
+
+## Recompile filters at semantic invalidation boundaries, not merely because more packets arrived
+
+A compiled display filter is not necessarily a pure function of its source text. Compilation can capture context such as macro definitions, hostname resolution results, and selected-frame field references. Recompiling unchanged text at the wrong lifecycle boundary can therefore change meaning or fail transiently even though the user did not request a semantic refresh.
+
+Merged master MR !14134, authored by John Thacker, stops recompiling an already validated display filter when a live capture merely appends packets. The MR notes that name resolution can time out or change, macros can be edited, and field references depend on the selected frame. Explicit rescans, reloads, retaps, or opening another file still need compilation against the new context; tailing the same live capture should preserve the existing compiled filter and its context.
+
+**Implementation rule:** define which lifecycle events invalidate compiled filter code. Preserve the compiled object across operations whose contract is only “process newly arrived packets,” and recompile when the operation intentionally establishes a new language or capture-analysis context.
+
+**Confidence:** Very high. Merged master display-filter lifecycle correctness fix authored by John Thacker.
+
+## Enforce lexical contracts before lookup and use one predicate across equivalent syntax forms
+
+When an identifier has a defined character set, reject an invalid character at the lexical boundary instead of continuing to parse a larger invalid name and later reporting that no such object exists. If the language offers multiple syntactic spellings for the same identifier class, they should share one lexical predicate so their accepted names cannot drift apart.
+
+Merged master MR !14143, authored and merged by John Thacker, changes both display-filter macro syntaxes to use the same macro-name character predicate. A `-` or `.` in a macro name now stops parsing as an invalid character instead of becoming part of a nonexistent macro name and producing a misleading lookup error. The permissive path was identified as legacy behavior left over from an older architecture in which field references passed through macro handling.
+
+**Implementation rule:** keep token validity in the lexer/parser layer and semantic existence in the lookup layer. Consolidate the token predicate for equivalent syntax forms rather than maintaining parallel character tests.
+
+**Confidence:** Very high. Merged master parser/diagnostic cleanup authored and merged by John Thacker.
+
+## Preserve the semantic distinction between a missing argument and an empty-string value
+
+A missing/null macro argument and a literal empty string are different language values. Converting the former into unquoted empty text defers the error into a later grammar stage, producing diagnostics about whatever tokens happen to become adjacent instead of explaining the actual invalid call.
+
+Merged master MR !14124, authored by John Thacker and merged by Anders Broman, rejects null display-filter macro arguments directly while continuing to allow a quoted empty-string argument where the filter language permits one. It also treats the syntactic form of an empty argument list as zero arguments rather than one null argument.
+
+**Implementation rule:** preserve absence, empty-list, and empty-string states until the language semantics decide among them. Diagnose an invalid missing argument at macro-call validation rather than substituting text and relying on a downstream parse failure.
+
+**Confidence:** Very high. Merged master display-filter macro semantics fix authored by John Thacker and accepted by Anders Broman.
