@@ -35,3 +35,15 @@ Merged MR !15516 changes Kafka handling so an unsupported API version can be dec
 **Implementation rule:** when using a supported version as a proxy for an unsupported on-wire version, choose the fallback deterministically, annotate the assumption for the user, and ensure the selected decode path either advances or terminates cleanly. If no bounded and semantically plausible fallback exists, stop dissection rather than looping or fabricating structure.
 
 **Confidence:** Very high. Merged master change authored and merged by John Thacker, motivated by a concrete fuzz-found non-progress failure and explicit discussion of best-effort versus abort behavior.
+
+## Unknown versions require an explicit compatibility judgment, not automatic fallback decoding
+
+Whether an unknown on-wire version should be decoded using a known layout depends on the protocol's evolution contract. If future versions are not guaranteed to preserve the current header/body layout, speculative decoding can turn an accurately identified unknown version into convincingly displayed garbage.
+
+Merged master MR !14623 adds explicit GSMTAP version dispatch. Anders Broman questioned whether a version mismatch should stop dissection and suggested that partial decoding plus a warning can sometimes be more useful. The contributor explained that a future GSMTAP header can be completely different from version 2, so continuing with v2 offsets would be unsafe. The final merged implementation keeps a minimal safe result for unknown versions: it identifies the packet as GSMTAP, displays the version, emits a protocol warning, and returns without invoking the v2 body decoder. Alexis La Goutte approved the resulting change.
+
+**Implementation rule:** before choosing fail-open versus fail-closed behavior for an unknown version, determine whether the protocol promises layout compatibility across versions. If it does not, decode only the invariant prefix needed to identify and diagnose the packet, then stop before version-specific structure. If compatibility is documented or a bounded fallback is semantically justified, best-effort decoding may be appropriate under the separate fallback rule above.
+
+**Diagnostic rule:** an unsupported version that is otherwise structurally recognizable should normally remain identifiable as the protocol and expose the version field plus an expert diagnostic. Do not silently hand version-specific bytes to the current decoder merely because dispatch already selected the protocol.
+
+**Confidence:** High. The accepted GSMTAP design directly resolved maintainer concern by tying behavior to the protocol's lack of forward layout guarantees; the result was merged and approved.
