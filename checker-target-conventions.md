@@ -37,3 +37,15 @@ Merged master MR !15026, authored and merged by Martin Mathieson, corrects `chec
 **Review rule:** when a checker warning suggests changing packet offsets or lengths, confirm that the warning models the called API's semantics before modifying wire parsing. A false-positive checker rule can otherwise turn valid source provenance into an actual dissection bug.
 
 **Confidence:** Very high. Accepted checker correction authored and merged by Martin Mathieson, reinforced by a directly related closed patch whose proposed wire-length changes were rejected as semantically incorrect.
+
+## Dissector checkers must resolve plugin inputs as first-class source paths
+
+Repository tools whose purpose is to check dissectors should not silently assume that every dissector lives under `epan/dissectors/`. Plugin dissectors are legitimate checker targets and arrive with repository-relative plugin paths; forcibly prepending the core-dissector directory turns a valid path into a nonexistent one and makes the checker architecture depend on source placement rather than on the input it was given.
+
+Merged master MR !14783 updates `check_dissector.py` and several checker helpers so they first honor an existing path and only fall back to the historical `epan/dissectors/` prefix when needed. It also teaches the static checker to locate build objects differently for core versus plugin sources. The author explicitly described the change as an incremental step toward fuller plugin coverage, so it should not be read as proving every checker already handles every plugin layout.
+
+**Implementation rule:** when a checker accepts a source path, preserve and resolve that path before applying legacy location defaults. Source-category-specific build-artifact lookup may still be required, but core-directory assumptions should be fallback behavior rather than unconditional rewriting.
+
+**Testing rule:** include at least one in-tree plugin dissector when validating checker path handling, in addition to ordinary `epan/dissectors` inputs. Keep claims of plugin support scoped to the tools and build layouts actually exercised.
+
+**Confidence:** High. Merged master tooling change accepted by Martin Mathieson, with the remaining scope limitation stated by the author.
