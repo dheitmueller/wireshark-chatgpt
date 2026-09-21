@@ -13,3 +13,15 @@ Merged master MR !15568 moves the TZSP encapsulation dissector-table registratio
 **Review rule:** when a new dissector table, tap, or equivalent registry is introduced, search for both producers and consumers. If consumption can occur from a different protocol's handoff, registration order must not depend on the incidental ordering of handoff callbacks. Generated/template sources must preserve the same lifecycle placement.
 
 **Confidence:** Extremely high. The TZSP fix is a merged master change explicitly justified by cross-dissector availability and approved/merged by John Thacker, and the same lifecycle rule is independently demonstrated by the broader accepted tap-registration cleanup in !16252.
+
+## Put profile-specific payload semantics behind a generic extension point
+
+A generic/base protocol should not hard-code the payload interpretation of one profile when the base protocol only establishes an extension field or opaque option. Expose a dissector table or equivalent dispatch point at the generic layer so each profile can supply its own interpretation and users can select among legitimate meanings with Decode As when necessary.
+
+Merged master MR !15122, authored and merged by Guy Harris, changes the OSI CLNP/ES-IS security-option path from direct ICAO ATN-specific coupling to a Decode-As dissector table. The MR explicitly notes that this removes entanglement among the CLNP dissector, generic OSI-options code, and the ATN security-option dissector while also permitting other OSI profiles to register their own security-option decoder.
+
+**Architecture rule:** keep the base dissector responsible for the generic wire structure and extension boundary; put profile/application-specific payload interpretation behind a registered subdissector mechanism. Prefer this to adding profile tests and dependencies inside the generic parser.
+
+**Review rule:** when a change teaches a generic dissector about one named downstream profile, ask whether the base protocol actually assigns that interpretation or merely carries opaque/profile-defined data. If the latter, look for a dissector table, heuristic list, or Decode-As boundary instead of direct coupling.
+
+**Confidence:** Extremely high. The accepted design is a merged master architectural change authored and merged by Guy Harris, and it turns a profile-specific special case into an explicit reusable extension mechanism.
