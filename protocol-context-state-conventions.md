@@ -37,3 +37,15 @@ Merged F1AP fixes !26576 (release-4.4) and !26575 (release-4.6), authored and me
 **Lifetime rule:** `proto_tree *`, TVBs, and other packet-owned objects must not be retained in longer-lived static or global dissector state. The storage holding a pointer does not extend the pointee's lifetime; its owner must be scoped no broader than the object being referenced unless an explicit ownership mechanism says otherwise.
 
 **Confidence:** Very high. Accepted fixes on two maintained stable branches, authored and merged by John Thacker, with the ordering and lifetime rationale stated directly in the MR.
+
+## Validate predecessor-dependent state before publishing the current element
+
+When parsing multiple logical protocol units that share a frame or another state container, the order in which the current unit is published can change what a lookup means. If a check is defined in terms of the previous unit, inserting the current unit into the searchable state first can make the lookup return the current unit itself and accidentally erase the predecessor invariant.
+
+Merged master MR !14525, authored by John Thacker and merged by Alexis La Goutte, fixes QUIC early 1-RTT data from a server before handshake completion. For coalesced QUIC packets, the relevant check compares the current packet's Destination Connection ID with the preceding QUIC packet in the same frame. The accepted implementation delays allocating/inserting the current `quic_packet` state until after it looks up and validates the prior packet, so the shared packet list still denotes the predecessor when the check runs.
+
+**Architecture rule:** when interpretation of the current element depends on previously published state, perform the predecessor lookup and validation before publishing the current element into the same searchable container. Treat insertion order as part of the state-machine contract rather than an incidental implementation detail.
+
+**Review rule:** for same-frame/coalesced protocols, explicitly ask whether a helper named "last", "previous", or equivalent still returns the intended object after the current unit has been inserted. Tests should include early or otherwise atypical ordering that forces the predecessor-dependent path.
+
+**Confidence:** Very high. Merged master correctness fix authored by John Thacker, with the accepted code ordering directly enforcing the required predecessor semantics.
