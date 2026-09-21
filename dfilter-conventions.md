@@ -1,77 +1,85 @@
-# Wireshark Display-Filter Compiler Conventions
+# Wireshark Display-Filter Conventions
 
-This file records durable display-filter compiler and macro-processing conventions extracted from accepted upstream Wireshark changes. Current upstream source remains authoritative.
+This file records durable display-filter implementation conventions extracted from accepted upstream Wireshark changes. Current upstream source remains authoritative.
 
-## Cache or register reuse is valid only when the semantic qualifiers are part of the identity
+## Cache semantic qualifiers, not just field identity
 
-Compiler optimizations may reuse a previously computed field value only when the two computations are semantically equivalent. A shared `hfinfo` identifier is not sufficient if one query is range-limited, raw, transformed, or otherwise qualified differently.
+When display-filter compilation caches or reuses field references, the cache key must include every qualifier that changes the reference's meaning. A field's registered `hf_` identity alone is insufficient if syntax such as layer selection, occurrence selection, slicing, or similar modifiers changes which values the expression denotes.
 
-Merged MR !26305, authored and merged by John Thacker, fixes DFVM register reuse for range-limited field references. Wireshark already avoided consuming an ordinary cached field register for a range-limited query; the missing inverse guard allowed a range-limited result to be stored and later reused for another form of the same field. The accepted fix simply declines that reuse and adds tests for range-limited and raw queries. Release backports !26307 and !26308 preserve the correction.
+Merged MR !26305, authored and merged by John Thacker, fixes a display-filter compiler bug where multiple references to the same field with different layer selectors could incorrectly share one cached load. The accepted implementation makes the field-reference cache account for layer selection rather than treating all references to the same `hf_` as equivalent.
 
-**Implementation rule:** an optimization cache key must encode every qualifier that can change the computed value. If doing so is disproportionate to the benefit, prefer not to cache/reuse that case rather than weakening semantic identity for a rare optimization.
+**Implementation rule:** before memoizing a parsed/compiled field expression, enumerate all syntax that affects its semantic value and include that state in the cache identity. Do not key only on the base field when two syntactically distinct references can legitimately resolve to different values.
 
-**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker and propagated to two stable branches.
+**Confidence:** Very high. Merged master compiler correctness fix authored and merged by John Thacker.
 
-## Prevent recursive macro cycles by expansion semantics, not only by a depth ceiling
+## Reject recursive display-filter macro expansion explicitly
 
-A recursion-depth limit is a useful resource guard, but it should not be the mechanism that gives macro expansion its basic cycle semantics. While replacing a macro, mark that macro unavailable to nested replacement of its own replacement list, while still allowing a later occurrence at the same outer scanning level when the language semantics permit it.
+Display-filter macros are effectively a small expansion language. A macro cycle must be diagnosed as such rather than allowed to recurse until a generic depth, stack, or parser failure occurs.
 
-Merged MR !26318, authored and merged by John Thacker, aligns dfilter macro rescanning with the C preprocessor model: a macro being replaced cannot be replaced again through a deeper nested expansion, which prevents direct and indirect cycles. The existing nesting limit remains a defense against legitimately deep chains, whose output can still grow exponentially, but it is no longer relied on to terminate cyclic definitions.
+Merged MR !26318, authored and merged by John Thacker, adds explicit recursion detection while expanding display-filter macros. The implementation tracks the active expansion chain and reports a cycle as a display-filter error instead of relying on incidental resource exhaustion.
 
-**Implementation rule:** distinguish semantic cycle prevention from resource limits. Track the active expansion set or equivalent state across nested replacement, and separately enforce a conservative maximum expansion depth/size for valid-but-pathological inputs.
+**Implementation rule:** expansion engines should track the active dependency chain and reject re-entry into an already-active macro. A global maximum depth can remain a defense-in-depth bound, but it is not a substitute for cycle detection because acyclic deep expansion and recursive expansion are different error conditions.
 
-**Confidence:** Very high. Merged master language-semantics fix authored and merged by John Thacker.
+**Confidence:** Very high. Merged master parser hardening authored and merged by John Thacker.
 
-## Validate macro argument references when the macro is defined, not when expansion happens
+## Parse macro arguments at the language level, not by raw delimiter splitting
 
-Invalid argument references are syntax errors and should fail during macro checking/creation. Deferring them until a macro happens to be expanded turns malformed configuration into a latent crash path.
+Display-filter macro arguments can themselves contain language constructs whose commas or parentheses do not delimit the outer macro invocation. Argument extraction therefore has to understand nesting and quoting rather than treating the argument text as a flat comma-separated string.
 
-Merged MR !26306, authored and merged by John Thacker, rejects `$0` because dfilter macro arguments are one-indexed and rejects argument numbers that overflow an `int`. Both previously could survive definition and crash only when the macro was used.
+Merged MR !26306, authored and merged by John Thacker, fixes display-filter macro arguments containing nested function calls and other parenthesized expressions by parsing delimiters with nesting awareness.
 
-**Implementation rule:** parse and range-check indexes, counts, and numeric references at definition/compile time whenever their validity is independent of runtime packet data. Store only representations that satisfy downstream indexing contracts.
+**Implementation rule:** when a feature embeds display-filter expressions inside another syntactic form, delimit those expressions using the filter language's token/nesting rules. Do not split on punctuation without tracking grouping and quoted/string contexts.
 
-**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker.
+**Confidence:** Very high. Merged master parser correctness fix authored and merged by John Thacker.
 
-## Treat generated documentation as untrusted until checked against implementation semantics
+## Keep user-facing language documentation synchronized with parser capability
 
-Documentation generated or expanded with AI assistance can confidently attach the wrong meaning to terse internal names. Review comments against the actual opcode/parser behavior, not merely naming intuition.
+When a display-filter syntax feature is added or broadened, update user-facing reference material in the same development stream so users do not have to infer the accepted grammar from implementation details.
 
-Merged MR !26314, authored and merged by John Thacker, corrects inaccurate AI-generated Doxygen comments that claimed `_R` opcodes denoted raw references when they actually denoted layer ranges.
+Merged MR !26314 adds documentation for arithmetic expressions and related display-filter behavior after the parser/compiler gained those capabilities. This is primarily documentation work, but it reinforces that the filter language is a user-facing interface whose documented grammar should match what the parser accepts.
 
-**Review rule:** AI assistance does not reduce the evidence required for comments or documentation. Verify semantic claims against the implementation, specification, tests, or authoritative maintainer knowledge before merging them.
+**Submission rule:** parser or semantic-language changes should include corresponding documentation changes when they expose new syntax or meaning to users. Conversely, documentation examples should be exercised against the current parser where practical.
 
-**Confidence:** High. Merged corrective change authored and merged by John Thacker with the specific documentation failure identified.
+**Confidence:** High. Merged master documentation aligned with recently added filter-language features.
 
-## Keep lexer case rules and reserved-name validation in lockstep
+## Lexer keyword recognition must respect identifier boundaries
 
-Changing whether language keywords or operators are case-sensitive also changes the namespace that user-registered identifiers are allowed to occupy. Parser/lexer recognition and registration-time collision checks must use the same normalization rules, or an identifier can be accepted as ordinary during registration but later tokenized as a reserved operator.
+A keyword that appears as a prefix or substring of an identifier must not be tokenized as the keyword unless the language grammar actually permits that split. Lexers should recognize the complete token before applying keyword classification.
 
-Merged MR !25845, authored and merged by John Thacker, makes display-filter operators case-insensitive and updates the checks for registered filter names so reserved operator names are rejected case-insensitively as well. The change deliberately excludes the `\x`, `\u`, and `\U` escape introducers from case folding because their case is semantically significant, and it updates the tests alongside the lexer behavior.
+Merged MR !25845, authored and merged by John Thacker, fixes display-filter identifiers whose leading text matched a keyword. The accepted lexer behavior classifies the whole identifier rather than prematurely consuming a keyword prefix.
 
-**Implementation rule:** whenever token matching changes case or normalization semantics, audit every other layer that recognizes or reserves those tokens—identifier registration, validation, documentation, and tests. Preserve explicit syntax-level exceptions rather than applying global case folding to constructs whose spelling itself carries meaning.
+**Implementation rule:** tokenize the full identifier according to identifier syntax, then decide whether that complete token is a reserved word. Avoid regex/order arrangements where a keyword rule can consume the beginning of an otherwise valid identifier.
 
-**Confidence:** Extremely high. Merged display-filter language change authored and merged by John Thacker with matching lexer, registration, and test updates.
+**Confidence:** Very high. Merged master lexer correctness fix authored and merged by John Thacker.
 
-## Every parser-admitted expression must reach a normal semantic result or diagnostic
+## Every parser-admitted expression must fail semantically, not internally
 
-The display-filter parser can legitimately construct syntax-tree nodes whose eventual operation is semantically invalid. Those cases are user input errors, not internal invariants, and the semantic compiler must handle them without hitting fatal assertions merely because a particular node type cannot participate in the requested operation.
+If the parser can legitimately construct an AST for an expression, the semantic checker/compiler must either compile it or reject it with a normal user-facing display-filter diagnostic. A syntactically valid but type-invalid expression must not fall through to an internal assertion, unreachable branch, or fatal DFilter error.
 
-Merged master MR !14789, authored and merged by John Thacker, fixes a crash when arithmetic is attempted between string literals. `STTYPE_STRING` is a parser-reachable operand form; the accepted change routes it through the normal semantic conversion path so the compiler reports an ordinary error such as `FT_STRING cannot be added` instead of terminating on a DFilter internal error/assertion.
+Merged master MR !14789, authored and merged by John Thacker, fixes arithmetic expressions involving string literals. The grammar could produce the expression, but type inference rejected it in a path that ultimately reached an internal assertion/fatal error. The accepted change makes the semantic layer diagnose the incompatible operand types cleanly.
 
-**Implementation rule:** audit semantic dispatch over the full set of AST node kinds the parser can emit at that position. Invalid type/operator combinations should fail through the ordinary compile-time diagnostic path; reserve assertions for states that user input truly cannot produce after successful parsing.
+**Implementation rule:** treat the parser's AST space as an input contract for the semantic checker. For each expression node/form the parser can emit, ensure type checking has an explicit valid-result or ordinary-error path. Negative tests should include legal syntax with illegal operand-type combinations, not just malformed syntax.
 
-**Testing rule:** negative display-filter tests should include syntactically valid but semantically invalid combinations for literals, fields, function results, and other parser-supported operand forms, and should assert a diagnostic rather than merely absence of a successful compile.
+**Confidence:** Very high. Merged master compiler robustness fix authored and merged by John Thacker.
 
-**Confidence:** Very high. Merged master robustness fix authored and merged by John Thacker.
+## Display flags are composable when registration permits combinations
 
-## Treat valid field-display flags as composable dimensions when the API permits combinations
+Do not assume mutually exclusive display modes when the field-registration API permits flag combinations. Semantic analysis and execution must interpret every supported combination consistently.
 
-A field can legally combine display/value-string traits. Code that interprets `hfinfo->display` must not accidentally model those traits as mutually exclusive if the registration API permits combinations such as a 64-bit value-string table that is also an extended string table. Both the string-to-value semantic checker and the value-to-string execution path must agree on the combined representation.
+Merged master MR !14506, authored and merged by John Thacker, fixes `BASE_VAL64_STRING | BASE_EXT_STRING`. The display-filter code had treated the extended-string flag as though it implied the 32-bit value-string representation, causing incorrect value-name resolution and matching for a legitimate combined 64-bit extended table. The accepted fix handles the combined representation in both semantic checking and execution, with IAX2 providing a concrete regression case.
 
-Merged master MR !14506, authored and merged by John Thacker, fixes display-filter matching for `BASE_VAL64_STRING | BASE_EXT_STRING`. The old branch ordering handled an extended table as the 32-bit `value_string_ext` form and therefore failed for valid 64-bit extended tables; the semantic checker likewise needed to unwrap `val64_string_ext` before searching by text. The accepted fix handles both flags together in both directions. John used the IAX2 Wiki sample as a concrete reproducer: `iax2.voice.codec == "GSM compression"` changes from an impossible-value error to a valid `FT_UINT64` comparison.
+**Implementation rule:** when `hfinfo->display` is a bitfield, review logic for relevant flag combinations rather than implementing a chain that assumes only one flag can be active. Type/representation selection in the semantic checker and runtime must agree.
 
-**Implementation rule:** when flag bits describe orthogonal properties, branch on their legal combinations rather than assuming a single winning flag. Audit all conversion paths that consume the metadata so compile-time name resolution and runtime formatting use the same representation.
+**Confidence:** Very high. Merged master display-filter correctness fix authored and merged by John Thacker.
 
-**Testing rule:** use at least one real registered field for each nontrivial supported flag combination, and test both symbolic-to-numeric filter compilation and numeric-to-symbolic matching/formatting where applicable. A synthetic unit test of one helper can miss disagreement between semantic checking and execution.
+## Preserve absence semantics when internal value containers change
 
-**Confidence:** Very high. Merged master display-filter fix authored and merged by John Thacker with a concrete sample-capture/`dftest` reproducer.
+Display-filter functions can receive arguments that represent an absent field. That absence must remain semantically “no value”; it must not be coerced to zero merely because an internal container is missing, nor may consumers blindly dereference a concrete-container pointer. Refactoring the value representation can invalidate old assumptions such as “a NULL pointer is a valid empty list.”
+
+Merged master MR !14287, authored and merged by John Thacker, fixes `min()`/`max()` after display-filter function values moved from `GSList` semantics to `GPtrArray`. Registers for expressions involving nonexistent fields can legitimately contain a NULL array. The accepted code ignores those NULL arguments for min/max, avoids unreferencing NULL during stack cleanup, and adds regression tests proving that a missing `udp.payload` remains NULL even through expressions such as `len(udp.payload[2:]) + 2` rather than becoming the numeric value 2.
+
+**Implementation rule:** define absence/nullability at the VM/function interface independently of the concrete container representation. When changing representation, audit every producer, consumer, and cleanup path for the old representation's implicit empty-value behavior.
+
+**Testing rule:** exercise absent fields through nested functions and intervening arithmetic/slicing operations, not only direct field loads, so tests cover registers that were never materialized into a concrete value container.
+
+**Confidence:** Very high. Merged master semantic and crash fix authored and merged by John Thacker with targeted regression tests.
