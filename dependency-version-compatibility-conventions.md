@@ -13,3 +13,15 @@ Merged master MR !14992, authored and merged by John Thacker, fixes the Qt Synta
 **Review/testing rule:** for a version-specific compatibility change, identify the oldest affected supported dependency release and the first unaffected release where practical. Test or otherwise verify the boundary versions, especially when distributions may ship maintenance releases containing backported behavior.
 
 **Confidence:** Very high. Merged master fix authored and merged by John Thacker, with explicit upstream Qt issue/backport rationale and stable-branch propagation.
+
+## Source and test syntax must remain valid on every supported runtime version
+
+Moving one platform to a newer interpreter or dependency does not automatically raise Wireshark's minimum version everywhere. Shared scripts and tests must therefore stay within the syntax and standard-library feature set of the oldest runtime that the project still supports, unless the project intentionally changes that minimum.
+
+Merged master MR !14616 moves Windows builds to Lua 5.3. During review, John Thacker caught test code that used Lua floor-division syntax introduced in 5.3. Because the same test suite still had to run with older supported Lua versions, he suggested the version-neutral equivalent `math.floor(milli/1000)`. The concern was resolved before merge.
+
+**Implementation rule:** when upgrading a dependency on one build target, distinguish that target's selected version from the repository-wide minimum supported version. New shared code must not rely on syntax or APIs introduced after the minimum unless the compatibility policy is being changed deliberately.
+
+**Review/testing rule:** dependency-upgrade MRs should run or reason about shared tests under both the newly selected version and the oldest still-supported version. Pay special attention to parser-level syntax changes: a runtime cannot execute a compatibility branch if it cannot parse the file in the first place.
+
+**Confidence:** High. Merged dependency transition authored by Anders Broman with a concrete cross-version syntax problem caught by John Thacker during review and corrected before merge.
