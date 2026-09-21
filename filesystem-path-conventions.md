@@ -1,0 +1,15 @@
+# Wireshark Filesystem Path Conventions
+
+This file records durable conventions for manipulating filesystem pathnames portably. Current upstream platform and utility APIs remain authoritative.
+
+## Use path-aware helpers instead of open-coding separator searches
+
+Portable path manipulation should use the platform/library pathname helpers rather than finding the last directory component with `strrchr()` on one separator character. On Windows, callers can supply pathnames containing either accepted separator form, so code that searches only `G_DIR_SEPARATOR` can split a valid pathname at the wrong place or fail to split it at all.
+
+Merged master MR !14155, authored by John Thacker and merged by Anders Broman, fixes ring-buffer filename handling by replacing hand-written last-separator logic with `g_path_get_basename()`, `g_path_get_dirname()`, and `g_build_filename()`. The accepted change explicitly notes that Windows accepts multiple separator forms and that using the pathname API avoids having each caller reproduce those rules. Release backports !14161 and !14162 carry the same correction to maintained branches.
+
+**Implementation rule:** when code needs a basename, dirname, path join, or equivalent pathname operation, prefer the shared path API that knows the target platform's accepted syntax. Do not assume one separator character is a complete pathname grammar.
+
+**Testing rule:** pathname code that must run on Windows should include mixed/alternate valid separator forms as well as ordinary native paths, particularly when deriving suffixes or filename components used for output.
+
+**Confidence:** Very high. Merged master portability fix authored by John Thacker, accepted by Anders Broman, and propagated to two stable branches.
