@@ -73,3 +73,13 @@ Merged MR !24143 rewrote ASN.1 REAL conversion so illegal encodings and range co
 **Implementation rule:** when a shared conversion helper needs to return both a decoded value and a diagnostic classification, make both parts explicit in the function contract. Keep packet-controlled malformed/range errors recoverable and let the dissector layer decide how to present them.
 
 **Confidence:** Extremely high. Merged master parser change by John Thacker with a concrete API-contract correction from Guy Harris incorporated before merge.
+
+## Attribute expert diagnostics to the component that is actually wrong
+
+Expert groups should identify the source of the problem, not merely the code path that noticed it. A packet is not malformed because a dissector violated an internal invariant, and packet bytes are not malformed merely because Wireshark did not reassemble the higher-level object before a dependent dissector ran.
+
+Merged master MR !14929, authored and merged by Guy Harris, introduces `PI_DISSECTOR_BUG` and moves `DissectorError` reporting there instead of `PI_MALFORMED`. The distinction is explicit: an internal dissector failure is a Wireshark bug, not evidence that the packet is malformed. Merged master MR !14926, also authored and merged by Guy Harris, similarly registers the `ei_unreassembled` diagnostic under `proto_unreassembled` rather than `proto_malformed`; release backports !14927 and !14928 carry the same ownership correction.
+
+**Diagnostic rule:** choose the expert group/protocol owner according to the failed semantic contract. Use packet-malformation diagnostics only when the packet representation itself is malformed; use dissector-bug diagnostics for internal implementation failures, and unreassembled/incomplete-data diagnostics when missing reconstruction is the actual cause. Do not make the packet carry blame for a Wireshark implementation or processing-state failure.
+
+**Confidence:** Extremely high. Two merged master corrections authored and merged by Guy Harris, with the unreassembled correction also accepted on supported release branches.
