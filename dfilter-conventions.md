@@ -51,3 +51,15 @@ Merged MR !25845, authored and merged by John Thacker, makes display-filter oper
 **Implementation rule:** whenever token matching changes case or normalization semantics, audit every other layer that recognizes or reserves those tokens—identifier registration, validation, documentation, and tests. Preserve explicit syntax-level exceptions rather than applying global case folding to constructs whose spelling itself carries meaning.
 
 **Confidence:** Extremely high. Merged display-filter language change authored and merged by John Thacker with matching lexer, registration, and test updates.
+
+## Every parser-admitted expression must reach a normal semantic result or diagnostic
+
+The display-filter parser can legitimately construct syntax-tree nodes whose eventual operation is semantically invalid. Those cases are user input errors, not internal invariants, and the semantic compiler must handle them without hitting fatal assertions merely because a particular node type cannot participate in the requested operation.
+
+Merged master MR !14789, authored and merged by John Thacker, fixes a crash when arithmetic is attempted between string literals. `STTYPE_STRING` is a parser-reachable operand form; the accepted change routes it through the normal semantic conversion path so the compiler reports an ordinary error such as `FT_STRING cannot be added` instead of terminating on a DFilter internal error/assertion.
+
+**Implementation rule:** audit semantic dispatch over the full set of AST node kinds the parser can emit at that position. Invalid type/operator combinations should fail through the ordinary compile-time diagnostic path; reserve assertions for states that user input truly cannot produce after successful parsing.
+
+**Testing rule:** negative display-filter tests should include syntactically valid but semantically invalid combinations for literals, fields, function results, and other parser-supported operand forms, and should assert a diagnostic rather than merely absence of a successful compile.
+
+**Confidence:** Very high. Merged master robustness fix authored and merged by John Thacker.
