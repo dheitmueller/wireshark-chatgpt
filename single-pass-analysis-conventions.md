@@ -15,3 +15,15 @@ Merged master MR !14901, authored by John Thacker and merged by Gerald Combs, fi
 **Review rule:** test stateful tap/export behavior in both one-pass and revisit/two-pass execution models when the code branches on `visited` state or on facts learned only at end-of-transfer/end-of-capture.
 
 **Confidence:** Very high. Merged John Thacker master correctness fix with three accepted stable backports and an execution-model explanation in the change itself.
+
+## Carry protocol identity across transport conversations when one-pass decoding needs earlier state
+
+A logical protocol exchange can span multiple lower-layer conversations. When a later connection contains an ambiguous field whose interpretation depends on state learned on an earlier connection, keeping that state only on the first transport conversation makes one-pass decoding impossible even though a two-pass GUI redissection may appear to work after later packets have populated caches.
+
+Merged master MR !14424 adds VMware vSPC vMotion tracking to the Telnet dissector. The protocol has `sequence` and `secret` fields with no delimiter, and the destination-side `VMOTION-PEER` message can arrive on a different Telnet conversation before that destination conversation has any independent way to know the sequence length. The accepted implementation adds a generic `CE_BLOB` conversation-element type, constructs a higher-level vMotion conversation keyed by the concatenated sequence+secret blob, and attaches the source Telnet session state to that higher-level identity. The later peer-side message looks up that vMotion conversation and imports the previously learned sequence length. The MR description explicitly distinguishes the one-pass problem from a two-pass/revisit case in which future information could otherwise mask the missing state.
+
+**Architecture rule:** if a protocol-defined session or handoff spans transport connections, key the shared state by the protocol identity that actually survives the handoff rather than by one endpoint tuple. Carry only the state needed by the later connection and terminate or bound the synthetic/higher-level conversation when the protocol says the handoff is complete.
+
+**Testing rule:** test both single-pass and revisit/two-pass decoding for cross-connection state. A capture that decodes correctly only after a second pass is evidence that required state was published too late or attached to the wrong conversation identity.
+
+**Confidence:** High. Merged master feature approved and merged by Anders Broman, with the execution-model and cross-connection identity problem documented directly in the accepted implementation.
