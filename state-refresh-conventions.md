@@ -47,3 +47,15 @@ Merged master MR !15187, authored by John Thacker and merged by Anders Broman, c
 **Review rule:** lifecycle tests should include open/close/reopen sequences while deferred work is pending, not just a clean steady-state transition. State that represents "work queued for this object" is as lifecycle-sensitive as cached analysis data.
 
 **Confidence:** Very high. Merged master lifecycle correctness fix authored by John Thacker and accepted by Anders Broman.
+
+## Configuration-derived registrations must invalidate through the owning lifecycle
+
+Configuration such as UAT rows or profile data can determine which dynamic protocol fields exist. When that configuration changes, refresh must be expressed through the protocol/module lifecycle that owns registration rather than by rebuilding fields ad hoc from whichever UI callback happened to notice the change. The invalidation also must not depend on unrelated dispatch state such as whether the dissector is currently bound to a port.
+
+Merged master MR !14779 changes SOME/IP's UAT update/reset paths to mark the module with `PREF_EFFECT_DISSECTION | PREF_EFFECT_FIELDS`, explicitly ensuring that `proto_reg_handoff_someip()` is called even when SOME/IP is not currently bound to a port. Merged follow-up !14793 moves the preference-change signal into each relevant reset callback so profile resets and the other UAT replacement paths also reliably invalidate the derived field registrations.
+
+**Implementation rule:** signal the owning framework/module at the earliest lifecycle callback guaranteed to run for every configuration mutation and reset path, then let the normal handoff/registration phase rebuild the derived state. Do not couple refresh eligibility to whether an unrelated dissector-table binding happens to exist.
+
+**Testing rule:** for configuration-derived registrations, test edits and profile switches while the protocol is not actively bound or otherwise in use, then verify that the dynamic field namespace is correct when the dissector is subsequently enabled.
+
+**Confidence:** Very high. Both are merged master lifecycle fixes; !14779 was merged by John Thacker and !14793 by Gerald Combs, and the accepted code explicitly documents the previously missing unbound-protocol path.
