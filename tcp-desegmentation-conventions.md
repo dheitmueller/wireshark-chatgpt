@@ -29,6 +29,18 @@ Merged MR !16463, authored by John Thacker and merged by Anders Broman, applies 
 
 **Confidence:** Very high. Merged master malformed-stream recovery change authored by John Thacker and merged by Anders Broman.
 
+## Request exact missing bytes when the required PDU size is known
+
+A TCP dissector that asks for more data must first respect both the user's desegmentation preference and `pinfo->can_desegment`. When the protocol framing already tells the dissector exactly how many bytes are missing, request that shortfall rather than `DESEGMENT_ONE_MORE_SEGMENT`; the latter is appropriate when the full required size cannot yet be determined, but it can force unnecessary re-entry one segment at a time when the target size is already known.
+
+Merged master MR !14999 fixes VNC replies that can span multiple TCP segments. During review, Jaap Keuter explicitly required checking `vnc_preference_desegment` and `pinfo->can_desegment` before requesting more data and recommended calculating the actual missing byte count for performance instead of repeatedly using `DESEGMENT_ONE_MORE_SEGMENT`. The accepted implementation follows those constraints and was merged by Anders Broman.
+
+**Implementation rule:** gate manual TCP desegmentation on the protocol preference and `pinfo->can_desegment`. If the message header or current state establishes the target length, set `pinfo->desegment_len` to the exact remaining number of bytes; use an open-ended one-more-segment request only while the eventual size is genuinely unknowable.
+
+**Review rule:** test short inputs that require more than one TCP segment and verify that disabled desegmentation and non-desegmentable contexts do not mutate desegmentation state. Also check that a known target length does not degrade into segment-at-a-time retries.
+
+**Confidence:** Very high. Merged master correctness fix with explicit maintainer review from Jaap Keuter and final acceptance by Anders Broman.
+
 ## Relationship to general heuristic guidance
 
 These rules complement `dissector-conventions.md`: heuristic probes must be safe on arbitrary traffic and may decline nonmatches, but once a stateful TCP dissector has committed to desegmentation it must not subsequently behave as though the same packet were merely an unclaimed heuristic candidate.
