@@ -119,3 +119,15 @@ Merged !20316 (RPC) and !20311 (SICK CoLA) independently fix concrete cases by r
 **Review rule:** no-copy APIs require interprocedural lifetime review. Trace where a string was allocated as well as where it is installed, and use `tools/check_col_apis.py --verbose` as a useful screening aid rather than assuming local inspection is sufficient.
 
 **Confidence:** Very high. Direct API documentation authored and merged by John Thacker plus multiple merged crash/use-after-free fixes in the same change series.
+
+## A scoped container does not automatically release resources owned by its payload objects
+
+Having a map or tree allocated from a wmem scope guarantees cleanup of the container's own storage, but it does not imply that arbitrary objects stored as values have had their own destructor or release operation run. Payloads with independent resource ownership still need lifecycle cleanup tied to the containing scope.
+
+Merged master MR !14059, authored and merged by John Thacker, fixes an RDPUDP leak caused by cloned `tvbuff_t` objects retained in file-scope trees for reassembly. The trees themselves were file-scoped, but destroying those trees did not call `tvb_free()` on the cloned TVBs. The accepted fix registers a file-scope allocator callback that walks both trees and explicitly frees every cloned TVB when file-scope teardown occurs.
+
+**Implementation rule:** distinguish storage ownership of a wmem container from resource ownership of the objects stored in it. If a stored value requires an API-specific release operation, attach cleanup to the same lifecycle boundary as the container (or use a container/destructor mechanism that explicitly owns the value) rather than assuming scope teardown invokes payload destructors.
+
+**Review rule:** when placing cloned, referenced, file-backed, or otherwise resource-owning objects into wmem containers, identify both who frees the container nodes and who releases each payload. Scope-managed container allocation is not a substitute for the payload object's destruction contract.
+
+**Confidence:** Very high. Merged master leak fix authored and merged by John Thacker with an explicit file-scope cleanup callback.
