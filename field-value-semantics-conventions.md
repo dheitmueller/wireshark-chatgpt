@@ -11,3 +11,15 @@ Merged !19694, authored by Guy Harris, extended `FT_ABSOLUTE_TIME` so a field ca
 **Implementation rule:** distinguish the field's underlying data type from protocol-specific sentinel semantics. If identical raw values have context-dependent meanings, represent those meanings in field-local metadata/value tables rather than proliferating special global display modes or hard-coded formatter behavior.
 
 **Confidence:** Extremely high. Merged framework change authored by Guy Harris, direct Guy Harris/John Thacker design discussion, and an immediate merged protocol conversion using the new mechanism.
+
+## Value-string keys for masked fields use the extracted logical value
+
+For an integer field with a nonzero bitmask, Wireshark applies the mask and shift as part of extracting the field value. A `value_string` associated with that field therefore maps the resulting logical value, not the original raw bit pattern at its on-wire bit position. Encoding raw positioned bits in the table can silently make entries unreachable or display the wrong symbolic value.
+
+Merged master MR !14551, authored and merged by Martin Mathieson, audits cases reported by the typed-item checker where `VALS` entries did not fit their field masks. The accepted corrections change values such as `0x20/0x40/0x60` to logical values `0x01/0x02/0x03` and `0x80` to `0x01` for masked fields. The MR also leaves an explicitly documented exceptional LoRa case rather than mechanically rewriting an entry whose surrounding API behavior is unusual.
+
+**Implementation rule:** when registering a masked field with `VALS`, define table keys in the post-mask/post-shift value domain consumed by the field. Review the field type, mask, and value table together rather than treating the table as a representation of raw wire-positioned bits.
+
+**Review rule:** checker warnings that a value does not fit a field mask should normally be treated as evidence of a semantic mismatch, not silenced with casts or a wider field. If an exceptional API path intentionally uses a different value domain, document why rather than relying on an apparently impossible table entry.
+
+**Confidence:** Very high. Merged master correctness cleanup authored and merged by Martin Mathieson, with multiple concrete field corrections and an intentionally documented exception.
