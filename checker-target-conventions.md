@@ -49,3 +49,15 @@ Merged master MR !14783 updates `check_dissector.py` and several checker helpers
 **Testing rule:** include at least one in-tree plugin dissector when validating checker path handling, in addition to ordinary `epan/dissectors` inputs. Keep claims of plugin support scoped to the tools and build layouts actually exercised.
 
 **Confidence:** High. Merged master tooling change accepted by Martin Mathieson, with the remaining scope limitation stated by the author.
+
+## Encode mechanical invariants of sentinel-terminated tables in repository checkers
+
+Static registration tables often have structural requirements that are easy for a human reviewer to overlook and cheap for repository tooling to prove: sentinel termination, a canonical terminator shape, uniqueness of keys, and similar local invariants. Those checks belong in the project's checker once the pattern is common enough, rather than depending on repeated manual review.
+
+Merged master MR !14598, authored and merged by Martin Mathieson, extends `check_typed_item_calls.py` to parse `string_string` tables and detect duplicate keys. Merged follow-up !14605 extends that support to require termination and the canonical `{ NULL, NULL }` sentinel rather than accepting alternate spellings such as `{ 0, NULL }`; it also fixes the repository instances exposed by the stronger check.
+
+**Implementation rule:** for common declarative tables with a repository-wide structural contract, teach the checker to parse enough of the declaration to validate that contract directly. Prefer deterministic checks for duplicate keys, missing terminators, and canonical sentinel forms over review folklore.
+
+**Review rule:** when a mechanical invariant is discovered repeatedly or can fail silently at runtime, ask whether it can be expressed once in the checker. Conversely, keep the parser scoped to syntax it actually understands; a checker that guesses at arbitrary C is worse than a narrow, explicit rule.
+
+**Confidence:** Very high. Two merged master checker changes authored and merged by Martin Mathieson, with the second strengthening both the required sentinel and existing repository conformance.
