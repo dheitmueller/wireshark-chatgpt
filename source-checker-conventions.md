@@ -23,3 +23,15 @@ Merged master MR !13574 exposed two useful examples in review. The RDP `SEC_PKT_
 **Review rule:** do not equate textual shape with numeric semantics when a checker is reasoning about integer width or masks. Leading zeroes, resolvable macros, and protocol-defined non-contiguous masks can require more precise analysis; conversely, a known exception should not become an excuse to disable neighboring checks.
 
 **Confidence:** High. Both rules come from merged master checker work by Martin Mathieson and from direct buildbot/review discussion that distinguishes specific false positives from real mask-width errors.
+
+## Keep whole-tree and changed-file checker modes aligned on the same source domain
+
+A repository checker should not silently examine a narrower source set in its normal whole-tree mode than it examines in a commit/range mode. Otherwise the same source file can be clean in an ordinary local run but start producing findings only after it appears in the changed-file set, making coverage depend on invocation mode rather than repository semantics.
+
+Merged master MR !13547, authored by Martin Kaiser and merged by Martin Mathieson, fixes exactly this in `check_tfs.py`. `--commits 500` could process `epan/dissectors/asn1/gsm_map/packet-gsm_map-template.c` because it was changed in the selected history, while an unqualified whole-tree run only scanned files directly under `epan/dissectors/` and skipped dissector subdirectories. The accepted fix recursively traverses those subdirectories so the two modes cover the same class of dissector sources.
+
+**Implementation rule:** define a checker's semantic source domain once and make every invocation mode select from that domain. Incremental/commit filtering may reduce the set to changed files, but an unfiltered whole-tree run should be at least as inclusive and must include nested dissector, template, or generated-source locations that the incremental path can legitimately reach.
+
+**Review rule:** when adding a new checker mode or directory layout, compare the file lists produced by whole-tree and changed-file invocations. A checker that reaches a file only through one mode has a coverage bug even if each mode appears internally consistent.
+
+**Confidence:** Very high. The inconsistency and concrete missed nested dissector file are stated directly in merged master MR !13547, and the accepted change was specifically to make the outputs consistent.
