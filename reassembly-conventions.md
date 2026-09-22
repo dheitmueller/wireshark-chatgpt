@@ -53,3 +53,17 @@ Merged master MR !13632, authored and merged by John Thacker, fixes HTTP/3 QPACK
 **Testing rule:** split one logical instruction/PDU across packet boundaries and verify that the stateful decoder observes each byte exactly once, including captures with several stream segments or coalesced transport packets in one frame.
 
 **Confidence:** Very high. Merged master reassembly correctness change authored and merged by John Thacker, with the duplicate-input failure mode and consumed-byte solution stated explicitly.
+
+## Only claim reassembly when analysis state proves it, and expose provenance when available
+
+User-facing packet text should describe what the reassembly engine actually established, not what the current code path merely expected might happen. A generic “segment of a reassembled PDU” message is misleading when no completed reassembly exists; when Wireshark knows the frame that completed the PDU, reporting that frame makes the analysis claim concrete and auditable.
+
+Merged master MR !13397 changes TCP's segment annotation so it is added only when the reassembly state has a nonzero `reassembled_in` frame, and changes the text to identify that frame explicitly. The previous unconditional-style wording could label a segment as belonging to a reassembled PDU even when the corresponding reassembly frame was absent.
+
+**Presentation rule:** derive reassembly annotations from positive framework state. Do not advertise a packet as reassembled merely because it traversed a reassembly-capable path or because a dissector expected later data.
+
+**Provenance rule:** when the framework records where the completed PDU was reconstructed, expose that frame identifier in the tree/summary rather than emitting an unqualified generic claim. This improves both troubleshooting and confidence in cross-frame analysis.
+
+**Testing rule:** cover both a capture that really completes a multi-frame PDU and a case where completion never occurs, such as a truncated or missing-tail capture. The completed case should name the reassembly frame; the incomplete case should not claim that reassembly occurred.
+
+**Confidence:** High. Merged master TCP presentation fix whose accepted condition is the concrete `reassembled_in` state supplied by the reassembly framework.
