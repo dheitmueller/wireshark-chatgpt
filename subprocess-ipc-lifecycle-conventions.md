@@ -43,3 +43,27 @@ Merged master MR !13809, authored and merged by John Thacker, changes `dumpcap` 
 **Testing rule:** deliberately emit ordinary child diagnostics while exercising the structured IPC path and verify that parent framing remains intact. Also test descriptor/handle passing independently from the protocol payload so launch-time inheritance failures are distinguishable from malformed messages.
 
 **Confidence:** Very high. Merged master subprocess-protocol fix authored and merged by John Thacker; the corruption mechanism and accepted dedicated-channel design are stated directly in the change.
+
+## Derive transport buffer capacity from the IPC record-size contract
+
+The maximum logical message size and the physical buffer used to receive that message are one invariant. Keeping them as unrelated constants creates a latent failure: increasing the protocol limit without increasing the receiving buffer can turn a valid message into truncation, memory corruption, or a crash.
+
+Merged master MR !13745, authored by John Thacker, replaces duplicated fixed `PIPE_BUF_SIZE` definitions with `PIPE_BUF_SIZE (SP_MAX_MSG_LEN+4)`, explicitly accounting for the sync-pipe indicator/header in addition to the maximum payload. The MR states that changing `SP_MAX_MSG_LEN` without changing the old fixed buffer could lead to a segfault.
+
+**Implementation rule:** derive receive-buffer sizes from the maximum framed-record size, including every header/indicator byte, or enforce the relationship with a compile-time assertion. Do not maintain a second magic constant that merely happens to be large enough today.
+
+**Review/testing rule:** when changing an IPC maximum, framing header, or serialization size, review every allocation/read buffer on both sides of the protocol. Exercise records at and just below the maximum supported size.
+
+**Confidence:** Very high. Merged master change by John Thacker that directly encodes the size relationship and documents the crash mode.
+
+## Design capability IPC schemas for extension rather than today's fixed property set
+
+Interface/capability discovery data is an evolving schema, not a permanently fixed tuple. A parent/child protocol should not hard-code assumptions that today's set of link types, addresses, options, and properties is exhaustive when the underlying capture API can grow.
+
+Merged master MR !13743 integrates interface discovery and running statistics so one `dumpcap` child can populate the welcome screen and then continue delivering stats. During the substantial review discussion, Guy Harris explicitly cautioned against assumptions about the future set of per-interface options and characteristics: libpcap may expose extensible settable options and pcapng-style interface characteristics, and the representation should remain capable of carrying such additions. The surrounding !13738/!13720/!13715 series uses JSON serialization for interface/capability data.
+
+**Architecture rule:** use an extensible structured representation for evolving capability/property sets, and make readers tolerate additional fields they do not yet understand. Avoid positional/fixed-width IPC shapes whose compatibility depends on the set of properties never changing.
+
+**Review rule:** when adding a new capability to an IPC schema, ask whether the representation can naturally carry the next unknown capability as well. Treat upstream API extensibility as part of the compatibility design, not as a later migration problem.
+
+**Confidence:** Extremely high. Merged master capture architecture series with direct, forward-looking review guidance from Guy Harris.
