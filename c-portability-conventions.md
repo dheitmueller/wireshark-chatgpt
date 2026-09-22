@@ -21,3 +21,15 @@ Merged MR !21037 adds C and C++ testing for `-Wextra-semi`. During review, John 
 **Implementation rule:** define statement-like macros without a trailing semicolon and write the semicolon at each invocation, just as for a function call. When enabling stricter warnings, fix the macro definition/call contract rather than sprinkling exceptional syntax around callers.
 
 **Confidence:** Very high. Explicit, agreeing review guidance from Michael Mann and John Thacker, followed by a merged compiler-warning change after the cleanup.
+
+## Do not treat an operating-system family as one uniform header/API surface
+
+Platform-specific includes should be driven by an actual dependency, not by a broad family label. Closely related operating systems can expose different private or implementation headers; an unconditional include that happens to work on one BSD can therefore break another BSD even when the code itself is otherwise portable.
+
+Merged master MR !13777 was authored and merged by Guy Harris and removes an unnecessary `net/if_var.h` include from the interface-monitor code. Guy states the portability policy explicitly in the MR description: the header is not present on all BSDs (NetBSD does not have it), and if a future build shows that some BSD genuinely requires it, the include should be restored only for the BSD or BSDs that need it rather than unconditionally for the whole family.
+
+**Implementation rule:** remove platform-private includes that are not actually needed. If a dependency is proven necessary on only part of an OS family, guard it narrowly for the platforms/versions where the requirement exists; do not generalize from one member of the family to all of them.
+
+**Review rule:** for portability failures, distinguish “this platform family uses similar APIs” from “every supported member provides this exact header or declaration.” Prefer evidence from the failing toolchain/platform and the smallest conditional compatibility scope that fixes it.
+
+**Confidence:** Extremely high. The merged master change and the narrow-scoping guidance were both authored by Guy Harris.
