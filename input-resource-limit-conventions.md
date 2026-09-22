@@ -79,3 +79,17 @@ Merged master MR !13933 fixes RTMPT AMF parsing from `if (--iterations)` to `if 
 **Testing rule:** resource-limit tests need both a pathological input that reaches the ceiling and a representative valid input that performs multiple iterations without reaching it. A guard that catches hostile input but also aborts all normal input is not a successful hardening change.
 
 **Confidence:** Very high. Merged master correction authored and merged by John Thacker with three accepted stable backports and a directly stated functional regression.
+
+## Recursion budgets must account for the real expansion represented by a generated cycle
+
+When a generator detects a recursive dependency cycle and emits a runtime depth guard only at one representative function, counting that guard as one level can substantially understate the actual call-stack growth if traversing the cycle invokes several generated dissectors before returning to the guarded function. The budget should represent the number of stack frames or equivalent expansion units consumed by each cycle traversal, not merely the number of times the guard location is crossed.
+
+Merged master MR !13845, authored by Gerald Combs, adds recursion checks to `asn2wrs`-generated ASN.1 dissectors. During review Evan Huus pointed out that guarding only the top frame of a cycle was efficient but could miss a long cycle—for example a 50-function cycle—if each traversal incremented depth by only one. The accepted generator records a `cycle_size`, raises the maximum recursion budget, and increments the protocol depth by that cycle size, so the limit more closely tracks real generated-call expansion.
+
+**Implementation rule:** if a recursive/cyclic grammar is transformed into generated code, define depth in terms of actual runtime expansion. For a cycle with `N` generated frames per traversal, charge the recursion budget by `N` (or instrument every frame) rather than treating the whole cycle as one stack level.
+
+**Generator rule:** put the policy in the generator whenever the recursive pattern is generated. Regenerate affected dissectors so the guard and accounting remain consistent across protocols instead of hand-patching individual generated outputs.
+
+**Review rule:** inspect how a proposed recursion counter maps onto call-stack growth, especially for mutually recursive types. A numerically large maximum does not help if the counter systematically undercounts each traversal.
+
+**Confidence:** Very high. Merged master generator hardening authored by Gerald Combs, with the cycle-size accounting refinement directly driven by Evan Huus's review and incorporated into the accepted generated output.
