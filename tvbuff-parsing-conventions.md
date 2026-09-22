@@ -24,6 +24,20 @@ Merged master MR !23078, authored by John Thacker and merged by Anders Broman, r
 
 **Confidence:** Very high. Merged master API-safety cleanup authored by John Thacker, independently reinforced by the accepted SOCKS conversion to a TVBuff-native helper.
 
+## Do not use protocol-declared maxima as memory-safety bounds for untrusted captures
+
+A specification may say that a token, parameter name, or other string has a maximum length, but a captured packet is untrusted input and can violate that rule. A fixed local buffer sized to the protocol maximum is therefore not safe unless the parser independently enforces the same bound before every write. Where possible, avoid the copy and scan/compare directly through bounded TVBuff operations.
+
+Merged master MR !13441, authored and merged by John Thacker, fixes an MGCP buffer overrun in vendor-extension parameter parsing. The old code copied alphanumeric packet bytes into a 256-byte stack buffer on the assumption that the specification's 256-octet limit would hold. Fuzzed input did not honor that assumption. The accepted change removes the fixed buffer, scans only within the current TVBuff-backed parameter length, and uses TVBuff string comparison for the recognized extension.
+
+**Implementation rule:** treat protocol maxima as validity constraints, not as proof about hostile capture contents. If a specification maximum matters, validate it explicitly and report malformed data; do not let an unvalidated wire length control writes into a fixed-size local array.
+
+**API rule:** when the desired operation is search, classification, or comparison over packet data, prefer bounded TVBuff helpers to copying the bytes into temporary C strings. This preserves capture bounds and removes a second buffer-size invariant.
+
+**Review/testing rule:** fuzz and test values beyond the protocol-declared maximum as well as boundary-valid values. In review, flag fixed-size packet-derived character buffers whose only safety argument is a statement in the protocol specification.
+
+**Confidence:** Very high. Merged master memory-safety fix authored and merged by John Thacker, with the invalid specification-based assumption and TVBuff-native replacement stated directly.
+
 ## Do not equate a non-NULL TVBuff with the presence of backing bytes
 
 A TVBuff can be a valid object representing an empty result. In that state, the TVBuff pointer itself is non-NULL while its reported length is zero and there may be no backing data pointer to return. APIs that require an addressable byte range must therefore be gated by the TVBuff's semantic length/availability, not merely by object existence.
