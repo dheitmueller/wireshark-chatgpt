@@ -39,3 +39,17 @@ Merged master MR !14004, authored and merged by John Thacker, changes OPC UA chu
 **Testing rule:** exercise a non-zero initial sequence number and, where the transport/capture permits it, reordering or missing-fragment cases. A workaround that succeeds only for a perfectly ordered chain is weaker than a framework operation that preserves the reassembly engine's normal ordering behavior.
 
 **Confidence:** Very high. Merged master reassembly cleanup authored and merged by John Thacker, with the API-selection rationale stated directly in the MR.
+
+## Advance stateful stream decoders only with bytes committed exactly once
+
+When Wireshark desegments a stream for a stateful decoder, bytes that are incomplete in the current packet may be presented again after reassembly. Feeding those bytes to the decoder before the dissector has actually consumed them advances external decoder state too early and can cause the same input to be processed twice when the completed segment is redisected.
+
+Merged master MR !13632, authored and merged by John Thacker, fixes HTTP/3 QPACK encoder-stream desegmentation. The dissector now returns the number of bytes it actually decoded, requests desegmentation beginning at `offset + decoded`, and passes only that consumed prefix to `nghttp3_qpack_decoder`. The previous path passed the entire currently available stream buffer, including an incomplete instruction that would later be supplied again after reassembly.
+
+**Implementation rule:** make consumed-byte count part of the boundary between a Wireshark stream dissector and any stateful decoder. Advance decoder state only for bytes that the dissector has committed as complete; leave the unconsumed suffix for the reassembly framework to replay after more data arrives.
+
+**Review rule:** when adding desegmentation around a stateful library, audit whether the same bytes can appear once in an incomplete packet and again in a completed reassembled TVB. Any library call that consumes the incomplete suffix before the reassembly decision risks double advancement.
+
+**Testing rule:** split one logical instruction/PDU across packet boundaries and verify that the stateful decoder observes each byte exactly once, including captures with several stream segments or coalesced transport packets in one frame.
+
+**Confidence:** Very high. Merged master reassembly correctness change authored and merged by John Thacker, with the duplicate-input failure mode and consumed-byte solution stated explicitly.
