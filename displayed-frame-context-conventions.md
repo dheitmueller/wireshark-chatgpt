@@ -15,3 +15,15 @@ Merged master MR !13116 fixes `sharkd`'s `frames` method after `frame.time_delta
 **Compatibility rule:** headless/front-end APIs such as sharkd must preserve the same analysis semantics as the desktop UI for fields exposed through both interfaces; filtering in the transport/API layer must not silently change what a field means.
 
 **Confidence:** Very high. Merged master correctness fix with a targeted regression test, Guy Harris approval, and merged release backport.
+
+## Timestamp-relative state advances only on records with timestamps
+
+Capture files can contain a mixture of timestamped and untimestamped records. An untimestamped record must not be treated as if it had timestamp zero, nor may it replace the previous/reference timestamp used for subsequent delta calculations.
+
+Merged release-4.2 MR !12996, authored by John Thacker, fixes frame delta/reference handling so records without timestamps are excluded from timestamp-predecessor state. Frame timestamp getters return no timestamp for such records, and the next timestamped frame continues relative to the last valid timestamped predecessor. Other non-time state, such as cumulative-byte or display bookkeeping, can still advance independently where its semantics require it.
+
+**Implementation rule:** represent timestamp availability explicitly. Update time-reference and previous-time state only when the current record has a valid timestamp; keep non-time ordering/state separate rather than letting record ordinal position imply time availability.
+
+**Testing rule:** exercise timestamped, untimestamped, then timestamped records in one capture and verify that the final delta is calculated from the preceding valid timestamp, not from the intervening untimestamped record.
+
+**Confidence:** Very high. Merged correctness fix authored by John Thacker for a concrete mixed-record capture behavior.
