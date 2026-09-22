@@ -10,13 +10,17 @@ Merged master MR !13624, authored and merged by John Thacker, caches the local c
 
 Merged master MR !13641 narrows the same principle for Logray: because Logray only needs extcap interfaces at that point, it calls `append_extcap_interface_list(NULL)` rather than obtaining the full local interface list and invoking `dumpcap`. Gerald Combs noted that avoiding unnecessary privileged-helper behavior is desirable and that a limited implementation is preferable when the frontend does not require the broader capability set.
 
+Earlier merged master MR !13424, authored and merged by John Thacker, changed `get_interface_descriptive_name()` to accept the caller's `capture_options` and use its `get_iface_list()` method rather than unconditionally launching fresh discovery. Guy Harris explicitly noted that platforms with interface-change notifications provide a natural cache-invalidation event, while platforms without one can still use explicit “Refresh Interfaces” or other well-defined UI lifecycle events. Merged master MR !13436 then implemented a TShark interface-list cache so command-line option processing and descriptive-name lookup do not repeatedly launch `dumpcap`; the MR calls out repeated Windows UAC prompts as one concrete cost of redundant discovery.
+
 **Architecture rule:** cache discovery results when their validity boundary is well defined, and centralize both the cached value and its invalidation trigger. A cache without an authoritative invalidation event risks stale capability state; repeated discovery without a reason wastes work and can repeatedly cross privilege boundaries.
+
+**API rule:** when a helper may legitimately use cached caller-owned discovery state, pass that state or an accessor for it into the helper instead of hiding an unconditional rediscovery call inside a convenience API. This makes freshness policy explicit at the layer that knows whether the data is still valid.
 
 **Least-work/least-privilege rule:** request only the discovery domain the caller needs. A frontend that needs extcap interfaces should not implicitly enumerate local capture devices merely because a generic helper can return both.
 
-**Testing rule:** verify first-use discovery, repeated reuse, manual refresh, asynchronous interface-change invalidation, and frontends that intentionally request only a subset of interfaces/capabilities. Count helper invocations where practical so a functional test also detects accidental reintroduction of redundant privileged queries.
+**Testing rule:** verify first-use discovery, repeated reuse, manual refresh, asynchronous interface-change invalidation, and frontends that intentionally request only a subset of interfaces/capabilities. Count helper invocations where practical so a functional test also detects accidental reintroduction of redundant privileged queries. For command-line frontends, include multiple interface options and descriptive-name lookups in one invocation and verify they share a single discovery result.
 
-**Confidence:** Very high. Two merged master changes by John Thacker establish both explicit cache invalidation and narrowing discovery to the frontend's actual needs; the privilege/helper cost is discussed directly in the accepted work.
+**Confidence:** Extremely high. Multiple merged master changes by John Thacker establish caller-supplied cache use, explicit cache invalidation, and narrowing discovery to the frontend's actual needs; Guy Harris directly supplied the forward-looking invalidation guidance in !13424.
 
 ## Recognize explicit non-device capture sources before enumerating devices
 
