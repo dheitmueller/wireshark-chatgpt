@@ -13,3 +13,17 @@ Merged master MR !13317, authored by John Thacker, fixes capture-filter checking
 **UI rule:** user-facing diagnostics should preserve this distinction. “Unable to check” is materially different from “invalid filter”: the former describes Wireshark's current knowledge/capability, while the latter makes a claim about the user's input.
 
 **Confidence:** Very high. Merged master behavior authored by John Thacker and carried to three supported release branches.
+
+## Cryptographic validation requires the complete authenticated byte region
+
+Authentication/checksum-style validation is meaningful only when every byte covered by the calculation is present. A truncated capture must not be reported as an authentication failure merely because Wireshark cannot reconstruct the bytes that would have been hashed or MACed.
+
+During review of merged MR !13013, which adds RADIUS Message-Authenticator validation, Pascal Quantin explicitly required checking that the complete authenticator region exists before reading/copying it and warned against running Message-Authenticator validation when `tvb_reported_length() != tvb_captured_length()` (or without an equivalent `tvb_bytes_exist()` availability check). The same review also noticed that analogous bounds/availability issues existed in the pre-existing authenticator-validation path, so the safety rule applies to existing and new validation code alike.
+
+**Bounds rule:** before a fixed-offset read or copy used by a validator, prove that the entire requested region is captured. Validate `offset + length` safely or use the tvbuff availability helpers rather than assuming protocol-declared structure implies captured bytes.
+
+**Semantic rule:** distinguish three outcomes: validation succeeded, validation failed with complete required data, and validation was unavailable because required bytes/context were not captured. Truncation belongs in the third category.
+
+**Review implication:** when adding a cryptographic/message-integrity validator, test both malformed short inputs and capture truncation in addition to valid and invalid authenticators. Do not let a security-oriented validator introduce an out-of-bounds read or a false-negative diagnosis.
+
+**Confidence:** Very high. The requirements came from direct Pascal Quantin review of a merged master authentication feature and were incorporated before merge.
