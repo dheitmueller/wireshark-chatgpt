@@ -28,9 +28,13 @@ When a recurring code-quality issue can be recognized mechanically with low ambi
 
 Merged MR !25259, authored by Martin Mathieson and merged by Anders Broman, extends `check_typed_item_calls.py` to detect duplicated hand-written `value_string` definitions. The discussion notes an important scope distinction: there were only hundreds of such duplicates in hand-written files but nearly two million occurrences in generated files, where deduplication belongs in the generator and may require a naming strategy rather than applying the hand-written-source check blindly.
 
+Earlier merged MRs !13054 and !13056 show how to tune such a checker around real editing behavior. A duplicated display-filter abbreviation in iperf2 had been copied from four entries earlier, so a consecutive-only comparison missed it. Martin Mathieson extended the checker to look back a small bounded number of nearby entries, explicitly based on the common workflow of pasting several fields and then editing each one. The broader scan immediately surfaced additional real copy/paste mistakes, while also producing false positives that still required human triage.
+
 **Implementation rule:** automate deterministic, inexpensive review checks in the closest existing project checker. Keep generated code on an explicit path: either teach the generator to satisfy the invariant or exempt generated output when applying the source-level rule directly would create huge low-value noise.
 
-**Confidence:** High. Merged master tooling change by a long-time Wireshark maintainer, with the generated-versus-hand-written distinction discussed explicitly before merge.
+**Heuristic rule:** when a checker detects copy/paste or adjacency mistakes, model the short-range editing pattern that actually produces them rather than testing only exact adjacency. Keep the search window bounded, report enough context for fast review, and expect heuristic warnings to require triage rather than treating every similarity as a defect.
+
+**Confidence:** High. Merged master tooling changes by Martin Mathieson demonstrate both the general checker strategy and the bounded-lookback refinement on real field-registration defects.
 
 ## CI must install the dependencies needed for tests it intends to count
 
