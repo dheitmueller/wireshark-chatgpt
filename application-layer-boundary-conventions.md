@@ -85,3 +85,15 @@ Merged master MR !21941, authored and merged by Michael Mann, pulls the former `
 **Architecture rule:** where product identity selects an implementation rather than a small data value, consider module/library composition instead of runtime flavor checks. Make each executable link the implementation it owns, and audit GUI and command-line consumers together so the abstraction does not leave hidden product-specific branches in shared code.
 
 **Confidence:** Very high. Merged master architectural refactor authored and merged by Michael Mann, with direct architecture-focused review from Guy Harris.
+
+## Centralize shared frontend policy instead of copying it into dialogs
+
+When several dialogs or frontends implement the same user-visible policy, the policy should live in a common application/UI helper and the individual dialogs should ask that helper for the result. Repeated policy code tends to drift as preferences, recent-state semantics, and platform behavior evolve.
+
+Merged master MR !13241, authored and merged by Guy Harris, moves file-open dialog style and initial-directory selection out of separate Qt dialog implementations and into common helpers. This follows the related !13213 distinction between persisted last-open history and a derived open-dialog initial directory: callers should consume the common semantic result instead of each reinterpreting preferences and recent state.
+
+**Architecture rule:** centralize the decision, not just the primitive. A helper such as “what directory should this open/save dialog start in?” is preferable to exposing several raw preference/history values and requiring every dialog to reconstruct the same precedence and platform fallback rules.
+
+**Review rule:** when nearly identical preference switches or fallback ladders appear in multiple dialogs, move the semantics to the layer that owns the policy before adding another caller. This is especially important for policy that combines platform behavior with persisted state, because duplicated implementations are easy to make subtly inconsistent.
+
+**Confidence:** Extremely high. The accepted master refactor was authored and merged by Guy Harris, and it consolidates policy immediately adjacent to his stable-branch work defining the underlying history-versus-fallback semantics.
