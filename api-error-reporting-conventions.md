@@ -45,3 +45,17 @@ Merged master MR !13585, authored and merged by Guy Harris, makes `dumpcap` chec
 **Testing rule:** where practical, exercise dependency failures or mocked error returns so the error path is not merely syntactically checked. At minimum, verify that a failed configuration/statistics call cannot leave the caller behaving as though valid results were produced.
 
 **Confidence:** Extremely high. Three adjacent merged master changes, all authored by Guy Harris, explicitly establish the policy across libpcap calls; two were also merged by Guy himself.
+
+## Return actionable validation causes from the parser that knows them
+
+A parser or validator should not collapse distinct invalid-input conditions into a generic “invalid format” result when it already knows which rule failed. The lower layer that owns the grammar and constraints is usually the only place that can provide a precise reason without duplicating parsing logic in the UI.
+
+Merged master MR !13243, authored and merged by John Thacker, changes 802.11 decryption-key parsing so `parse_key_string()` returns specific error text for conditions such as empty input, non-hexadecimal WEP data, and length violations. Callers then surface that reason instead of replacing every failure with the same generic key-format message. The immediately preceding !13219 explicitly anticipated this API direction while moving normalization into the parser.
+
+**Implementation rule:** when a parser rejects user-controlled configuration, return a semantic reason tied to the violated constraint. Keep syntax/constraint knowledge in the parser and let frontends decide how to present the returned reason; do not reimplement the grammar merely to reconstruct a better error message.
+
+**Review rule:** generic validation text is a warning sign when the parser internally distinguishes several failure paths. Check whether the API discards useful diagnostic context at the boundary, especially for UAT/preferences and command-line inputs where the user can directly correct the value.
+
+**Testing rule:** cover representative distinct rejection classes and verify that each produces the intended actionable reason, not only that parsing returns failure.
+
+**Confidence:** Very high. Merged master API/diagnostic improvement authored and merged by John Thacker, with the need for richer parser errors stated in the preceding related change.
