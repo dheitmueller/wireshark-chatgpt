@@ -112,3 +112,17 @@ Never launch a development Wireshark or Stratoshark build against the user's nor
 On 2026-09-10, an automated development-build launch used the normal profile. Qt temporarily resized seven packet-list columns to its 21-pixel minimum while the final Info column stretched to 1576 pixels. `PacketList::sectionResized()` records any resize received while the packet list is visible, including programmatic layout changes; the source explicitly notes that it cannot distinguish stretched values from manual changes. A later profile-state save persisted those transient widths. The development build's accessibility crash occurred earlier than the file write, so the crash itself was not the writer.
 
 This was not caused by the Packet Bytes/data-source patch: that patch series changes only dissector, data-source, DataSourceTab, and HexDataSourceView files, with no packet-list, header, layout, or recent-settings changes. The persistence behavior exists in upstream packet-list code and can affect other developers or automated runs that share a real profile, although normal interactive use should not ordinarily enter the transient minimum-width state.
+
+## Do not create a declarative Qt connection only to cancel it during construction
+
+A behaviorally important signal/slot relationship should have one intentional source of truth. If a dialog must *not* accept/close when a button-box `accepted()` signal fires, omitting that connection in the `.ui` definition is safer than letting generated setup create it and relying on constructor code to disconnect it afterward.
+
+Merged master MR !13670, authored by John Thacker, removes `QDialogButtonBox::accepted()` to `QDialog::accept()` connections from several graph-dialog `.ui` files instead of disconnecting them in C++ after `setupUi()`. Under Qt 6 the setup/construction ordering differed enough that the runtime disconnect did not reliably neutralize the generated connection, so a Save As action could destroy the dialog while its file dialog was still open. The same correction was deliberately backported in merged !13674, !13675, and !13676.
+
+**Implementation rule:** if a generated/declarative UI connection is not semantically wanted, remove it at the declarative source. Do not create lifecycle-changing behavior and then depend on later initialization order to undo it.
+
+**Review rule:** when porting between Qt versions, scrutinize code that depends on generated `setupUi()` side-effect ordering, especially connect-then-disconnect patterns. Prefer a final connection graph that is correct immediately after generated setup rather than one that transiently contains dangerous behavior.
+
+**Testing rule:** exercise the action that intentionally diverges from standard `QDialogButtonBox` acceptance behavior and verify both the outer dialog and any nested file/modal dialog remain alive for the expected lifetime.
+
+**Confidence:** Very high. Merged master lifecycle fix authored by John Thacker plus three accepted stable backports, with the Qt 6 ordering failure and destruction symptom documented directly.
