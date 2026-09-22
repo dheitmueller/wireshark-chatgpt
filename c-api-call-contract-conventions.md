@@ -77,3 +77,27 @@ Merged master MR !15167, authored and merged by John Thacker after a Coverity fi
 **Review rule:** expressions such as `search(...) + n`, `lookup(...)->field`, or a pointer-returning call embedded inside another expression deserve scrutiny whenever the callee can return NULL. Refactor to an explicit temporary and check the sentinel first.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with a concrete static-analysis report exposing undefined pointer arithmetic.
+
+## Integer-compatible parameters can still belong to different semantic domains
+
+C's type system cannot protect a call site when two conceptually unrelated parameters happen to be represented by compatible integer types. A runtime protocol value must not be passed into an argument whose domain is API control flags merely because it compiles and fits in the same machine representation.
+
+Merged master MR !13910, authored and merged by John Thacker, fixes the RSVP dissector after a `proto_tree_add_item()` call passed the RSVP session-attribute `type` value as the final `encoding` argument. The accepted fix uses `ENC_BIG_ENDIAN`; release-4.2 !13911 and release-4.0 !13912 backport the same correction.
+
+**Implementation rule:** review arguments by semantic role as well as C type. For Wireshark APIs whose trailing integers represent domains such as `ENC_*` flags, field widths, bases, or selector IDs, pass a value from the documented domain rather than reusing a nearby protocol variable of an integer-compatible type.
+
+**Review rule:** calls with several adjacent integer or enum-like arguments deserve special scrutiny. A compiler-clean call is not evidence that the arguments are semantically interchangeable; compare each argument against the callee contract and, where available, prefer typed enums or checker tooling that narrows the domain.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker with accepted backports to both maintained stable branches.
+
+## Hash/equality callbacks must match the actual storage type of their keys
+
+GLib hash helpers operate on the bytes behind the pointer they receive; their names describe a storage contract, not merely the numeric range a caller wants to hash. Passing a pointer to a 32-bit `gint` into `g_int64_hash()` makes the callback read eight bytes and can consume uninitialized or out-of-bounds memory.
+
+Merged master MR !13879, authored by John Thacker, changes a hash table whose keys are stored as `gint` from `g_int64_hash`/`g_int64_equal` to `g_int_hash`/`g_int_equal`. Release-4.2 !13880 and release-4.0 !13881 carry the same fix. The bug was exposed as an uninitialized read.
+
+**Implementation rule:** choose hash and equality callbacks from the key object's concrete in-memory representation. If the table key is `gint`, use the `g_int_*` pair; use the 64-bit variants only when the pointer actually addresses a 64-bit integer object. Apply the same rule to custom callbacks: the callback's dereference width and interpretation must match how keys were allocated and inserted.
+
+**Review rule:** when a hash table changes key type, allocation strategy, or typedef, audit the hash/equality callbacks together with all insertion and lookup sites. Semantic intent such as "this is an identifier" does not override the pointed-to object's width and layout.
+
+**Confidence:** Very high. Merged master memory-correctness fix by John Thacker with accepted stable backports and a concrete uninitialized-read failure mode.
