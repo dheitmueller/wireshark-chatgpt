@@ -63,3 +63,17 @@ Merged master MR !15406, authored by John Thacker and merged by Anders Broman, o
 **Implementation rule:** when an option promises low-latency streaming, audit all producer/consumer and IPC buffering stages involved in the path. Configure upstream batching consistently with the requested semantics rather than changing only the final stdout/stderr buffering policy.
 
 **Confidence:** Very high. Merged master end-to-end live-capture behavior authored by John Thacker.
+
+## Preserve the primary failure when cleanup or shutdown reports another error
+
+Failure handling often performs a second operation—closing a helper command, tearing down IPC, or releasing a resource—that can itself produce an error. That secondary failure must not overwrite a more specific diagnostic that already explains why the requested operation failed.
+
+Merged master MR !13987 fixes a capture path where the errno-derived message returned from dumpcap was overwritten by `sync_pipe_close_command()`, leaving callers without the useful reason for the original failure. The accepted change keeps the dumpcap diagnostic and intentionally ignores the less useful close-command message on that path. Guy Harris directly approved the MR, and John Thacker merged it.
+
+**Implementation rule:** once a primary operation has failed, preserve its status and diagnostic across best-effort cleanup. If cleanup failure is itself important, report or log it separately; do not reuse the primary error slot in a way that replaces the root-cause message with a consequence of shutting the failed operation down.
+
+**Review rule:** inspect error paths for helper calls made after the first failure. Out-parameters such as `err`, `err_str`, or secondary status objects are especially prone to accidental overwrite when reused for cleanup.
+
+**Testing rule:** force both the main operation and the subsequent cleanup/close step into error-capable paths and verify that the user-facing message still describes the primary failure. Secondary diagnostics may be retained separately but must not erase the original cause.
+
+**Confidence:** Extremely high. Merged master capture error-propagation fix with direct Guy Harris approval and John Thacker merge.
