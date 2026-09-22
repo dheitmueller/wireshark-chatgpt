@@ -31,3 +31,17 @@ Merged master MR !13828, authored and merged by Guy Harris, changes `dumpcap` ha
 **API-design note:** repeated parsing of dependency error strings is a sign that the lower-level API may lack sufficiently structured error classification. Use the best available classification at the Wireshark layer, but prefer typed/semantic dependency errors when the lower-level API makes them available.
 
 **Confidence:** Extremely high. The master fix and three stable backports were authored/merged or directly propagated by Guy Harris, and the MR rationale explicitly distinguishes remote/environmental errors from Wireshark bugs.
+
+## Check dependency API return values even when failure appears impossible today
+
+A dependency routine that returns status is defining a failure contract. Wireshark should honor that contract rather than silently discarding the result because the current call sequence makes the documented failure modes seem unlikely or unreachable. Library implementations, platform behavior, and future call ordering can change, and an ignored failure tends to turn a useful root-cause diagnostic into incorrect state or a later secondary failure.
+
+Merged master MR !13585, authored and merged by Guy Harris, makes `dumpcap` check whether `pcap_stats()` succeeds even though failure was considered unlikely. Merged master MR !13588, also authored and merged by Guy, checks the return values of libpcap configuration routines called between `pcap_create()` and `pcap_activate()` and reports failures instead of assuming those setters succeed. Merged master MR !13589, authored by Guy and merged by John Thacker, adds another such check even though the dependency's then-current implementation could only fail for an already-activated `pcap_t`, while Wireshark was intentionally calling it before activation.
+
+**Implementation rule:** if an external API exposes a success/error return, inspect it unless the API contract explicitly says the value is ignorable. Preserve the dependency's useful error text/context at the point where the failing call is made.
+
+**Review rule:** treat comments such as “this cannot currently fail here” or “failure is unlikely” as reasons to verify the dependency contract, not as automatic justification for dropping the status. If the invariant is genuinely guaranteed by Wireshark, checking still documents and protects the boundary cheaply in many cases.
+
+**Testing rule:** where practical, exercise dependency failures or mocked error returns so the error path is not merely syntactically checked. At minimum, verify that a failed configuration/statistics call cannot leave the caller behaving as though valid results were produced.
+
+**Confidence:** Extremely high. Three adjacent merged master changes, all authored by Guy Harris, explicitly establish the policy across libpcap calls; two were also merged by Guy himself.
