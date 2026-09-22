@@ -29,3 +29,17 @@ Merged master MR !13844, authored and merged by John Thacker, introduces a disti
 **Configuration rule:** where a parent owns user-facing logging policy, propagate the relevant effective log level/filter to the child rather than requiring separate compile-time switches or silently applying a different verbosity policy.
 
 **Confidence:** Very high. Two adjacent merged master changes authored and merged by John Thacker establish both the record-type separation and runtime logging-policy propagation.
+
+## Keep structured child IPC off ordinary diagnostic streams
+
+A machine-readable parent/child protocol should use a dedicated channel rather than borrowing a conventional diagnostic descriptor such as standard error. Code outside the subprocess protocol's control, including third-party libraries, can legitimately write diagnostics to stderr and thereby corrupt framing if stderr is also being treated as structured IPC.
+
+Merged master MR !13809, authored and merged by John Thacker, changes `dumpcap` so the sync pipe is no longer forced onto file descriptor 2. The parent instead passes the dedicated sync-pipe descriptor explicitly with `-Z`; the Windows path likewise carries the inherited sync-pipe handle explicitly and keeps its signal pipe as a separate option. The MR explains that stderr had become unsafe precisely because unrelated library or runtime diagnostics could appear there.
+
+**Architecture rule:** give structured control/data IPC its own descriptor or handle. Keep stdout/stderr available for their normal text-output and diagnostic roles unless the subprocess interface explicitly defines those streams as the protocol and all writers are controlled.
+
+**Process-launch rule:** when the child needs a nonstandard inherited descriptor or handle, communicate that endpoint explicitly as part of the launch contract rather than relying on a magic conventional descriptor number. Treat POSIX descriptor inheritance and Windows handle inheritance as platform-specific mechanisms implementing the same explicit logical channel.
+
+**Testing rule:** deliberately emit ordinary child diagnostics while exercising the structured IPC path and verify that parent framing remains intact. Also test descriptor/handle passing independently from the protocol payload so launch-time inheritance failures are distinguishable from malformed messages.
+
+**Confidence:** Very high. Merged master subprocess-protocol fix authored and merged by John Thacker; the corruption mechanism and accepted dedicated-channel design are stated directly in the change.
