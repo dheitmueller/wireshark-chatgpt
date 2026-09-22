@@ -23,3 +23,15 @@ The key semantic point is that persisted preferences are defaults for an invocat
 **Review implication:** when startup code is reordered, identify both precedence and derivation edges. A value can be parsed from the right source and still be wrong if a lower-precedence layer is projected into runtime state afterward and silently overwrites it.
 
 **Confidence:** Extremely high. Merged master fix authored and merged by John Thacker, with an explicit seven-stage ordering in the MR description and a merged stable-branch backport.
+
+## Retire stale preferences that override explicit invocation input
+
+A preference whose historical rationale no longer applies should not be preserved merely because it has existed for a long time, especially when its modern behavior is difficult to explain and can silently disable an explicit command-line request.
+
+Merged master MR !12973, authored by John Thacker, marks the `Only use the profile "hosts" file` name-resolution preference obsolete. The preference originated as a workaround for GNU ADNS behavior, but Wireshark had moved to resolvers such as c-ares/libunbound with different hosts-file semantics. In its later form the preference could also cause a `tshark -H` hosts file supplied explicitly for the current invocation to be ignored. Merged release-4.2 MR !12986 carries the same removal.
+
+**Configuration rule:** periodically re-evaluate preferences whose meaning depends on an implementation or dependency that has changed. If the original semantic distinction no longer exists and the remaining behavior is surprising, prefer removing/obsoleting the preference rather than perpetuating an accidental policy surface.
+
+**Precedence rule:** an explicit per-invocation input should not be silently suppressed by a legacy persisted preference unless that precedence is itself the deliberate documented contract. This is a concrete instance of the broader rule that persisted configuration acts as a default while direct invocation intent normally wins.
+
+**Confidence:** Very high. Merged master change authored by John Thacker with a merged stable backport and detailed historical rationale.
