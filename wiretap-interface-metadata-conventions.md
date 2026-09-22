@@ -59,3 +59,17 @@ Merged master MR !15765, authored by John Thacker and merged by Anders Broman, c
 **Review rule:** compare direct-child invocation with parent-spawned capture on interfaces that are difficult to enumerate or describe, including loopback and extcap-like paths. Metadata equivalence is part of capture correctness, not merely cosmetic UI behavior.
 
 **Confidence:** Very high. Merged master capture fix authored by John Thacker with a concrete cross-platform inconsistency described in the MR.
+
+## Preserve section scope when mapping pcapng interface IDs
+
+An interface ID in a pcapng packet record is not globally unique across the whole file. Each Section Header Block starts a new section-specific interface namespace, so an interface reference is identified by the section together with the per-section interface ID.
+
+Merged master MR !13559, authored and merged by John Thacker, fixes display and writing of captures containing multiple sections by carrying the section number into interface name/description lookup and storing an explicit mapping from `(SHB number, interface number)` to a Wiretap-global interface number. When dumping pcapng, Wireshark currently emits one output SHB rather than reproducing every input section, so the accepted change uses that mapping to rewrite packet interface numbers into the flattened output namespace. The MR also notes that merge handling needs the same per-SHB-to-global mapping.
+
+**Implementation rule:** whenever a format restarts an identifier namespace at a structural boundary, include that boundary in the internal identity key. For pcapng interface references, do not key lookup or mapping by `interface_id` alone; preserve section identity until an explicit normalization step maps `(section, interface_id)` into a global or output-local identifier.
+
+**Writer rule:** if output deliberately flattens multiple input namespaces into one, make the remapping explicit and deterministic. Do not carry input-local IDs through unchanged merely because the numeric values happen to fit the output representation.
+
+**Review rule:** test captures with at least two sections whose interface numbering overlaps, including repeated interface ID zero with different IDBs. Verify both user-visible interface names/descriptions and rewritten packet interface IDs after save/export/merge.
+
+**Confidence:** Very high. Merged master architecture/correctness fix authored and merged by John Thacker; the section-scoped mapping and single-SHB dump behavior are stated directly in the MR description.
