@@ -81,3 +81,17 @@ Merged master MR !13680, authored and merged by John Thacker, replaces `dumpcap`
 **Testing rule:** include names/descriptions containing tabs, newlines/escaping characters where the schema permits them, missing or wrong-typed fields, malformed serialization, and unknown additional fields. A format is not robust merely because the producer normally emits simple ASCII today.
 
 **Confidence:** Very high. Merged master IPC change authored and merged by John Thacker, with both the delimiter failure and forward-extensibility motivation stated directly.
+
+## Compare serialized keys in their decoded semantic form and honor parse-error output contracts
+
+Escaped representation and semantic string value are different domains. A JSON object key containing a Windows path or other backslash-bearing identifier may be valid on the wire but fail a lookup if one side compares an encoded spelling and the other compares the decoded value. Parsing helpers also need a consistent failure contract: if the caller supplies an error-output pointer and the function returns no result, that output must be populated on every malformed-IPC path that the caller expects to report.
+
+Merged master MR !13419, authored and merged by John Thacker, fixes single-interface capability deserialization on Windows. The prior lookup path passed an unescaped interface name to a helper that expected an already escaped JSON key. The accepted code instead reads the object-key token, decodes the JSON string, and compares the resulting semantic value with the requested interface name. The same MR fills `err_primary_msg` with a concrete "bad JSON" diagnostic on parse/token-shape failures whenever the caller provided that output, because TShark relies on the error result when capabilities are NULL.
+
+**Representation rule:** do not compare encoded JSON spellings with unescaped application strings. Either use a helper whose contract accepts raw strings and performs encoding internally, or decode the serialized token and compare semantic values.
+
+**API rule:** for a result-plus-error-output interface, audit every path that can return the failure result. If the caller supplied an error destination and the API contract promises a diagnostic, populate it consistently; malformed serialization is not an exception to that contract.
+
+**Testing rule:** include identifiers containing backslashes, quotes, and other escaped characters, plus malformed and wrong-shaped JSON. Verify both the success value and the caller-visible diagnostic on failure.
+
+**Confidence:** Very high. Merged master Windows correctness fix authored and merged by John Thacker, with both the escaping-domain bug and the required TShark error-output behavior stated directly.
