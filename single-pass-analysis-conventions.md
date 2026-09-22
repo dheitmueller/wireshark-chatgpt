@@ -41,3 +41,15 @@ Merged master MR !13977, authored and merged by Gerald Combs, fixes the Falco br
 **Testing rule:** after an initial sequential dissection, revisit packets out of order (including jumping backward and forward) and confirm that displayed fields and analyzer state remain stable. Also verify a fresh one-pass run so the caching path does not accidentally depend on prior redissection.
 
 **Confidence:** Very high. Merged master architecture/correctness change authored and merged by Gerald Combs, with the third-party ordering constraint and first-pass caching strategy stated directly in the MR.
+
+## Dispatch early protocol phases from information available at that phase
+
+Some protocols permit useful payload before final negotiation has completed. Such early data must not depend on state learned only from a later handshake message or a redissection pass. When the early-phase selection and final negotiated selection can legitimately differ, keep them as distinct pieces of state instead of overwriting one with the other.
+
+Merged master MR !13940 fixes QUIC 0-RTT application dissection. Before the ServerHello arrives, the server-selected ALPN is not yet known; the only valid application-protocol indication for 0-RTT is the client's offered ALPN. The accepted implementation adds access to the client ALPN and stores a separate 0-RTT application handle, because the finally negotiated application protocol can differ. John Thacker explicitly asked whether the bug only affected live/single-pass dissection; the author confirmed that the old path depended on second-pass state while the fix provides correctly parsed HTTP/3 on the first pass.
+
+**Architecture rule:** make protocol-phase dependencies explicit. Dispatch data using only negotiation/state that is semantically available when that data is sent, and retain separate early/final state when later negotiation can select a different result.
+
+**Testing rule:** test early-data paths in a fresh one-pass/live-equivalent run as well as in two-pass/redissection mode. A result that becomes correct only under `tshark -2` or after GUI redissection is a strong signal that future state is leaking backward into an earlier protocol phase.
+
+**Confidence:** Very high. Merged master fix with direct John Thacker review of the one-pass distinction and an implementation that separates early and final application dispatch.
