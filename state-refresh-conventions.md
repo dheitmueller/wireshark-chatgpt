@@ -71,3 +71,15 @@ Merged master MR !14561, authored and merged by John Thacker, enforces the exist
 **Review rule:** distinguish the UI action "the user accepted the dialog" from the semantic event "configuration changed." Closing or accepting an editor with no modifications should not synthesize a state-change event merely because the dialog lifecycle completed.
 
 **Confidence:** Very high. Merged master preference-lifecycle correction authored and merged by John Thacker, enforcing a pre-existing documented API requirement and using it to suppress a false no-op notification.
+
+## Classify preference effects by the work actually required
+
+A changed preference still needs a nonzero effect classification even when it does not require packet redissection. Conversely, assigning the default dissection effect to UI-only settings causes expensive work that has no semantic value. The effect mask is therefore both a change indicator and a precise invalidation contract.
+
+Merged master MR !12934, authored and merged by John Thacker, restores `PREF_EFFECT_GUI` for UI preferences while explicitly removing `PREF_EFFECT_DISSECTION`. The immediate compatibility reason is that Lua `set_preference` expects some effect bit when a setting changed, but the performance reason is equally important: column, font, color, and other GUI-only settings do not generally change dissection results. The accepted change also sets the effect flags explicitly on GUI submodules because subtree registration resets them to the default dissection effect instead of inheriting the parent's corrected classification.
+
+**Implementation rule:** assign the narrowest effect mask that describes the downstream work a preference mutation actually requires. A nonzero mask does not imply redissection. When preference subtrees/modules have independent default effect metadata, audit them individually rather than assuming parent flags propagate.
+
+**Review rule:** adding or reorganizing preference modules should include an effect-mask audit, especially for UI-only settings. Check both semantic correctness and the cost of false invalidation: an overly broad effect can be a correctness-preserving but severe performance regression.
+
+**Confidence:** Very high. Merged master preference-lifecycle/performance fix authored and merged by John Thacker, with the Lua compatibility and redissection cost explicitly documented.
