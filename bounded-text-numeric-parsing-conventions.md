@@ -21,3 +21,15 @@ During review of merged MR !20031, Guy Harris specifically recommended replacing
 **Implementation rule:** select numeric parsers by the semantic width and validation contract of the destination value. Prefer `ws_strtou*()`/related Wireshark helpers over raw `strtoul()`-style calls when the project helper expresses the required range and error semantics.
 
 **Confidence:** Extremely high. Direct Guy Harris review on a merged master parser migration, with the recommendation adopted before merge.
+
+## Require whole-token conversion when the protocol grammar defines a numeric token
+
+A permissive numeric conversion that succeeds on a numeric-looking prefix is unsafe when the protocol grammar requires the entire normalized token to be numeric. Otherwise an unrelated token whose first characters happen to be legal digits can be misclassified as a number.
+
+Merged master MR !13031, authored by John Thacker, fixes HTTP chunk-size detection after broader reassembly logic began examining arbitrary initial lines. `sscanf(..., "%x", ...)` accepted a hexadecimal-looking prefix of request methods such as `CCM_POST` and WebDAV `BCOPY`, causing them to be mistaken for chunk sizes. The accepted fix first removes only the suffix syntax explicitly permitted by the chunk grammar (extensions and optional bad whitespace), then uses `ws_hexstrtou32()` so the remaining token must satisfy Wireshark's checked hexadecimal conversion contract. Merged release-4.2 backport !13032 carries the same fix.
+
+**Grammar rule:** separate normalization defined by the protocol grammar from numeric conversion. Strip only explicitly permitted delimiters/suffixes first, then require the complete remaining token to parse successfully; do not use prefix-accepting conversion as a substitute for recognizing the grammar.
+
+**Review implication:** regression tests for textual numeric fields should include non-numeric protocol tokens that begin with characters valid in the numeric base, not only obviously invalid strings. Parser broadening can expose prefix-acceptance bugs that were unreachable under a narrower call path.
+
+**Confidence:** Very high. Merged master parser correction authored by John Thacker, approved/merged by Anders Broman, and backported to release-4.2.
