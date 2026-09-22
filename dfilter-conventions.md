@@ -58,9 +58,11 @@ If the parser can legitimately construct an AST for an expression, the semantic 
 
 Merged master MR !14789, authored and merged by John Thacker, fixes arithmetic expressions involving string literals. The grammar could produce the expression, but type inference rejected it in a path that ultimately reached an internal assertion/fatal error. The accepted change makes the semantic layer diagnose the incompatible operand types cleanly.
 
-**Implementation rule:** treat the parser's AST space as an input contract for the semantic checker. For each expression node/form the parser can emit, ensure type checking has an explicit valid-result or ordinary-error path. Negative tests should include legal syntax with illegal operand-type combinations, not just malformed syntax.
+Merged master MR !12941 reinforces the same boundary from the opposite direction: a field reference such as `${@frame}` has the same sliceable `FT_BYTES` semantics as the corresponding ordinary field, even though it is represented by a distinct AST node type. The old semantic checker handled `STTYPE_FIELD`, functions, and nested slices but rejected `STTYPE_REFERENCE`; the accepted fix dispatches explicitly on the node kind, obtains the field type for both field and reference nodes, and adds a regression test for slicing a byte-valued reference.
 
-**Confidence:** Very high. Merged master compiler robustness fix authored and merged by John Thacker.
+**Implementation rule:** treat the parser's AST space as an input contract for the semantic checker. For each expression node/form the parser can emit, ensure type checking has an explicit valid-result or ordinary-error path. Distinct AST node kinds that denote the same value category should receive the same capability checks rather than inheriting restrictions from representation accidents. Negative tests should include legal syntax with illegal operand-type combinations, while positive tests should cover equivalent capabilities through references and other alternate AST forms.
+
+**Confidence:** Very high. Both are merged master semantic/compiler correctness fixes; !12941 was authored and merged by João Valverde and includes a targeted regression test.
 
 ## Display flags are composable when registration permits combinations
 
@@ -123,3 +125,15 @@ Merged master MR !14124, authored by John Thacker and merged by Anders Broman, r
 **Implementation rule:** preserve absence, empty-list, and empty-string states until the language semantics decide among them. Diagnose an invalid missing argument at macro-call validation rather than substituting text and relying on a downstream parse failure.
 
 **Confidence:** Very high. Merged master display-filter macro semantics fix authored by John Thacker and accepted by Anders Broman.
+
+## New surface syntax must preserve or explicitly redefine macro semantics
+
+Display-filter macros are textual expansion, even when an invocation spelling looks like an ordinary function call. A new syntax alias must not silently change precedence or grouping semantics merely because its surface form suggests function behavior; conversely, if the project wants function-like grouping, that is a language-semantics change and must be treated as such for compatibility.
+
+Merged master MR !12960 adds `$name(arg1, ...)` as an alternate spelling for the historical `${name:arg1;...}` macro syntax and documents that macro expansion remains recursive textual replacement performed before filter compilation. Review discussion exposed the important consequence: negating a macro whose body contains `or` can surprise users because the macro body is not automatically parenthesized. The accepted MR kept the existing textual semantics, while discussion recognized that adding implicit parentheses would be a separate backward-incompatible language change rather than a harmless parser tweak.
+
+**Implementation rule:** when adding alternate syntax for an existing language feature, preserve the existing semantic model unless the change explicitly proposes and tests a compatibility break. For textual macros, document that callers or macro definitions must supply grouping where precedence matters; do not infer new grouping merely from function-like punctuation.
+
+**Review rule:** evaluate new language syntax not only for parseability but also for the semantic expectations its shape creates. Test precedence-sensitive examples, especially negation and boolean operators, before deciding whether an apparently ergonomic syntax is truly an alias or a new language construct.
+
+**Confidence:** High. Merged master language feature by João Valverde with explicit maintainer discussion of textual-expansion semantics, precedence surprises, and backward compatibility.
