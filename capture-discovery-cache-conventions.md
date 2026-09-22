@@ -35,3 +35,17 @@ Merged master MR !13602, authored and merged by John Thacker, recognizes Windows
 **Testing rule:** exercise the special source through every frontend that shares capture option parsing, and verify that using it does not trigger an interface-list query. Also retain ordinary interface-name tests so the fast classification path does not swallow legitimate device names.
 
 **Confidence:** Very high. Merged master correctness/architecture change authored and merged by John Thacker, with explicit consolidation of three formerly duplicated classification paths.
+
+## Batch capability discovery while preserving per-interface results
+
+When a privileged or otherwise expensive helper can answer the same question for several interfaces in one invocation, prefer one batched request over launching the helper once per interface. The batch protocol must still preserve the result boundary for each requested interface: one interface that cannot report capabilities is not inherently a failure of the helper process or of the other interface queries.
+
+Merged master MR !13371, authored by John Thacker, changes `dumpcap`'s machine-readable interface-capability output to a JSON array capable of carrying multiple interfaces. A multi-interface query attempts every requested interface and records per-interface status, capability data, and errors in the structured result instead of aborting at the first interface-specific failure. The helper process reserves overall failure for unexpected/global errors. Merged master MR !13403, also authored by John Thacker, then changes the caller to obtain the capabilities for the complete interface list in one `dumpcap` call rather than launching one helper per interface; the MR reports roughly halving startup time in the tested case and, importantly on Windows, avoiding repeated UAC prompts when capture access requires elevation.
+
+**Architecture rule:** distinguish transport/helper success from item-level success in batch discovery. A successful structured response may legitimately contain a mix of successful and failed interface records; the parent should consume each record independently. Reserve process-level failure for conditions that prevent the batch protocol itself from completing reliably.
+
+**Performance/privilege rule:** treat helper-process count as part of the architecture when the helper is expensive or privileged. If discovery is naturally batchable, aggregate the work before crossing the process or privilege boundary rather than hiding an N-helper loop behind a convenient per-interface API.
+
+**Testing rule:** include a mixed batch where one interface succeeds and another reports an interface-specific error, and verify that both results are retained while only one helper invocation occurs. Separately exercise malformed serialization, helper-launch failure, and other global failures to confirm they still fail the overall operation.
+
+**Confidence:** Very high. Two adjacent merged master changes authored by John Thacker establish both sides of the design: a multi-result structured protocol in !13371 and one-call bulk capability retrieval in !13403.
