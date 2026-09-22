@@ -27,3 +27,17 @@ Merged master MR !13931 moves SOME/IP tap emission from payload dissection to th
 **Review rule:** moving a tap is a semantic change even if the tap structure is unchanged. Check reassembly boundaries, zero-length cases, subdissector success/failure, and duplicate-delivery risk so statistics do not change from “one logical message” to “one fragment” or vice versa by accident.
 
 **Confidence:** Very high. Merged master correctness fix with direct John Thacker review of tap/reassembly/subdissector semantics and accepted stable backports.
+
+## Preserve already-established packet-level tap metadata across later dissection exceptions
+
+A later malformed/truncated region should not erase packet-level metadata that the dissector has already established and that remains semantically valid. If tap delivery is skipped simply because a subsequent TVB read throws, statistics can silently lose packets even though enough information was available to classify the packet or association.
+
+Merged master MR !13765, authored and merged by John Thacker, changes SCTP so association information is still sent to the tap when later chunk dissection raises an exception, provided at least one chunk TVB was successfully established. The change also initializes the packet-level association index and direction before potentially throwing reads and uses the association identity determined for the first bundled chunk rather than allowing later parsing to leave the packet metadata unset or replace it opportunistically.
+
+**Architecture rule:** identify which tap fields are packet-level facts and establish their safe defaults/identity before entering parsing that can throw. If those facts remain valid after a later malformed region, arrange final tap/tree publication so the exception does not suppress them.
+
+**State rule:** for bundled protocol units that are required to share one packet-level association, select that identity at the protocol-defined point (for example, the first chunk) rather than repeatedly overwriting it as subordinate units are visited. If later units are illegally inconsistent, diagnose that inconsistency separately instead of letting it redefine the packet's tap identity.
+
+**Testing rule:** include truncated or malformed packets that fail after the association/packet metadata has been established and verify that the tap still receives the valid metadata exactly once. Also cover legal bundled messages and, where possible, illegal mixtures so packet identity and expert diagnostics remain separate concerns.
+
+**Confidence:** Very high. Merged master correctness change authored and merged by John Thacker, with the exception/tap behavior and first-chunk association semantics documented directly in the MR.
