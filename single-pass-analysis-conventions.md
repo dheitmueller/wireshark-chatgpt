@@ -27,3 +27,17 @@ Merged master MR !14424 adds VMware vSPC vMotion tracking to the Telnet dissecto
 **Testing rule:** test both single-pass and revisit/two-pass decoding for cross-connection state. A capture that decodes correctly only after a second pass is evidence that required state was published too late or attached to the wrong conversation identity.
 
 **Confidence:** High. Merged master feature approved and merged by Anders Broman, with the execution-model and cross-connection identity problem documented directly in the accepted implementation.
+
+## Cache results from order-sensitive external analyzers on the first pass
+
+Redissection does not necessarily visit packets in capture order. If a dissector delegates semantic interpretation to a stateful external engine whose contract requires chronological event processing, calling that engine again during arbitrary redissection can corrupt its state or produce results that depend on which packet the user happened to revisit.
+
+Merged master MR !13977, authored and merged by Gerald Combs, fixes the Falco bridge for libsinsp's ordering requirement. The MR states explicitly that libsinsp requires events to be processed in order, so Wireshark processes/extracts the event data on the first pass and caches the resulting Wireshark-facing representation for later use rather than relying on the external analyzer to tolerate redissection order.
+
+**Architecture rule:** separate chronological state advancement from repeatable presentation. Run an order-sensitive decoder/analyzer while packets are traversed in the guaranteed forward pass, retain the minimum semantic output needed by Wireshark, and make revisits consume that cached output instead of advancing the external engine again.
+
+**Review rule:** identify libraries and helpers with hidden stream/history state before wiring them directly into a dissector. A function that looks like a pure “decode this packet” call may actually require all previous events in order; if so, arbitrary GUI redissection is a distinct execution model that must be handled explicitly.
+
+**Testing rule:** after an initial sequential dissection, revisit packets out of order (including jumping backward and forward) and confirm that displayed fields and analyzer state remain stable. Also verify a fresh one-pass run so the caching path does not accidentally depend on prior redissection.
+
+**Confidence:** Very high. Merged master architecture/correctness change authored and merged by Gerald Combs, with the third-party ordering constraint and first-pass caching strategy stated directly in the MR.
