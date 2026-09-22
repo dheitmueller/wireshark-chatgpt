@@ -42,3 +42,17 @@ Merged master MR !14057, authored and merged by Guy Harris, removes the X.75 dis
 **Review rule:** when adding or changing a fixed dissector-table registration, check the existing registrations for that table/key and ask what the key itself promises. Treat a duplicate or overlapping registration as a potential correctness conflict, not merely a discovery convenience.
 
 **Confidence:** Extremely high. Merged master correction authored and merged by Guy Harris, with an accepted release backport.
+
+## Encode externally assigned namespace classes, not only today's occupied numeric subranges
+
+Selector ownership can drift over time when a dissector auto-registers a broad numeric range that overlaps an externally maintained registry. A range that appears safe today can start claiming values belonging to another semantic class as the registry grows. Registration boundaries should therefore reflect the namespace's structural allocation rules, not just the currently assigned values visible when the code was written.
+
+Merged master MR !13797 fixes Bluetooth ATT automatic protocol registration after growth in the Bluetooth SIG member-assigned UUID registry. The previous registration ranges skipped the member values then known in the `0xFDxx`/`0xFExx` areas but still registered other `0xFxxx` values as if they were ATT protocol/service selectors. As the member registry expanded, that assumption became wrong. The accepted change excludes the full future-facing `0xFxxx` member range rather than enumerating only the portions already occupied.
+
+**Registration rule:** when selector ranges are derived from an assigned-number namespace, encode stable namespace partitions/reserved classes where the specification defines them. Do not register “everything not currently assigned to someone else” if future assignments can legitimately appear inside that space.
+
+**Maintenance rule:** registry-data refreshes should be able to add new assigned values without silently changing which dissector owns those selectors. If a data update can create a registration collision, the registration boundary is probably coupled too tightly to the current snapshot of the registry.
+
+**Testing rule:** include boundary values around reserved/member/experimental classes and at least one currently unassigned value inside a structurally reserved class. This catches code that accidentally turns a future allocation into a Decode As or fixed-registration conflict.
+
+**Confidence:** Very high. Merged master correctness fix prompted by real Bluetooth registry growth; the accepted range change encodes the broader member-assignment class rather than the present set of assigned UUIDs.
