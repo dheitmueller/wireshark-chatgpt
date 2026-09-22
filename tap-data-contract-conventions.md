@@ -15,3 +15,15 @@ Merged master MR !14229, authored and merged by John Thacker, changes RTP Analys
 **Testing rule:** when replacing duplicated downstream normalization with a canonical tap value, exercise wrap, reordering, boundary, and other cases that made the original reconstruction ambiguous. The objective is semantic equivalence across all consumers, not merely simpler code on ordinary captures.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker; the MR directly documents both the duplicate calculation and the edge cases that exposed its differences.
+
+## Emit taps at the layer where the logical event exists
+
+Tap delivery should represent the logical object that a consumer is counting or analyzing, not an incidental optional subfield. If a valid protocol message can have an empty payload or can hand its payload to a subdissector, placing `tap_queue_packet()` only inside the payload-specific path silently makes statistics depend on those unrelated conditions.
+
+Merged master MR !13931 moves SOME/IP tap emission from payload dissection to the main message path so messages with empty payloads are still visible to statistics. During review, John Thacker explicitly checked two semantic consequences of the move: whether reassembled fragments versus complete PDUs were being reported, and whether a successfully selected payload subdissector should suppress the tap. The accepted placement makes the tap correspond to the SOME/IP message rather than to the presence or ownership of its payload; release backports !13948 and !13949 carry the same behavior.
+
+**Architecture rule:** define the tap's event contract first (message, PDU, transaction, fragment, decoded payload, etc.) and queue it at the first layer where that logical event is complete. Do not make delivery conditional on optional payload length or on whether another dissector claims a subordinate region unless those conditions are part of the tap contract itself.
+
+**Review rule:** moving a tap is a semantic change even if the tap structure is unchanged. Check reassembly boundaries, zero-length cases, subdissector success/failure, and duplicate-delivery risk so statistics do not change from “one logical message” to “one fragment” or vice versa by accident.
+
+**Confidence:** Very high. Merged master correctness fix with direct John Thacker review of tap/reassembly/subdissector semantics and accepted stable backports.
