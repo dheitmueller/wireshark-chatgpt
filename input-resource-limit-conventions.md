@@ -55,3 +55,27 @@ The merged PIDL upstream-sync series provides several independent examples. MR !
 **Testing rule:** fuzzing and malformed-input tests should exercise pathological nesting and repeated bookkeeping constructs, not just oversized byte strings or element counts. A parser that is byte-bounded can still be vulnerable through stack depth or accumulated control state.
 
 **Confidence:** Very high. Multiple merged John Thacker PIDL sync MRs carry upstream fuzz/security rationale, including explicit OSS-Fuzz findings and denial-of-service/resource-limit descriptions.
+
+## Separate logical protocol size from speculative memory commitment
+
+A large length advertised by a packet can be legitimate even when allocating that entire length before the corresponding bytes arrive is unsafe. Do not turn a memory-exhaustion fix into an arbitrary protocol-size limit when the protocol itself permits large messages; instead bound the amount of memory committed speculatively and grow storage as real input arrives.
+
+Merged master MR !13939, authored and merged by John Thacker, changes RTMPT custom reassembly after fuzzed 24-bit message lengths could trigger very large up-front allocations. The accepted fix keeps the full protocol length, caps the initial allocation, and uses `wmem_realloc()` as additional bytes actually arrive. John explicitly rejected retaining a user preference that capped the legal packet size because valid RTMP messages can be large.
+
+**Implementation rule:** distinguish an untrusted declaration of eventual size from bytes presently available. Where streaming/incremental accumulation is possible, cap the initial commitment and expand monotonically with received data rather than rejecting all messages above a convenience threshold.
+
+**Review rule:** when introducing a resource limit, ask whether it constrains an implementation cost or changes the accepted protocol domain. Prefer limits on resource commitment/work when the wire format legitimately permits larger values.
+
+**Confidence:** Very high. Merged master resource-exhaustion fix authored and merged by John Thacker, with the distinction between legal logical size and unsafe initial allocation made explicit in the MR.
+
+## Safety budgets must trip at exhaustion, not merely while budget remains
+
+Iteration and recursion guards are useful only if their boundary condition preserves ordinary valid parsing. A guard that decrements a positive budget and then treats every nonzero value as failure turns a protective limit into an unconditional early abort.
+
+Merged master MR !13933 fixes RTMPT AMF parsing from `if (--iterations)` to `if (--iterations == 0)`, because the former declared a loop on the first iteration and prevented normal AMF dissection from succeeding. Stable backports !13934, !13935, and !13936 carry the same correction to maintained branches.
+
+**Implementation rule:** make the exhaustion condition explicit. Prefer code whose comparison states the intended invariant (`remaining == 0`, depth above maximum, etc.) rather than relying on truthiness after arithmetic when the semantic boundary is easy to invert.
+
+**Testing rule:** resource-limit tests need both a pathological input that reaches the ceiling and a representative valid input that performs multiple iterations without reaching it. A guard that catches hostile input but also aborts all normal input is not a successful hardening change.
+
+**Confidence:** Very high. Merged master correction authored and merged by John Thacker with three accepted stable backports and a directly stated functional regression.
