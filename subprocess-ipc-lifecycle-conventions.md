@@ -67,3 +67,17 @@ Merged master MR !13743 integrates interface discovery and running statistics so
 **Review rule:** when adding a new capability to an IPC schema, ask whether the representation can naturally carry the next unknown capability as well. Treat upstream API extensibility as part of the compatibility design, not as a later migration problem.
 
 **Confidence:** Extremely high. Merged master capture architecture series with direct, forward-looking review guidance from Guy Harris.
+
+## Use real serialization for machine-readable records whose strings can contain delimiters
+
+A line-oriented or delimiter-separated child protocol is only safe if the field grammar guarantees that payload strings cannot contain those delimiters. Interface names, descriptions, addresses, and other platform/user-provided text do not provide that guarantee, and escaping rules added later become an ad hoc serialization format of their own.
+
+Merged master MR !13680, authored and merged by John Thacker, replaces `dumpcap`'s newline/tab-delimited machine-readable interface list with JSON. The MR explicitly cites embedded tabs in names/descriptions as a correctness problem and also uses the structured representation to prepare for combining interface, capability, and statistics discovery. The reader validates that returned data parses as JSON and treats malformed child output as an explicit error rather than continuing with a partially split record.
+
+**Architecture rule:** when subprocess records contain unconstrained strings or an evolving collection of typed fields, use a structured serialization format with defined string escaping and field boundaries rather than inventing delimiter conventions.
+
+**Validation rule:** parsing structured child output is part of the IPC trust boundary. Validate the document and expected field/token shapes, and report malformed output as a protocol failure instead of silently skipping or partially accepting records.
+
+**Testing rule:** include names/descriptions containing tabs, newlines/escaping characters where the schema permits them, missing or wrong-typed fields, malformed serialization, and unknown additional fields. A format is not robust merely because the producer normally emits simple ASCII today.
+
+**Confidence:** Very high. Merged master IPC change authored and merged by John Thacker, with both the delimiter failure and forward-extensibility motivation stated directly.
