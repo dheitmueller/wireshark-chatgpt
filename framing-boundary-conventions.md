@@ -1,0 +1,27 @@
+# Wireshark Framing-Boundary Conventions
+
+This file records durable conventions for dissectors that must distinguish protocol payload, padding, trailers, and frame checksums across nested link-layer encapsulations. Current upstream source remains authoritative.
+
+## Classify padding, trailers, and FCS from semantic frame boundaries, not raw enclosing length
+
+An enclosing tvbuff or captured packet length does not necessarily identify where the original frame payload ended. Tags can be inserted after padding was added; trailers can precede or follow padding depending on the path through the network; an FCS may be present, absent, truncated, or only heuristically suspected. Framing logic therefore needs the semantic payload origin/length supplied by the dissector that actually knows it, together with captured-vs-reported length state.
+
+Merged master MR !13089, authored by John Thacker, reworks Ethernet trailer handling around this principle. `add_ethernet_trailer()` is given the payload offset so strict zero-padding calculations can be based on the Ethernet frame geometry rather than blindly on `pinfo->fd->pkt_len`. It also passes the effective payload length to heuristic trailer dissectors instead of forcing them to reconstruct context from a sliced trailer tvbuff.
+
+The same MR handles uncertain FCS presence conservatively: when `fcs_len == -1`, it first offers the candidate trailer to heuristic trailer dissectors without stripping an assumed FCS. Only if that interpretation is not accepted does it try the alternate interpretation with an FCS removed. It also avoids computing an FCS when the full frame is not actually captured. This prevents an early framing guess from destroying bytes needed by a more specific trailer interpretation.
+
+**Implementation rule:** carry semantic boundary information explicitly across dissector layers. Do not infer original payload length from a later encapsulated packet length when tags, padding, trailers, or truncation can change that relationship.
+
+**Heuristic rule:** when mutually exclusive framing interpretations are plausible, avoid destructive preprocessing based on the weaker guess. Try the interpretation that preserves all candidate bytes first, and commit to removing an FCS/trailer only when configuration or evidence justifies it.
+
+## Keep the protocol-tree span and the tvbuff's semantic actual length synchronized
+
+When a dissector determines that its meaningful protocol data ends before the enclosing tvbuff, both the data-source boundary used by outer framing logic and the displayed protocol item's span should reflect that same endpoint.
+
+Merged master MR !13072, authored and merged by John Thacker, fixes the short HomePNA path by calling both `proto_item_set_len(ti, offset)` and `set_actual_length(tvb, offset)`. The actual-length update lets the preceding Ethernet dissector recognize bytes beyond HomePNA as padding/trailer/FCS; updating the proto item at the same time keeps the tree highlight from visually claiming those bytes as HomePNA.
+
+Merged master MR !13088, also authored and merged by John Thacker, applies the same semantic-boundary idea to MACsec short frames: once the short-length field establishes the real MACsec extent, `set_actual_length()` lets the previous Ethernet layer calculate the FCS over the correct whole-frame region instead of treating the checksum bytes as MACsec padding.
+
+**Implementation rule:** when a child dissector knows a shorter authoritative extent, update every representation that downstream/upstream consumers rely on: the tvbuff actual length for framing calculations and the protocol-item length for UI ownership. A correct parser boundary with a stale tree span, or vice versa, leaves contradictory interpretations of the same bytes.
+
+**Confidence:** Extremely high. The core evidence is three adjacent merged master fixes authored/merged by John Thacker, including a substantial architectural conversion of PRP from a postdissector to an Ethernet trailer heuristic and two independent short-frame boundary corrections.
