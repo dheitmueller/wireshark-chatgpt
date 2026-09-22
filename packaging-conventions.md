@@ -27,3 +27,17 @@ Merged master MR !13671 changed Wireshark's `.pc` files to derive paths from `pc
 **Testing rule:** validate generated `.pc` files in default, custom-prefix, staged `DESTDIR`, and representative multiarch layouts. Include at least one external consumer build so a syntactically valid `.pc` file is also shown to advertise correct include/library/plugin paths.
 
 **Confidence:** High. The merged change had a sound relocatability goal, but later concrete Debian multiarch/external-plugin breakage demonstrates that fixed relative-depth assumptions require broader layout testing.
+
+## Keep installer runtime-dependency inventories single-sourced
+
+When an installer needs the same runtime dependency set in multiple generated sections, duplicating the list creates independent sources of truth that can drift. A dependency added to one manifest or packaging path can then be absent from another even though both are intended to describe the same shipped runtime.
+
+Merged master MR !13227, authored and merged by Gerald Combs, fixes Windows packaging by adding the required minizip DLL to installer dependency lists. Merged master MR !13231, also authored and merged by Gerald, immediately follows by replacing duplicate WiX DLL enumerations with one `_dll_list` consumed by both component and file generation. The release-4.2 backports !13229 and !13232 preserve the same fixes.
+
+**Packaging rule:** represent one semantic runtime-dependency set with one authoritative list and derive all installer manifestations from it. Do not maintain parallel hand-written inventories merely because the packaging generator needs the values in multiple places.
+
+**Review rule:** when a missing-DLL fix adds the same dependency in two or more lists, treat the duplication itself as a follow-up defect candidate. Ask whether those lists are semantically identical and can be generated from one source before accepting continued parallel maintenance.
+
+**Testing rule:** validate the installed/package artifact, not only the build tree. For Windows runtime dependencies, exercise a clean target without the developer environment's dependency paths so omitted DLLs cannot be accidentally satisfied by the build host.
+
+**Confidence:** Very high. The missing-runtime fix and immediate single-source cleanup were both merged master packaging changes authored and merged by Gerald Combs, with equivalent release-branch propagation.
