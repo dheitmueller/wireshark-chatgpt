@@ -21,3 +21,15 @@ Merged master MR !14257 const-ifies generated registration tables and changes ex
 **Review rule:** distinguish binary ABI, source/API typing, and semantic mutation contracts. For a public pointer parameter that the callee does not modify, adding pointee `const` is generally compatible with the C calling convention and improves the source contract; nevertheless, review unusual uses such as function-pointer type matching and the compatibility policy of the branch being changed rather than applying a blanket rule to every qualifier edit.
 
 **Confidence:** Extremely high for the stated Wireshark review precedent. The compatibility question was answered directly by Guy Harris on a merged MR and followed by his explicit approval.
+
+## Package symbol metadata must match the actual exported API exactly
+
+Distribution ABI metadata is part of the public-library contract. A symbol file that names a function incorrectly can cause package ABI checks to validate the wrong interface, even when the library itself exports the correct function. Names, suffixes, and version-introduction annotations should be derived from the actual public exports rather than reconstructed from memory or a nearby API family.
+
+Merged release-4.0 MR !13619 and release-4.2 MR !13620 correct Debian `libwiretap` symbol files after newly added option getter/setter functions were recorded without their real `_value` suffix. The code exported names such as `wtap_block_get_int32_option_value`, while the package metadata had listed `wtap_block_get_int32_option`.
+
+**Packaging/ABI rule:** whenever public functions are added, renamed, or backported, compare package symbol manifests against the compiled/exported API names and record the correct first-supported version. Treat the symbols file as machine-readable ABI metadata, not as approximate documentation.
+
+**Review rule:** a public-API change is incomplete until downstream symbol/version manifests for maintained release branches agree with the real binary exports. Small naming differences such as suffixes are correctness issues because packaging tools consume the strings literally.
+
+**Confidence:** Very high. Two merged maintained-branch fixes correct concrete symbol-name mismatches in Debian's ABI metadata and were accepted by project maintainers.
