@@ -45,3 +45,17 @@ Merged master MR !13995, authored by John Thacker and merged by Anders Broman, f
 **Testing rule:** click-sort every visible column in each view that shares the model, especially views that omit columns. Verify both ascending/descending order and that the values being compared are from the header the user selected.
 
 **Confidence:** Very high. Merged master model/view correctness fix authored by John Thacker; the failure mechanism and recommended `QHeaderView::swapSections()` alternative are documented directly in the accepted change.
+
+## Do not assume a proxy model has one concrete source-model subclass when multiple backends are supported
+
+A Qt proxy can expose a common view while being backed by different source-model classes that do not inherit from one another. Code that blindly casts `sourceModel()` to the implementation used on one platform or initialization path can compile cleanly and then crash when another legitimate backend is installed.
+
+Merged master MR !13817, authored and merged by John Thacker, fixes a Windows crash when adding a capture pipe before the interface list is loaded. `InterfaceSortFilterModel` can be backed by either `InterfaceTreeModel` or `InterfaceTreeCacheModel`; the old path effectively assumed one concrete source type and called a member through the wrong cast on systems supporting remote capture. The accepted code uses `qobject_cast` to determine the actual source model and invokes only methods valid for that subtype.
+
+**Implementation rule:** when a proxy supports multiple source-model implementations, treat `QAbstractItemModel` as the stable boundary and branch explicitly on actual supported subtype only where subtype-specific behavior is unavoidable. Do not encode a platform-dependent concrete-model assumption in a cast.
+
+**Design rule:** if the same operation is genuinely common to all supported source models, prefer moving that capability behind a shared interface/role rather than proliferating subtype checks. When the models have intentionally different APIs, keep the dispatch explicit and safe.
+
+**Testing rule:** exercise the proxy with each supported source model, including initialization states such as an empty/not-yet-loaded interface list. Platform-specific backend selection is part of the test matrix because that is where invalid casts often remain hidden.
+
+**Confidence:** Very high. Merged master crash fix authored and merged by John Thacker, with the multiple-unrelated-source-model cause stated explicitly.
