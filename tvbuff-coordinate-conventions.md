@@ -25,3 +25,15 @@ Merged master MR !15194 fixes Kafka Snappy decompression after a refactor to sha
 **Failure-path rule:** APIs that create derived/decompressed tvbuffs can fail. Check the returned child tvbuff before adding it as a data source, querying its length, or handing it to a nested dissector; coordinate correctness does not remove the need to honor nullable-result contracts.
 
 **Confidence:** Very high. Merged master decompression correctness fix with a concrete regression and an accepted change that fixes both parent-coordinate arithmetic and decompression failure handling.
+
+## Express protocol-tree highlight ranges in the coordinate system of the tvbuff being displayed
+
+Scratch-parser offsets and substructure-relative origins are not automatically protocol-tree offsets. When adding fields against a tvbuff, the start and length supplied to the tree API must describe the bytes in that tvbuff's coordinate system. Do not subtract an opcode or nested-record origin merely because a parallel decoder is tracking a local buffer position, unless the tree item is actually being added against a corresponding subset tvbuff.
+
+Merged master MR !13198, authored and merged by John Thacker, fixes several HTTP/3 QPACK field highlights where values such as `offset + decoded - opcode_offset` were passed to tree-building logic even though the active tvbuff expected `offset + decoded`. It also corrects a derived field length so both endpoints are computed from the same tvbuff-relative basis.
+
+**Implementation rule:** keep parser-local cursor arithmetic separate from display-range arithmetic. At each `proto_tree_add_*` boundary, derive the start and length from the coordinate space of the tvbuff argument rather than reusing a cursor that was normalized to a nested construct.
+
+**Review rule:** highlight bugs often indicate mixed coordinate systems even when decoded values are correct. Inspect additions and subtractions of opcode, record, or parent offsets around tree-item calls and confirm that both the start and the computed end/length share one origin.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with multiple QPACK highlight offsets repaired by removing an inappropriate nested-origin subtraction.
