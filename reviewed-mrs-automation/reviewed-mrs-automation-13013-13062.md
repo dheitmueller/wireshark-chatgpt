@@ -79,3 +79,7 @@ Outcome summary: 45 merged and 5 closed/unmerged (!13049, !13045, !13028, !13023
 ## Exact reviewed MR set
 
 `!13062, !13061, !13060, !13059, !13058, !13057, !13056, !13055, !13054, !13053, !13052, !13051, !13050, !13049, !13048, !13047, !13046, !13045, !13044, !13043, !13042, !13041, !13040, !13039, !13038, !13037, !13036, !13035, !13034, !13033, !13032, !13031, !13030, !13029, !13028, !13027, !13026, !13025, !13024, !13023, !13022, !13021, !13020, !13019, !13018, !13017, !13016, !13015, !13014, !13013`
+
+## Frontier
+
+`!13012` (`dfilter: Fix crash with nested function calls`) exists in the same corpus commit and is merged. It was inspected only to verify that the corpus continues below this batch and is **not** counted as reviewed here. Absent newly scraped higher-numbered unreviewed material, it is the next descending candidate.
