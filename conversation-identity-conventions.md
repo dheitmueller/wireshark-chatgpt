@@ -33,3 +33,17 @@ Merged master MR !20539, authored by John Thacker and merged by Anders Broman, f
 **Architecture rule:** before choosing a cache/state key, enumerate the complete semantic identity of the object being cached. If a lookup result varies with transport type, direction, namespace, protocol mode, tag-owner bit, interface, or another discriminator, that discriminator belongs in the key even when one component is usually sufficient on common traffic. Cached misses require the same complete key discipline as cached hits.
 
 **Confidence:** Extremely high. Merged master correctness fix authored by John Thacker, consistent with the notebook's existing reassembly/conversation identity rules.
+
+## Reassociate established protocol state when the transport conversation legitimately changes
+
+A stateful protocol can retain one logical connection while the observed address/port tuple changes. Once Wireshark has enough protocol evidence to identify the established connection, the newly observed transport conversation must be associated with that existing state so packets in the reverse direction can find the same connection even when those packets carry no independently useful protocol identifier.
+
+Merged master MR !13702 fixes QUIC connection migration and NAT rebinding, including the difficult zero-length connection-ID case. After a client packet from the new address is recognized as belonging to an existing QUIC connection, the accepted implementation associates that connection with the new Wireshark conversation so the server's replies to the new tuple can be found and decrypted. John Thacker's substantive review distinguished prohibited connection-ID reuse during active migration from RFC-permitted NAT rebinding; the merged solution handles the legitimate address-change case rather than assuming every tuple change means a new QUIC connection.
+
+The closed predecessor !13693 is useful testing evidence even though it is not implementation precedent: the contributor supplied a concrete migration capture plus key log and identified the first migrated packet and later packets that should decrypt. That is the right shape of regression artifact for a state-association bug whose symptom occurs several packets after the causal tuple change.
+
+**Architecture rule:** if the protocol explicitly permits migration or rebinding, treat the transport tuple as a location for the established state, not necessarily its identity. When protocol-level evidence resolves a packet to an existing connection, attach the new conversation to that connection before subsequent packets depend on tuple-only lookup.
+
+**Testing rule:** test both directions across the endpoint change, especially a reverse-direction packet that cannot identify the connection by itself. Include a real migrated/rebound capture and any required decryption secrets, and verify packets after the migration rather than only the first packet that announces or reveals the new path.
+
+**Confidence:** Very high. Merged master fix with detailed John Thacker review and concrete capture/keylog reproduction from its superseded predecessor; it also corroborates the notebook's existing reassembly rule that protocol session identity can outlive endpoint tuples.
