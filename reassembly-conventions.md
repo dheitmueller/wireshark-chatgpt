@@ -25,3 +25,17 @@ Merged master MR !14014, authored and merged by John Thacker, fixes RTMPT's cust
 **Testing rule:** for custom reassembly, test a selection/export workflow in addition to successful dissection. Selecting the frame that exposes the completed higher-level PDU should retain every earlier frame needed to reconstruct that PDU.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker; the behavior is directly tied to Wireshark's packet-export semantics.
+
+## Use the reassembly primitive that matches the protocol's native sequence-number semantics
+
+Do not compensate for a mismatch between a protocol's fragment numbering and a generic reassembly call by walking or rewriting the reassembly framework's internal fragment chain. If Wireshark exposes a public reassembly primitive for that numbering model, use it so the framework owns normalization, ordering, and bookkeeping.
+
+Merged master MR !14004, authored and merged by John Thacker, changes OPC UA chunk reassembly to use `fragment_add_seq_offset()`. OPC UA chunks can begin at a sequence number other than zero. The prior workaround examined the accumulated fragment chain and adjusted numbering manually; the accepted change uses the API specifically intended for fragments whose sequence numbering starts at an arbitrary value. The MR explicitly notes that this is simpler than examining the whole chain and has a better chance of remaining correct if fragments arrive out of order.
+
+**Implementation rule:** choose the `fragment_add_*` variant whose contract matches the protocol's actual offset/sequence model. For an arbitrary starting sequence, establish the sequence offset through the supported API and then pass the protocol's native sequence values rather than inventing a second numbering scheme in the dissector.
+
+**Review rule:** direct traversal or mutation of reassembly internals is a warning sign when the goal is merely to adapt sequence-number semantics. First check whether the framework already has an offset-aware, sequence-aware, or otherwise specialized public primitive.
+
+**Testing rule:** exercise a non-zero initial sequence number and, where the transport/capture permits it, reordering or missing-fragment cases. A workaround that succeeds only for a perfectly ordered chain is weaker than a framework operation that preserves the reassembly engine's normal ordering behavior.
+
+**Confidence:** Very high. Merged master reassembly cleanup authored and merged by John Thacker, with the API-selection rationale stated directly in the MR.
