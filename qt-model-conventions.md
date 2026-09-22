@@ -31,3 +31,17 @@ Merged master MR !14274, authored by John Thacker and merged by Anders Broman, f
 **Testing rule:** for view-relative export/action paths, apply a filter (and sorting where relevant) before invoking the operation and verify that the result contains the same rows—and, where semantically meaningful, the same order—as the visible proxy view.
 
 **Confidence:** Very high. Merged master model/view correctness fix authored by John Thacker and merged by Anders Broman.
+
+## Keep proxy/source column mappings consistent; use the view for presentation-only reordering
+
+A proxy model that maps columns by their relative source-model order rather than by calling `mapToSource()` for each column has an implicit structural contract: views may omit columns, but the columns they retain must remain in the same relative source order. Violating that contract can make an apparently unrelated action such as sorting one visible column operate on a different source column.
+
+Merged master MR !13995, authored by John Thacker and merged by Anders Broman, fixes sorting in the Manage Interfaces dialog. `InterfaceSortFilterModel` maintained its own ordered proxy-to-source column mapping; the dialog had a different relative column order, so clicking “Hide/Show” could sort by the device name and clicking the device name could sort by another field. The accepted change realigns the source column enumeration with the relative order used by the views and documents that a view which genuinely needs a different visual order should use `QHeaderView::swapSections()`.
+
+**Implementation rule:** make the proxy/source mapping contract explicit. If a proxy assumes source-relative column order, keep all model/view column identities in that order and let views omit columns as needed. For presentation-only rearrangement, use Qt's header/view facilities rather than silently redefining source-model column identity.
+
+**Review rule:** when enabling sorting or filtering on a model shared by several views, verify that each visible header maps to the intended source column after omissions and any presentation reordering. Do not infer correctness merely because the unsorted display looks right.
+
+**Testing rule:** click-sort every visible column in each view that shares the model, especially views that omit columns. Verify both ascending/descending order and that the values being compared are from the header the user selected.
+
+**Confidence:** Very high. Merged master model/view correctness fix authored by John Thacker; the failure mechanism and recommended `QHeaderView::swapSections()` alternative are documented directly in the accepted change.
