@@ -113,3 +113,15 @@ Merged master MR !15440 added the IBM i TRCCNN RDMA dissector. During substantiv
 **Implementation rule:** design dissector headers from actual consumers outward. Expose the minimal shared data required by subdissectors or other source files, and keep private flow-analysis/state structures and implementation details in the source file. Do not copy another dissector's header surface without verifying that the same sharing requirement exists.
 
 **Confidence:** Very high. Direct maintainer review on a merged new dissector, with the requested encapsulation cleanup incorporated before merge.
+
+## Name API variants for the capability they add, not for when they were introduced
+
+Temporal suffixes such as `_new` age badly. They describe a moment in the API's history rather than a stable semantic difference, and become actively ambiguous as soon as another revision appears.
+
+Merged master MR !13975 adds human-readable descriptions to heuristic dissector lists. During review, Jaap Keuter objected to an initial `*_new()`-style API name because “new” is a temporal designation that expires with the next API change, and asked for a suffix that says what was extended. The accepted interface uses a capability-bearing name (`..._with_description`) while retaining the existing registration routine as the simpler wrapper.
+
+**Implementation rule:** when extending an API while preserving an older entry point, name the new variant after the additional semantic capability, argument, or behavior—such as `_with_description`, `_full`, or another project-appropriate descriptive suffix. Avoid `_new`, `_newer`, version-era names, or other labels whose meaning depends on repository history rather than the call contract.
+
+**Review rule:** read related function names side by side and ask whether a caller unfamiliar with their chronology can tell why one should be chosen over another. If the distinction only makes sense after knowing which was added later, the names are underspecified.
+
+**Confidence:** Very high. Direct maintainer naming review from Jaap Keuter on a merged API extension, with the requested semantic rename incorporated before merge.
