@@ -53,3 +53,17 @@ Merged master MR !13940 fixes QUIC 0-RTT application dissection. Before the Serv
 **Testing rule:** test early-data paths in a fresh one-pass/live-equivalent run as well as in two-pass/redissection mode. A result that becomes correct only under `tshark -2` or after GUI redissection is a strong signal that future state is leaking backward into an earlier protocol phase.
 
 **Confidence:** Very high. Merged master fix with direct John Thacker review of the one-pass distinction and an implementation that separates early and final application dispatch.
+
+## When the authoritative negotiated result is not known yet, expose only guaranteed provisional information
+
+A first-pass or live dissection may need to present useful protocol state before the message that authoritatively establishes the final value has arrived. In that situation, provisional output should state only what the packets seen so far logically guarantee. It should not guess the eventual negotiated result merely because a later redissection would know it.
+
+Merged master MR !13771, authored by John Thacker, fixes the TLS Protocol column when a ClientHello contains the `supported_versions` extension but no ServerHello or other authoritative version-setting message has yet been seen. The accepted change displays the minimum version advertised by the client: the eventual negotiated version is not yet known, but any acceptable server choice must be at least that version. The MR explicitly calls out live capture, one-pass TShark, and captures that omit the authoritative message as the affected execution models.
+
+**Architecture rule:** distinguish a final negotiated/authoritative value from a provisional bound or fact derivable from current evidence. If the UI needs a provisional value, choose one whose semantics remain true regardless of which valid later outcome occurs, and replace/refine it when the authoritative protocol message arrives.
+
+**Review rule:** when a field or column changes after redissection, ask whether the first-pass value was genuinely knowable at that point. Do not back-propagate future state into earlier packets unless the analysis model explicitly supports and intends that behavior.
+
+**Testing rule:** cover at least three cases: one-pass/live capture before the authoritative message; a complete capture after authoritative state becomes known; and a truncated/partial capture in which the authoritative message never appears. The provisional representation should be useful without pretending to know the final result.
+
+**Confidence:** Very high. Merged master correctness change authored by John Thacker, with the first-pass/live-capture semantics and conservative minimum-version choice documented directly in the MR.
