@@ -20,8 +20,24 @@ When only the first N entries of a recent-history list are written, the in-memor
 
 Merged release MRs !13326, !13327, and !13328 carry the capture-filter history fix to supported branches. The old list kept newer filters at the end while `recent_common` writing started at the beginning and stopped at the configured maximum, so after enough use the same oldest entries were repeatedly persisted. The accepted implementation keeps the newest filter first by prepending new entries, reverses the list once after reading the persisted file, and then lets both display and writing consume the list in natural order. The implementation also notes that if the maximum becomes preference-controlled, the recent file is read before that preference, so input must not be truncated before the effective limit is known.
 
+Merged master MR !13260, authored by John Thacker, demonstrates that last point concretely for the recent-capture list. `recent_common` must be read before preferences so that Wireshark can discover the last-used profile; therefore applying the default recent-file maximum while reading can irreversibly discard entries before the selected profile, `-C`, `-o`, or `-P` establishes the effective limit. The accepted change preserves the full startup history first and reapplies the effective limit to the menu and welcome-page model after preferences/profile state is known.
+
 **Implementation rule:** define MRU ordering explicitly and keep in-memory, presentation, and serialization order consistent. If a persistence limit is loaded later than the data itself, preserve enough input to apply the final limit after configuration is known rather than truncating under a default that may be wrong.
+
+**Startup-order rule:** when early startup data is needed to choose the configuration/profile that will itself determine how that data should be filtered or bounded, the early read must be non-destructive. Defer preference-dependent truncation and presentation until the effective configuration has been resolved.
 
 **Performance note:** for `GList`, repeated prepend followed by one reverse is O(N), while repeatedly appending N items is O(N²); the accepted implementation aligns the efficient data-structure operation with the desired MRU semantics.
 
-**Confidence:** High. The same accepted correction was carried to three release branches and documents both the semantic and complexity rationale.
+**Confidence:** Very high. The same ordering correction was carried to three release branches, and !13260 supplies a merged master example of why startup-time truncation must be deferred until configuration precedence has settled.
+
+## Keep fallback UI defaults out of persisted history
+
+A value chosen only because no real historical value exists is not itself history. Persisting a fallback as though the user had selected it can cause the fallback to become sticky and override better context on later runs.
+
+Merged release-4.2 MR !13213, authored and merged by Guy Harris, separates the persisted "last directory in which a file was opened" from the "initial directory for an open/save dialog." If a real last-open directory exists, it is used. Otherwise Wireshark derives a runtime fallback from the personal-data/current/home-directory policy, including a macOS Finder workaround where the process current directory can be `/`. Crucially, startup no longer writes that fallback into the last-open state merely to initialize dialogs.
+
+**Implementation rule:** distinguish observed user history from derived UI defaults. A fallback may be used to initialize presentation when history is absent, but it should not populate or overwrite the persisted history slot until the corresponding user action actually occurs.
+
+**Platform rule:** process-launch environment values such as the current directory are not always meaningful user intent. Apply platform-aware sanity checks before using them as defaults, and keep those checks in the common policy helper rather than duplicating them across dialogs.
+
+**Confidence:** Extremely high. The change is a merged stable-branch fix authored and merged by Guy Harris, with an explicit rationale separating the two state concepts.
