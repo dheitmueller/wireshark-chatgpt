@@ -17,3 +17,15 @@ The merged sequence !13092 → !13091 → !13093 → !13104 performs that migrat
 Later merged initialization work, including !20611 and its follow-ons already reviewed elsewhere in this notebook, further corroborates zero as the intended static registration initialization model.
 
 **Confidence:** Very high. Four coordinated merged changes cover preparatory predicate auditing, core epan state, plugins, and tools/generated code, with the migration order visible in the accepted series.
+
+## Do not automatically backport a broad representation migration just to simplify future cherry-picks
+
+A representation/invariant migration that is correct on master can still be a poor stable-branch backport. Stable branches have a different risk budget: changing a project-wide sentinel convention can create unknown side effects and merge conflicts across later fixes even if the new convention is preferable long term.
+
+Closed release-4.2 MR !13028 proposed backporting the zero-initialization migration. Maintainer discussion converged against it. Stig Bjørlykke noted possible unknown issues and that fixes introducing new fields were limited; Peter Wu agreed that zero initialization could make some future backports easier but judged the relatively new change and possible missing side effects too risky for the stable branch; Gerald Combs likewise opposed the migration close to release. Stig also pointed out that differing initializer conventions themselves create merge conflicts when cherry-picking field/subtree changes.
+
+**Stable-branch rule:** do not backport a broad internal representation migration merely to align a stable branch with master or reduce hypothetical future cherry-pick effort. Require a concrete stable-branch need and a risk/validation case strong enough to justify changing the invariant. Otherwise preserve the stable branch's existing representation and adapt individual fixes deliberately.
+
+**Evidence weighting:** !13028 itself was closed and is therefore weaker implementation precedent than the merged master migration. Its value is review-policy evidence: several experienced maintainers explicitly rejected the stable-branch backport while accepting the underlying master direction.
+
+**Confidence:** High for backport policy, not for changing the master convention. The negative evidence is an unmerged MR, but the rationale is unusually explicit and supported by Stig Bjørlykke, Peter Wu, Alexis La Goutte, and Gerald Combs.
