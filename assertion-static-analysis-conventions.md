@@ -59,3 +59,17 @@ Merged MR !20873 fixes extcap preference creation by sanitizing invalid preferen
 **Implementation rule:** decide assertion policy based on who controls the value. For repository-defined constants and registrations, an invalid value may be a programmer bug; for user/plugin/extcap/network-derived values, validate and convert at the boundary without turning ordinary external input into a process-fatal invariant failure.
 
 **Confidence:** High. Merged master change with direct maintainer discussion explicitly comparing the two ownership/trust domains.
+
+## Generic helper APIs should recover from unsupported semantic domains that legitimate callers can supply
+
+An enum value can be unsupported by one helper without being evidence that the whole process is internally inconsistent. If a generic caller can legitimately carry a broader domain than a particular lookup service understands, the helper should return its documented “not available” result rather than asserting and crashing. Preserve all output-parameter semantics on that fallback path, and represent the fallback with an explicit enum member rather than assigning an arbitrary integer outside the enum's declared domain.
+
+Merged master MR !13853, authored and merged by John Thacker, changes service-name lookup so an unknown/nonstandard port type returns no service name instead of reaching `ws_assert_not_reached()`. The motivating caller, `col_append_ports()`, can reasonably be asked to format ports for protocols whose port type has no service-name table; dissectors should not need to know the resolver's narrower lookup-domain details merely to obtain good column text. During review Evan Huus caught that an early return would skip setting the optional `value_ret` output; the accepted design falls through the common result path so that output contract remains intact. John also explicitly added an enum “unknown” value rather than storing an out-of-domain integer in the enum.
+
+**Implementation rule:** before asserting on an enum/mode in a reusable helper, distinguish “impossible for every valid caller” from “unsupported by this helper but reachable from a legitimate generic caller.” Use the API's ordinary unavailable/fallback result for the latter.
+
+**Output-contract rule:** fallback and unsupported-domain paths must initialize and populate out-parameters exactly as the API promises. Do not fix a crash with an early return that leaves secondary outputs stale or undefined.
+
+**Type rule:** if an internal state needs an unknown/not-applicable enum value, declare a named enum member for it instead of relying on C's ability to store an arbitrary underlying integer.
+
+**Confidence:** Very high. Merged master API hardening authored and merged by John Thacker, with the output-parameter and explicit-enum details driven by direct Evan Huus review.
