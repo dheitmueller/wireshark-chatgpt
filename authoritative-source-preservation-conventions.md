@@ -51,3 +51,17 @@ Merged master MR !13625, authored and merged by Guy Harris, corrects NFLOG times
 **Review rule:** when a timestamp, length, flag, or numeric field looks plausible but produces systematically wrong values, challenge the assumed units and source representation first. A decoder can be internally consistent and still be consistently wrong if its original semantic premise was mistaken.
 
 **Confidence:** Extremely high. Merged master correctness change authored and merged by Guy Harris, supported by both a published linktype definition and the Linux producer implementation, with three accepted stable backports.
+
+## Derive validation constraints from the specification's actual domain, not its common instance
+
+A common protocol value or hardware family is not a license to narrow a field beyond what the governing specification permits. If another field selects the type or interpretation of a value, lengths and constraints must follow that type's specified domain rather than the dimensions of the most familiar subtype.
+
+Merged master MR !13225 adds DHCPv6 Client Link-Layer Address option handling from RFC 6939. During review, John Thacker points out that the RFC requires the link-layer type only to be a valid IANA-assigned hardware type; it does not require Ethernet or a six-byte address. The initial implementation's length assumption was therefore too narrow. The accepted revision validates only the fixed hardware-type portion first and handles the remaining address according to the actual option length, analogous to the existing DUID-LL handling. Merged !13255 carries the corrected implementation to release-4.2.
+
+**Implementation rule:** when a protocol field's size or legal values depend on a selector/type code, validate the invariant common prefix first, then interpret the variable portion according to the selected domain. Do not bake Ethernet-sized, IPv4-sized, ASCII-sized, or other popular-instance assumptions into a specification that intentionally permits a wider family.
+
+**Review rule:** whenever a proposed constraint is justified by “normally,” “typically,” or a common deployment example, check the normative specification for whether that property is actually required. A stricter decoder can reject valid but uncommon traffic just as surely as a lax decoder can accept malformed traffic.
+
+**Testing rule:** include at least one valid non-default/non-common subtype where practical, especially when the field names or surrounding code make one popular representation easy to assume implicitly.
+
+**Confidence:** Very high. The over-constraint was identified directly by John Thacker during review of a merged master protocol addition, corrected before merge, and propagated to a maintained release branch.
