@@ -31,3 +31,15 @@ Merged release-4.6 MR !21367 backported BLF application-name/version handling. G
 **Submission rule:** before proposing or approving a stable-branch cherry-pick, enumerate the APIs and architectural prerequisites the change relies on and verify that they exist in the target branch at the same usable layer. If a prerequisite refactor is itself appropriate for the stable branch, backport it first and preserve the intended dependency direction. Otherwise adapt the fix deliberately to the older architecture; do not paper over a missing prerequisite by introducing an ad hoc duplicate helper or an improper cross-layer dependency merely to make the cherry-pick compile.
 
 **Confidence:** Extremely high. Direct architectural backport diagnosis by Guy Harris, followed by the prerequisite backport and successful merged release-branch change.
+
+## Split independent fixes out of feature work when they need their own backport path
+
+A bug discovered while implementing a feature should not remain inseparably buried in the feature change when the fix is independently useful, especially when maintained release branches should receive the fix but not the new feature. Giving the fix its own commit/MR makes review intent, release-note scope, and cherry-pick eligibility explicit.
+
+Merged master MR !13900 added RSVP SESSION_ATTRIBUTE support. During review Alexis La Goutte noticed that the feature diff also corrected an unrelated bad `proto_tree_add_item()` encoding argument and asked whether that fix should become a specific commit so it could be backported. John Thacker agreed that splitting it was preferable. The correction became merged master MR !13910, with release-4.2 !13911 and release-4.0 !13912 carrying the fix independently of the feature.
+
+**Submission rule:** when feature development exposes an unrelated correctness fix, ask whether the fix has a different backport or release policy from the feature. If so, split it into a focused commit/MR before merge. This lets stable branches take the correction without taking new functionality and gives reviewers a clean unit whose risk and intent can be evaluated independently.
+
+**Review rule:** when a feature MR contains an incidental bug fix, do not judge only whether the combined diff is correct on master. Check whether the correction should be independently backportable; if it should, request a split before the history makes that distinction harder to preserve.
+
+**Confidence:** Very high. Direct maintainer review in a merged feature MR, followed by exactly the requested split-out master fix and accepted backports to both maintained stable branches.
