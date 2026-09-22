@@ -15,3 +15,15 @@ Merged MR !23768 repairs MGCP and MSN Messenger callers after `tvb_find_line_end
 This complements the notebook's existing rules that enum/status values are not booleans and that tri-state integer contracts must retain all states.
 
 **Confidence:** High. Merged master correctness fix with a concrete regression caused by the API semantic change and a resolved review discussion specifying the accepted call pattern.
+
+## Populate requested output parameters on every successful return path
+
+An optional output parameter is part of the function's success contract whenever the caller supplies it. A parser fast path must not return successfully before filling an output that slower paths populate; otherwise behavior depends on how many bytes were needed to encode the same semantic value.
+
+Merged master MR !13198, authored and merged by John Thacker, fixes QPACK prefixed-integer parsing where the Huffman-encoding flag was only written after the one-byte fast path. When the integer fit entirely in the prefix byte, the function returned before setting the requested flag. The accepted change moves the `out_flag` assignment ahead of that early return so all successful paths initialize it consistently.
+
+**Implementation rule:** for functions with optional output pointers, identify which outputs are promised on success and initialize or populate them before any successful early return that would otherwise bypass the assignment. Do not let a compact encoding or fast path silently change the output-parameter contract.
+
+**Review rule:** when a parser has early returns for short/common encodings, audit every requested output parameter across those paths, not only the primary decoded value and consumed length.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker; the bug directly depended on a successful fast path leaving caller-visible state unset.
