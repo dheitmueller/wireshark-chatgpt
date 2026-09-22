@@ -39,3 +39,15 @@ Merged master MR !14100 fixes X11 `ConfigureWindow` dissection. During review, G
 **Review rule:** when a subsystem mixes generated and manual artifacts, reviewers should ask which file is authoritative for each changed behavior and whether regeneration would overwrite the proposed change. The answer may legitimately differ within one protocol dissector.
 
 **Confidence:** Extremely high. The ownership/generation boundary and preferred future architecture were explained directly by Guy Harris on a merged master fix.
+
+## Resolve ambiguous wire semantics from authoritative format definitions and producer behavior
+
+An existing dissector's interpretation is not itself evidence that a capture-format field has the right units or layout. When a wire/capture representation is ambiguous or appears inconsistent, verify it against the published format definition and, where available, the implementation that actually emits the bytes. If the correction exposes a generally useful representation missing from Wireshark's common APIs, extend the shared primitive rather than open-coding a local conversion.
+
+Merged master MR !13625, authored and merged by Guy Harris, corrects NFLOG timestamps from seconds/nanoseconds to seconds/microseconds. The change cites both the tcpdump LINKTYPE_NFLOG definition and the Linux kernel's `nfnetlink_log.c` producer path, then adds common `ENC_TIME_SECS_USECS` handling for the relevant 16-byte and 12-byte timestamp layouts and uses it in the dissector. Merged !13626, !13627, and !13628 carry the correction to maintained release branches.
+
+**Implementation rule:** for capture or protocol metadata whose meaning depends on external definitions, establish the units/layout from authoritative documentation and producer code before changing the parser. Prefer teaching a shared `proto_tree`/encoding helper about a recurring wire representation over duplicating unit conversion logic in one dissector.
+
+**Review rule:** when a timestamp, length, flag, or numeric field looks plausible but produces systematically wrong values, challenge the assumed units and source representation first. A decoder can be internally consistent and still be consistently wrong if its original semantic premise was mistaken.
+
+**Confidence:** Extremely high. Merged master correctness change authored and merged by Guy Harris, supported by both a published linktype definition and the Linux producer implementation, with three accepted stable backports.
