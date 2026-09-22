@@ -13,3 +13,15 @@ Merged master MR !15128, authored and merged by John Thacker, fixes Qt's “Copy
 **Submission rule:** a small correctness fix needed on a maintained branch need not be blocked on introducing a broader public helper API. Land the narrowly scoped grammar-correct fix when appropriate, then consider reusable API consolidation separately.
 
 **Confidence:** Very high. The master fix was authored and merged by John Thacker, received positive maintainer review, and was subsequently carried to the maintained 4.2 branch.
+
+## Serialize one logical field before applying delimiter-separated escaping
+
+For CSV-like or delimiter-separated output, escaping belongs at the serialization boundary of the complete logical field. If a field consists of multiple values joined by an aggregator, compose that field first and then quote/escape the result once. Escaping each component independently can miss separators, quote characters, or aggregator bytes that only acquire syntax after composition.
+
+Merged master MR !13111, authored by John Thacker, fixes TShark delimiter-separated field output by centralizing the grammar in `ws_escape_csv()`. The accepted path first joins repeated values with the configured aggregator and then escapes the complete field. When quoting is enabled, embedded quote characters are doubled according to the output grammar; when quoting is disabled, the field separator itself must be escaped. The same change updates the user documentation and exports the helper as a `libwsutil` symbol rather than keeping a second ad-hoc implementation in `epan/print.c`.
+
+**Implementation rule:** separate semantic composition from syntactic serialization. Build the value that conceptually occupies one output field, then pass that complete value through the format-specific escaping routine using the actual separator, quote, and escape settings. Do not independently escape fragments and concatenate them afterward unless the target grammar explicitly defines fragment-level escaping.
+
+**API rule:** when multiple producers need the same textual grammar, prefer one shared escaping primitive and make its parameter contract explicit. Update documentation, exported-symbol metadata, and representative tests together when that primitive becomes externally visible.
+
+**Confidence:** Very high. Merged master correctness change authored by John Thacker; the diff directly aligns implementation, public helper API, documentation, and tests around the same serialization rules.
