@@ -49,3 +49,15 @@ Merged master MR !14525, authored by John Thacker and merged by Alexis La Goutte
 **Review rule:** for same-frame/coalesced protocols, explicitly ask whether a helper named "last", "previous", or equivalent still returns the intended object after the current unit has been inserted. Tests should include early or otherwise atypical ordering that forces the predecessor-dependent path.
 
 **Confidence:** Very high. Merged master correctness fix authored by John Thacker, with the accepted code ordering directly enforcing the required predecessor semantics.
+
+## Publish newly discovered mapping state before later layers in the same packet need it
+
+A dissector can discover identity or mapping information while decoding one layer and then need that information again in a higher layer of the *same* packet. If the new state is written only to the lookup path used by future packets, the first packet containing the information can still fail even though subsequent packets work.
+
+Merged master MR !12866, authored and merged by John Thacker, fixes the first decryptable ZigBee APS packet. While decoding the network security header, Wireshark learns the extended source address from the nonce. The old path updated the IEEE-layer short-to-long mapping but did not immediately update the network-layer mapping consulted by APS; the first APS payload therefore missed information that later packets could find. The accepted change publishes the long address into the network-layer mapping as soon as it is learned, allowing the remaining layers of the current packet to consume it.
+
+**Architecture rule:** when dissection discovers protocol state that a later layer in the current packet depends on, publish that state to the consumer's lookup domain before invoking or continuing that later layer. Do not rely on a future packet to make newly learned state visible.
+
+**Review rule:** stateful dissectors should include a cold-start case where the first packet both establishes state and immediately consumes it. A trace that succeeds only from the second packet onward can hide an ordering bug in state publication.
+
+**Confidence:** Very high. The bug and ordering rationale are stated directly in a merged master fix authored by John Thacker.
