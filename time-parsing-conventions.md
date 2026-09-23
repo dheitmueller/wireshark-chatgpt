@@ -8,13 +8,15 @@ If an input format already defines a value as seconds from the Unix epoch plus a
 
 Merged master MR !11917, authored by Guy Harris, rewrites `unix_epoch_to_nstime()` accordingly. The accepted implementation parses the seconds with `ws_strtoi64()`, range-checks the conversion to `time_t`, and parses the fractional digits directly into nanoseconds. It removes the previous `strptime("%s")` path for two reasons called out in the MR: interpreting an epoch count via `struct tm` risks accidentally importing local-time semantics, and `%s` is not a Single UNIX Specification `strptime()` conversion. Release backports !11918 and !11920 preserve the same behavior.
 
+The same direction is visible in the immediately preceding merged MR !11908. During review of a proposal to make Wireshark's `strptime()` behavior consistent across platforms, Guy Harris explicitly called out `%s` as non-standard and argued that numeric Unix-epoch input should not involve `struct tm` at all. He also challenged an unguarded `localtime_r()` dependency because supported Windows builds cannot be assumed to provide every POSIX interface. The accepted series moved toward a known imported `strptime()` implementation plus portability wrappers, while the Unix-epoch concern was subsequently split out and fixed directly in !11917.
+
 **Implementation rule:** keep the parser aligned with the representation's semantic domain. Numeric epoch seconds are numeric epoch seconds, not a broken-down local calendar time. Parse the wide intermediate first, then verify that narrowing to the platform storage type is lossless.
 
-**Portability rule:** do not depend on non-standard `strptime()` conversions merely because they exist on one libc. When Wireshark can parse the representation directly with its portable integer helpers, prefer the portable representation-level parser.
+**Portability rule:** do not depend on non-standard `strptime()` conversions merely because they exist on one libc. When Wireshark can parse the representation directly with its portable integer helpers, prefer the portable representation-level parser. When importing a libc implementation to normalize behavior, audit every helper it depends on against all supported platforms and provide project portability wrappers rather than assuming POSIX-only routines exist everywhere.
 
 **Testing rule:** cover the target `time_t` width boundary, fractional-second forms, malformed input, and any intentionally unsupported domain (for !11917, negative epoch values were explicitly rejected at that point). A successful parse on a 64-bit development host is not sufficient evidence that the conversion is valid on every supported data model.
 
-**Confidence:** Extremely high. The master change is merged and authored by Guy Harris, with two accepted stable-branch backports.
+**Confidence:** Extremely high. The master change is merged and authored by Guy Harris, with two accepted stable-branch backports; !11908 supplies direct high-authority review evidence for the portability rationale.
 
 ## Accept time-zone syntax only when its meaning is unambiguous and portable
 
