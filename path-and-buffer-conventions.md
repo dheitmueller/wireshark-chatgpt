@@ -21,3 +21,15 @@ Merged master MR !12256, authored and merged by John Thacker, fixes CMake compil
 **Testing rule:** where practical, run at least one CI build from a directory containing whitespace and non-ASCII characters. This catches quoting, shell-tokenization, encoding, cache-key, and generated-script assumptions that ordinary build paths hide. When a newly fixed path syntax exposes another legal metacharacter such as `=`, consider adding that case to focused tooling tests as well.
 
 **Confidence:** Very high. The quoting fix in !12256 was authored and merged by John Thacker, Gerald Combs explicitly requested regression coverage during review, and Gerald's later !12266 made the awkward-path case part of CI. The buffer-sizing rule is independently supported by merged master !12291.
+
+## Compose fixed-buffer output from the current cursor and remaining capacity
+
+When a string is assembled in several bounded formatting calls, the state for the next append is the current write position plus the number of bytes still available. Reusing the original buffer pointer or original buffer size after earlier output has already been written can overwrite prior text or let a later append overrun the end.
+
+Merged master MR !12044, authored and approved by Guy Harris, fixes exactly this class of bug in timestamp formatting. `format_fractional_part_nsecs()` is changed to return the number of bytes formatted, analogous to other bounded formatting helpers; callers then advance their pointer and decrease the remaining capacity before each append. The same change also distinguishes byte counts from character counts and rejects an impossible nanosecond fraction of one billion or more instead of silently assuming normalized input.
+
+**Implementation rule:** for multi-step formatting into caller-supplied fixed storage, carry `(cursor, remaining)` forward after every write. Helpers intended for such composition should expose a result that lets callers update that state without rescanning the buffer, and names/comments should say `bytes` when the quantity is a byte count rather than a character count.
+
+**Review rule:** inspect every append after the first one. Verify that both the destination pointer and capacity describe the unconsumed suffix of the buffer, and validate domain invariants before formatting values whose textual width assumes normalized input.
+
+**Confidence:** Extremely high. Merged master correctness/API cleanup authored and approved by Guy Harris, with the buffer-overrun mechanism and return-contract rationale stated directly in the MR.
