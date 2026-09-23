@@ -12,7 +12,7 @@ Do not use a NULL protocol tree as a shortcut for skipping semantic processing w
 
 If a helper sometimes suppresses expert information or column updates, prefer an explicit behavior flag over abusing a NULL `packet_info *` as that signal. Packet context has other responsibilities, including allocator lifetime and access to per-packet state; conflating "do not emit these optional side effects" with "there is no packet context" makes later API cleanup harder and can force reliance on ambient globals/scopes.
 
-**Evidence:** merged master MR !20714 replaces NULL `packet_info *` signaling in the WPS helper with an explicit flag, specifically so `pinfo` remains available and ambient `wmem_packet_scope()` use can be replaced. This corroborates the notebook's existing explicit packet-context/allocator-scope guidance.
+**Evidence:** merged master MR !20714 replaces NULL `packet_info *` signaling in the WPS helper with an explicit flag, specifically so `pinfo` remains available and ambient `wmem_packet_scope()` use can be replaced. Merged master MR !12332 independently fixes the same design error in AFP: `decode_name_label()` had used NULL `pinfo` to mean "do not update the Info column", but the helper also needed `pinfo->pool` for string lifetime. The accepted fix passes valid packet context on every call and adds a separate `add_info` boolean for the optional column side effect. Together these changes reinforce that behavior policy and required packet context are separate API concerns.
 
 ## Parser-engine replacements should preserve observable registration semantics
 
