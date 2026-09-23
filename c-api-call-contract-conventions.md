@@ -113,3 +113,13 @@ Merged master MR !12017, authored and approved by Guy Harris, changes `iso8601_t
 **Review rule:** when strengthening a parser's failure reporting, audit every caller rather than mechanically changing types. A newly explicit failure state is valuable precisely because it forces the caller to choose recovery, rejection, or fallback semantics instead of accidentally continuing with partial/default state.
 
 **Confidence:** Extremely high. Merged master parser-API redesign authored and approved by Guy Harris, with the caller-side malformed-input consequence stated explicitly in the MR rationale.
+
+## Handle “not supplied” sentinels at the boundary that understands their source semantics
+
+A sentinel that means “the caller did not provide an override” is control-flow information about the input source, not necessarily a value in the lower-level setting API's semantic domain. Test that sentinel where the command-line/configuration source is interpreted and skip the setter when no override exists; do not make the lower-level setter translate “not supplied” into some other concrete setting.
+
+Merged master MR !11723, authored by Guy Harris, moves `TS_NOT_SET` / `TS_PREC_NOT_SET` checks out of `timestamp_set_type()` and `timestamp_set_precision()` and into the TShark/rawshark command-line application path. The previous precision setter silently mapped `TS_PREC_NOT_SET` to `TS_PREC_AUTO`, conflating “the user did not request a change” with “set automatic precision.” The accepted setters simply set an actual requested value, while callers that know whether a command-line option was present decide whether to invoke them at all.
+
+**API rule:** keep absence/presence sentinels at the layer that owns that distinction. Lower-level mutation APIs should normally receive values they are actually being asked to apply, rather than knowing about every upstream configuration source's “not specified” token.
+
+**Confidence:** Extremely high. Merged master semantic cleanup authored and approved by Guy Harris, with the sentinel meaning and ownership stated explicitly.
