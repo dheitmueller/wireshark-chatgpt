@@ -77,3 +77,15 @@ Merged master MR !13987 fixes a capture path where the errno-derived message ret
 **Testing rule:** force both the main operation and the subsequent cleanup/close step into error-capable paths and verify that the user-facing message still describes the primary failure. Secondary diagnostics may be retained separately but must not erase the original cause.
 
 **Confidence:** Extremely high. Merged master capture error-propagation fix with direct Guy Harris approval and John Thacker merge.
+
+## Send machine-readable failure status across helper-process boundaries
+
+When a parent process may need to react differently to distinct child/helper failures, the IPC contract should carry the structured failure identity rather than only preformatted user-facing text. Parsing prose to infer whether an operation failed because of permissions, missing files, or another errno is brittle and makes localization or wording changes part of the control-flow protocol.
+
+Merged master MR !12020, authored and approved by Guy Harris, changes the capture child so an `exec` failure for dumpcap sends the `errno` value to the parent. This matters on systems where dumpcap is executable only by a capture-enabled group: an `EACCES` result can be identified directly instead of guessed from an error string. The parent remains responsible for formatting the user-facing message, and the structured status leaves room for more specific policy or guidance later.
+
+**Implementation rule:** send a stable status/error domain over process or privilege boundaries when the receiver may branch on the cause. Format localized or user-oriented text at the layer presenting the error; carry raw supplemental text only as diagnostic detail, not as the sole machine-readable failure signal.
+
+**Review rule:** if code is matching or heuristically parsing an error sentence emitted by another process in order to decide behavior, treat that as evidence that the IPC protocol is missing a structured status field.
+
+**Confidence:** Extremely high. Merged master capture-process error-contract change authored and approved by Guy Harris, with the permission-denied use case stated explicitly in the MR rationale.
