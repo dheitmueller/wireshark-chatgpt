@@ -36,4 +36,18 @@ Merged master MR !12741 fixes TECMP CAN payload metadata by setting `can_info.le
 
 **Confidence:** Extremely high. The original TECMP fix was merged to master with Pascal Quantin's approval and was immediately backported to both supported release branches, demonstrating that the semantic-length bug affected real downstream dissection.
 
+## Establish framing discriminators before interpreting dependent fields
+
+Some container formats place a discriminator such as byte-order magic, a version, or another representation selector before fields whose meaning depends on that selector. Do not interpret dependent lengths or offsets until the discriminator has been validated and the representation is known.
+
+Merged master MR !12421 fixes the pcapng file dissector when a later Section Header Block has different endianness from the preceding section. The old path used the SHB length before establishing the new section's byte order, which could make the protocol tree claim bytes outside the actual block. The accepted fix determines the SHB byte order before using the length and hardens the invalid-magic path. During review, John Thacker specifically recommended avoiding duplicate special-case parsing: if the byte-order magic is invalid, constrain the tvbuff to the 12-byte minimum block size and let the normal block parser add the magic field and expert information.
+
+**Implementation rule:** parse and validate representation-defining fields before any dependent framing value. Never decode a length under inherited, guessed, or previous-container endianness merely because a prior block used that representation.
+
+**Failure-path rule:** when the discriminator itself is invalid, do not trust fields whose decoding depends on it. If useful diagnostics still need the normal parser, pass a safely bounded minimum-size subset rather than inventing an interpretation or duplicating the parser's error-reporting logic.
+
+**Testing rule:** for formats that permit representation changes between containers or sections, include a case that switches representation mid-file and a malformed discriminator case. Verify both byte ownership/highlighting and parser termination, not only decoded field values.
+
+**Confidence:** Very high. !12421 is a merged master correctness fix; John Thacker materially shaped the accepted failure path and merged the change.
+
 **Overall confidence:** Extremely high. The core evidence consists of merged master fixes with accepted maintainer review and release backports, including multiple independent examples where semantic boundaries—not enclosing-buffer or cursor-relative lengths—are required for correct downstream behavior.
