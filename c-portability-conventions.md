@@ -45,3 +45,15 @@ Merged master MR !13777 was authored and merged by Guy Harris and removes an unn
 **Review rule:** for portability failures, distinguish “this platform family uses similar APIs” from “every supported member provides this exact header or declaration.” Prefer evidence from the failing toolchain/platform and the smallest conditional compatibility scope that fixes it.
 
 **Confidence:** Extremely high. The merged master change and the narrow-scoping guidance were both authored by Guy Harris.
+
+## Match generic-library callbacks to the exact element type they receive
+
+Callbacks passed to generic C library routines such as `bsearch()` are invoked on objects with the exact layout and alignment of the array being searched. A comparator written for a different structure type is not made safe merely because the two structures happen to begin with similar-looking members. Reusing it through casts can impose the wrong alignment or member-offset assumptions and becomes undefined or fault-prone on stricter architectures.
+
+Merged master MR !11809, authored and merged by João Valverde, fixes an unaligned-memory access in the manuf lookup code by giving `bsearch()` a comparator that matches the actual array element type instead of reusing a comparator for a different structure layout. The bug was architecture-sensitive, which is exactly the class of failure hidden by relying on coincidental layout compatibility.
+
+**Implementation rule:** write a comparator/callback against the real object type supplied by the library API, or explicitly factor a common key representation that both callers can safely access. Do not cast between unrelated structure types to share callback code based on assumed prefix layout or alignment.
+
+**Review rule:** when a callback receives `void *`, trace the concrete type the calling library will pass at runtime. Treat casts that reinterpret it as a different struct as portability red flags even when they appear to work on x86.
+
+**Confidence:** Very high. Merged master portability/correctness fix authored and merged by João Valverde with a concrete unaligned-access failure mode.
