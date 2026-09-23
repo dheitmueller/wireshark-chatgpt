@@ -47,3 +47,15 @@ Merged master MR !11938, authored by Guy Harris, fixes the Tibia dissector becau
 **Testing/tooling rule:** treat `tools/fix-encoding-args.pl` and related encoding-argument diagnostics as semantic aids, not cosmetic cleanup. A mismatch can change decoded values or invoke unsupported API behavior.
 
 **Confidence:** Extremely high. The master correctness fix is authored by Guy Harris and preserved in two merged release backports.
+
+## Validate normalized decoder output before fixed-position access
+
+A decoding helper can legitimately return a representation shorter or otherwise different from the raw field length when malformed or sentinel wire values are encountered. Once parsing has crossed from bytes into a normalized string/value, callers must validate that derived representation before indexing it as though every encoded position survived conversion.
+
+Merged master MR !11819, authored and merged by John Thacker, fixes CAMEL time/time-zone parsing. `ENC_BCD_DIGITS_0_9` can truncate the returned string when a nibble of `0xf` is encountered; the old code then indexed positions assuming the full date/time string existed. The accepted code checks the resulting length and digits before fixed-position use, and decodes the time-zone octet separately because its encoding is not actually the same BCD representation as the time digits. Guy Harris also reviewed the signed timezone presentation, which was resolved using the `%+d` sign flag rather than embedding a literal plus sign.
+
+**Implementation rule:** treat helper output as a new semantic domain with its own validity/length contract. If a decoder can stop, normalize, replace, or reject wire symbols, validate the returned object before positional access. Do not force an adjacent subfield through the same decoder when its wire encoding only looks superficially similar.
+
+**Review rule:** for string-producing numeric/BCD helpers, test malformed/sentinel nibbles and shortened output, not only well-formed examples. Confirm that every subsequent index or substring operation is guarded by the post-decode length/format actually guaranteed by the API.
+
+**Confidence:** Very high. Merged master malformed-input correctness fix authored and merged by John Thacker, with direct Guy Harris review of the resulting timezone presentation.
