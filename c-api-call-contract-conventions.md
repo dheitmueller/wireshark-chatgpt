@@ -101,3 +101,15 @@ Merged master MR !13879, authored by John Thacker, changes a hash table whose ke
 **Review rule:** when a hash table changes key type, allocation strategy, or typedef, audit the hash/equality callbacks together with all insertion and lookup sites. Semantic intent such as "this is an identifier" does not override the pointed-to object's width and layout.
 
 **Confidence:** Very high. Merged master memory-correctness fix by John Thacker with accepted stable backports and a concrete uninitialized-read failure mode.
+
+## Variable-length parsers should return an end position plus an explicit failure sentinel
+
+For a parser that consumes a variable-length prefix of text, returning a pointer to the first unconsumed byte is often a better contract than returning a narrow integer count. The end pointer composes naturally with follow-on parsing and full-consumption checks, avoids an artificial count-width limit, and can reserve `NULL` as an unambiguous parse-failure result.
+
+Merged master MR !12017, authored and approved by Guy Harris, changes `iso8601_to_nstime()` and `unix_epoch_to_nstime()` from returning an 8-bit parsed-character count to returning the first character after the parsed time, following the model of `strto*()` and `strptime()`. Failure is reported as `NULL`. Updating the contract also exposed callers that had never decided what malformed input should mean; the 3GPP 32.423 reader was changed to reject a file when the required ISO 8601 timestamp is absent or invalid.
+
+**API rule:** choose a parser result that represents both successful progress and failure without lossy conversion. For prefix parsers, an end pointer is particularly useful when callers need to continue from the exact parse boundary; document the failure sentinel and require callers to handle it before using the returned position.
+
+**Review rule:** when strengthening a parser's failure reporting, audit every caller rather than mechanically changing types. A newly explicit failure state is valuable precisely because it forces the caller to choose recovery, rejection, or fallback semantics instead of accidentally continuing with partial/default state.
+
+**Confidence:** Extremely high. Merged master parser-API redesign authored and approved by Guy Harris, with the caller-side malformed-input consequence stated explicitly in the MR rationale.
