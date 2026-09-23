@@ -10,11 +10,15 @@ Merged master MR !12002, authored by Guy Harris, removes a test that expected `e
 
 Merged master MR !11998, also authored by Guy Harris, applies the stronger design form to `tvb_get_string_bytes()` and `tvb_get_string_time()`: conversion failure is represented by a `NULL` return instead of `errno`. The MR explains that intermediate calls can overwrite `errno`, and that assigning project-specific meanings to a finite system errno namespace would make future error distinctions awkward. The accepted API therefore carries success/failure in its direct return channel and reserves expert diagnostics for the semantic conversion error.
 
+Earlier merged master MR !11954 supplies the platform behavior that triggered this sequence. After a configure check enabled the system `timegm()` on macOS, tests failed because at least macOS 13.4 and FreeBSD 13.2 could return the correct epoch value for a valid input while nevertheless leaving `errno` set to `EOVERFLOW`. Guy Harris's analysis explicitly notes that the available `timegm()` documentation made no promise about preserving or clearing `errno` on success. This is strong evidence that merely switching from a project fallback to an available libc implementation must not silently import an undocumented `errno` contract.
+
 **API rule:** prefer an explicit return-status/sentinel contract over ambient `errno` for parser and conversion APIs. Once an API has reported success, do not subsequently reject that result merely because `errno` happens to be nonzero.
 
 **Review rule:** whenever code reads `errno`, verify that the immediately relevant API documents `errno` as meaningful for the specific return value being handled. A later read after unrelated calls, or an unconditional `errno == 0` success check, is suspect.
 
-**Confidence:** Extremely high. Both are merged master changes authored by Guy Harris; !11998 changes the API itself and !12002 removes an incorrect caller-side `errno` assumption.
+**Portability rule:** when a configure check begins using a system implementation in place of a fallback, revalidate the wrapper's observable contract. API availability does not imply that incidental side effects such as `errno` behavior match the fallback or another libc.
+
+**Confidence:** Extremely high. The main contract changes are merged master changes authored by Guy Harris; !11954 adds direct high-authority evidence from real macOS/FreeBSD behavior that motivated the later normalization.
 
 ## If a legitimate result collides with an error sentinel, make the discriminator part of the API contract
 
