@@ -73,3 +73,13 @@ Merged master MR !13853, authored and merged by John Thacker, changes service-na
 **Type rule:** if an internal state needs an unknown/not-applicable enum value, declare a named enum member for it instead of relying on C's ability to store an arbitrary underlying integer.
 
 **Confidence:** Very high. Merged master API hardening authored and merged by John Thacker, with the output-parameter and explicit-enum details driven by direct Evan Huus review.
+
+## Static checker coverage should not depend on a particular runtime registration path
+
+A repository source checker can and should validate latent definitions that runtime validation only sees when a particular object is registered or executed. If a table, field definition, or helper metadata is mechanically inconsistent in source, catching it should not depend on whether today's call graph happens to route that definition through the runtime check.
+
+Merged master MR !11748, authored and merged by Martin Mathieson, extends `check_typed_item_calls.py` to detect conflicting entries in `value_string` tables even when those tables are not used by a registering header field. The analogous `proto.c` runtime check only applies to value strings reached through field registration, so it could miss conflicts in otherwise valid source definitions or alternate consumers. The accepted static check broadens coverage at the source level.
+
+**Testing rule:** when a correctness invariant is knowable from repository source, prefer checking the definition directly rather than relying only on one runtime consumer to exercise it. Runtime checks and source checkers are complementary: runtime validation protects dynamic state, while source tooling can catch dormant or differently consumed definitions before they become reachable.
+
+**Confidence:** Very high. Merged checker enhancement authored and merged by Martin Mathieson, with the coverage gap between the static checker and `proto.c` stated directly in the MR description.
