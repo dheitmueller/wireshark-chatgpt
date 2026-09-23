@@ -125,3 +125,25 @@ Merged master MR !13975 adds human-readable descriptions to heuristic dissector 
 **Review rule:** read related function names side by side and ask whether a caller unfamiliar with their chronology can tell why one should be chosen over another. If the distinction only makes sense after knowing which was added later, the names are underspecified.
 
 **Confidence:** Very high. Direct maintainer naming review from Jaap Keuter on a merged API extension, with the requested semantic rename incorporated before merge.
+
+## Derive wire-format lengths inside semantic helpers when the data itself determines the length
+
+If a serialized field's length is mechanically determined by the object being serialized, callers should not have to supply both the object and a separately computed copy of its length. Put that derivation and wire-width enforcement in the semantic helper so callers cannot accidentally disagree with the data or silently wrap a narrow length field.
+
+Merged master MR !11754, authored and approved by Guy Harris, adds `wtap_buffer_append_epdu_string()` for Exported-PDU string TLVs. It replaces call sites that manually supplied string lengths—some of which Coverity had already found to be wrong—and clamps the derived length to the 16-bit TLV limit rather than narrowing a larger value with a cast. The helper then delegates to the lower-level byte/tag primitive.
+
+**API rule:** when data and length are not independent caller choices, accept the semantic object once and derive the redundant metadata centrally. At bounded serialization boundaries, explicitly enforce the representable range before passing the value to the lower-level encoder.
+
+**Confidence:** Extremely high. Merged master API cleanup authored and approved by Guy Harris, with concrete incorrect manual lengths and the 16-bit boundary identified in the MR rationale.
+
+## Do not publish an internal helper merely because a new feature needs it internally
+
+A feature can require a specialized internal operation without making that operation a useful or stable external contract. Before exporting a new helper, ask whether external consumers have a natural reason to call it directly; if the public abstraction can express the capability through existing structures or callbacks, keep the implementation helper private.
+
+Merged master MR !11753 adds per-exception expert information to the Thrift subdissector interface. During the design discussion the contributor considered exporting a new `dissect_thrift_t_exception()` routine, then deliberately kept the expert-aware struct helper internal because callers naturally describe Thrift results/exceptions through the member/union definition instead. The same discussion declined to generalize the new expert-info field to every Thrift type and declined to remove the older `reply_field_id` facility merely because the new mechanism reduced its importance; the compatibility cost was not justified by the simplification. The final rebased/squashed change was approved and merged by Anders Broman after fuzzing.
+
+**API rule:** expose the smallest stable abstraction external consumers need, not every operation the implementation happens to contain. When evolving an extensible dissector API, separately evaluate whether a new capability warrants a public entry point, whether broad generalization has real users, and whether removing an older extension point is worth its source/ABI compatibility cost.
+
+**Confidence:** High. Merged master extensibility change with the public-versus-private decision and compatibility tradeoffs explicitly reasoned through in the MR discussion and accepted in the final implementation.
+
+Merged master MR !11722, authored by Guy Harris, also reinforces the naming side of this file: `slist_break_commas()` was renamed `process_enable_disable_list()` because splitting comma-separated strings was only an implementation mechanic; the helper's stable responsibility was applying an enable/disable list through a callback.
