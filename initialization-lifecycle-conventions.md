@@ -135,3 +135,13 @@ Merged master MRs !12158 and !12160 convert large sets of dissectors from anonym
 **Review implication:** when adding a dissector that users or other code may need to invoke by name, check that the name is actually registered rather than assuming a table-bound anonymous handle is discoverable. Conversely, do not manufacture a public name for a truly internal helper that is not intended to be a standalone dissector contract.
 
 **Confidence:** Very high. Two adjacent merged master changes apply the same lifecycle pattern across many protocols and were approved by Anders Broman.
+
+## Prefer declaration-time defaults to ordering-sensitive global initialization calls
+
+When process-global/static configuration has language-supported constant defaults, initialize those defaults at the declaration whenever practical. A separate initializer creates a hidden ordering precondition for every executable or entry point that touches the state, and it is easy for one frontend to omit that call.
+
+Merged master MR !11725, authored by Guy Harris, replaces `dissect_opts_init()` with a designated initializer for `global_dissect_options`. TShark and rawshark were not calling the initializer even though command-line parsing relied on its sentinel defaults; declaration-time initialization makes every entry point begin with the same valid state, while C static-storage zero initialization supplies the ordinary NULL/zero members.
+
+**Implementation rule:** use explicit declaration-time initialization for nonzero/sentinel defaults in global static state when those values are compile-time constants. Reserve runtime initialization for state that genuinely depends on runtime inputs or requires ordered resource construction; do not impose an avoidable “call this first” requirement on all consumers.
+
+**Confidence:** Extremely high. Merged master lifecycle simplification authored and approved by Guy Harris, motivated by concrete missing initialization in supported command-line frontends.
