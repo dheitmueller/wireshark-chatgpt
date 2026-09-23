@@ -49,3 +49,17 @@ Merged master MR !16192 fixes the packet-bytes dialog's decompression path after
 **Review rule:** nullable-object checks are not a substitute for empty-data checks. Audit decompression, transformation, subset, and synthetic-TVBuff paths especially, because a successful transformation may validly yield an empty buffer.
 
 **Confidence:** High. Merged master crash/assertion fix with a concrete valid-empty TVBuff state.
+
+## A subset's captured length must never exceed its reported length
+
+Captured length describes bytes actually present in the capture, while reported length describes the logical packet extent. For a TVBuff subset, allowing captured length to exceed reported length produces an internally contradictory object and can trigger incorrect exception behavior in downstream dissectors.
+
+Merged master MR !11864, authored by John Thacker, centralizes this invariant in `tvb_new_subset_length_caplen()`: the implementation clamps the subset's captured length to its reported length. Its API documentation also makes the intended hierarchy explicit: callers should normally use `tvb_new_subset_length()` or `tvb_new_subset_remaining()`. The explicit-caplen form is for the less common case where trailing bytes in the backing TVBuff (for example an FCS or padding) must be excluded independently of the subset's reported length.
+
+Merged follow-up !11912 then replaces dozens of obvious `tvb_new_subset_length_caplen()` call sites with the simpler length/remaining variants. The MR notes that some old calls could throw exceptions, including the wrong exception, for snaplen-truncated captures because they had forced captured length to equal the logical requested length.
+
+**Implementation rule:** do not manufacture a captured length from a protocol-declared or reported length. Let the TVBuff layer derive the available captured extent whenever possible, and use `tvb_new_subset_length()` / `tvb_new_subset_remaining()` for ordinary protocol subranges. Use an explicit captured-length subset only when the backing buffer contains captured bytes that semantically must be excluded.
+
+**Review rule:** when a subset call supplies the same value for reported and captured length, ask whether the caller is incorrectly assuming the full logical payload was captured. Test truncated captures so the resulting bounds exception reflects the actual missing-data condition rather than an artificial subset length.
+
+**Confidence:** Very high. Both changes are merged master work authored by John Thacker; !11864 establishes the core invariant and !11912 applies it broadly across dissectors.
