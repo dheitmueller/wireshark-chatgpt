@@ -33,3 +33,17 @@ Merged master MR !12059, authored and merged by John Thacker, fixes SCCP RSN dis
 **Review rule:** whenever code combines `tvb_get_*()`, manual `& mask`/`>> shift`, and `proto_tree_add_uint*()` for a field that itself has a nonzero registration mask, check for double transformation. The value supplied to an API that applies field semantics must be in the domain that API expects, not merely an integer that looks convenient at the call site.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, independently preserved in two accepted stable-branch backports.
+
+## Match encoding flags to the registered field type
+
+`ENC_*` flags are interpreted according to the registered field type; they are not generic annotations that can safely be copied from adjacent fields. String-character encodings belong on string fields. Integer/boolean/other non-string items should use the byte-order or neutral encoding required by that type, and use `ENC_NA` when no encoding transformation applies.
+
+Merged master MR !11938, authored by Guy Harris, fixes the Tibia dissector because it passed a negotiated string encoding into several non-string `proto_tree`/`ptvcursor` additions. The MR states the contract directly: Wireshark does not guarantee that string encodings work for non-string items, and in these cases they did not. The accepted fix changes command bytes to `ENC_NA` and removes the string-encoding bits from a non-string little-endian item. Merged release backports !11941 and !11942 carry the same correction.
+
+**Implementation rule:** choose the encoding argument from the `hf_` field's actual registered type and wire representation, not from a surrounding conversation-wide notion of encoding. A protocol's negotiated text encoding should affect only fields whose semantics are text.
+
+**Review rule:** when a shared `encoding` variable is threaded through a dissector, inspect every call site that ORs or forwards it. If the destination field is not a string/character field, verify independently that the supplied encoding bits are valid for that field type.
+
+**Testing/tooling rule:** treat `tools/fix-encoding-args.pl` and related encoding-argument diagnostics as semantic aids, not cosmetic cleanup. A mismatch can change decoded values or invoke unsupported API behavior.
+
+**Confidence:** Extremely high. The master correctness fix is authored by Guy Harris and preserved in two merged release backports.
