@@ -22,6 +22,18 @@ Merged MR !21037 adds C and C++ testing for `-Wextra-semi`. During review, John 
 
 **Confidence:** Very high. Explicit, agreeing review guidance from Michael Mann and John Thacker, followed by a merged compiler-warning change after the cleanup.
 
+## Do not spell the minimum signed value with an out-of-range positive literal
+
+In C, a leading minus sign is an operator, not part of an integer constant. A spelling such as `-2147483648` is therefore formed by first choosing a type for the positive constant `2147483648` and then applying unary minus. On a compiler/data model where that positive value is not representable as `int`, the literal can acquire an unsigned or wider type and produce warnings or semantics different from the intended “smallest int” value.
+
+Merged master MR !12079 was authored by Guy Harris after a Visual Studio warning and replaces an open-coded `-2147483648` sentinel with `INT_MIN`. Guy's rationale is explicit: the program wants the implementation's minimum `int`, so the standard header/compiler should provide the representation rather than source code trying to manufacture it from a positive literal whose type selection is implementation-sensitive. He notes that Visual Studio versions may define `INT_MIN` as an expression such as `(-2147483647 - 1)` precisely to avoid the problematic literal.
+
+**Implementation rule:** use the standard limits macros (`INT_MIN`, `INT32_MIN`, and the corresponding limits for the actual type) when code means the minimum representable signed value. Do not hard-code the value by applying unary minus to a decimal literal that may already be outside the positive range of the intended signed type.
+
+**Review rule:** when a compiler warns about a boundary integer constant, inspect the type of the literal before the unary operator as well as the destination type. Source text that looks numerically correct can still have different C type semantics across supported compilers.
+
+**Confidence:** Extremely high. Merged master portability fix with the language-semantics rationale authored by Guy Harris.
+
 ## Do not treat an operating-system family as one uniform header/API surface
 
 Platform-specific includes should be driven by an actual dependency, not by a broad family label. Closely related operating systems can expose different private or implementation headers; an unconditional include that happens to work on one BSD can therefore break another BSD even when the code itself is otherwise portable.
