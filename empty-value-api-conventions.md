@@ -12,4 +12,14 @@ Merged master MR !14799, authored and merged by John Thacker, restores the histo
 
 **Compatibility rule:** before tightening an old utility helper around empty input, check historical behavior and real callers. A defensive-looking zero-length rejection can be an API regression if valid-empty values were previously accepted and serialized/configured consumers rely on that distinction.
 
-**Confidence:** Very high. Merged master compatibility fix authored and merged by John Thacker, with an accepted stable-branch backport and a concrete UAT dependency noted in the MR.
+## Allocator or ownership variants should preserve the modeled API's edge semantics
+
+When a Wireshark helper deliberately presents itself as an allocator- or ownership-adjusted version of an established API, matching the source API means matching its valid edge cases as well as its common path. Do not let an implementation convenience silently turn an empty-but-valid collection into an invalid/absent result.
+
+Merged master MR !12720, authored and merged by John Thacker, changes `wmem_strjoinv()` to match `g_strjoinv()` when given a non-NULL, NULL-terminated string array containing no strings: it returns a wmem-allocated empty string rather than `NULL`. The corresponding documentation explicitly distinguishes an empty array from an invalid `NULL` array and also documents that a `NULL` separator is equivalent to an empty separator. João Valverde's review additionally moved the invalid-input check to the project's standard `ws_return_val_if()` form. Merged release-4.2 backport !12722 carries the same behavior and documentation.
+
+**Wrapper rule:** if an API is documented as behaving "as" another API except for allocation or lifetime, treat the modeled API's edge-case semantics as part of the compatibility contract. Preserve distinctions such as empty collection versus invalid pointer, and document those edge cases explicitly so callers do not have to infer them from implementation details.
+
+**Review rule:** when changing a compatibility helper, compare the behavior matrix—not just the main algorithm—against the API it models: invalid pointer, valid empty input, singleton input, separator/default behavior, ownership, and allocation lifetime are all potential compatibility surfaces.
+
+**Confidence:** Extremely high. Both examples are merged master fixes authored and merged by John Thacker with stable-branch backports; !12720 also contains accepted maintainer review on the project's standard invalid-input guard idiom.
