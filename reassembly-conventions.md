@@ -54,6 +54,20 @@ Merged master MR !13632, authored and merged by John Thacker, fixes HTTP/3 QPACK
 
 **Confidence:** Very high. Merged master reassembly correctness change authored and merged by John Thacker, with the duplicate-input failure mode and consumed-byte solution stated explicitly.
 
+## Treat post-completion retransmissions as reassembly metadata, not automatically as malformed input
+
+Receiving another fragment after a message has already been reassembled does not necessarily mean the packet is malformed. On transports where retransmission, multipath duplication, or repeated lower-layer delivery is possible, a fragment that falls within the completed result should normally be represented using the reassembly engine's overlap/retransmission state so users can relate it to the original reassembly. Throwing a `ReassemblyError` turns an ordinary transport event into a misleading malformed-packet diagnosis.
+
+Merged master MR !12077, authored and merged by John Thacker, changes the byte-offset `fragment_add()` path to match the sequence-number reassembly behavior. A fragment wholly within an already-completed reassembly now reaches the normal overlap bookkeeping and sets `FD_OVERLAP` rather than raising an exception. The MR was validated with a multipath retransmission capture where the previous behavior produced alarming `ReassemblyError` output. The same change also corrects the boundary test from `>=` to `>`: a fragment ending exactly at the completed length overlaps the existing result but does not extend beyond it.
+
+The MR's public API documentation makes the key-lifetime distinction explicit. The non-`_check` reassembly APIs retain completed reassemblies under their key and therefore interpret reuse of that key as the same message/retransmission; if a protocol can legitimately reuse an identifier for a different message, the dissector must include sufficient additional `data` or custom key functions to distinguish generations. Conversely, the `_check` variants remove completed entries from the in-progress table and permit a key to start a new message, but callers outside reliable transports must then avoid feeding retransmissions of an already-completed message as if they were new fragments.
+
+**Implementation rule:** classify a duplicate fragment according to the reassembly API's documented completed-key semantics. For a retransmission of the same completed message, record overlap/provenance rather than converting it into a malformed exception. If the protocol legitimately reuses identifiers, make the reassembly key generation-aware enough to distinguish separate messages or choose the API whose completed-entry lifecycle matches that protocol.
+
+**Review rule:** examine both exact-end and beyond-end duplicates, key reuse for a genuinely new message, and transports where retransmissions are not filtered below the dissector. A reassembly key that is only unique “most of the time” is not sufficient when completed state remains addressable by that key.
+
+**Confidence:** Very high. Merged master core-reassembly behavior and API documentation authored and merged by John Thacker, with a concrete retransmission capture used for validation.
+
 ## Only claim reassembly when analysis state proves it, and expose provenance when available
 
 User-facing packet text should describe what the reassembly engine actually established, not what the current code path merely expected might happen. A generic “segment of a reassembled PDU” message is misleading when no completed reassembly exists; when Wireshark knows the frame that completed the PDU, reporting that frame makes the analysis claim concrete and auditable.
