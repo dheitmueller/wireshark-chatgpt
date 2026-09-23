@@ -49,3 +49,15 @@ Merged master MR !12185, authored and merged by Martin Mathieson, first connecte
 **Review rule:** checker implementation changes should be tested against both unmasked fields and masked fields whose storage width is larger than their semantic width. A checker that understands only the `FT_UINT*` container can produce false negatives precisely where masked-field `VALS` mistakes are most likely.
 
 **Confidence:** Very high. Two consecutive merged master changes by Martin Mathieson establish both the initial range check and the accepted mask-aware correction, and later checker-driven field fixes independently corroborate the semantics.
+
+## Represent encoding-neutral payload as bytes until a lower layer defines text semantics
+
+A payload is not text merely because some common content carried there happens to be printable. If the protocol layer defines the value only as an octet sequence and delegates media/content interpretation to another dissector, register the field as `FT_BYTES` and preserve the raw bytes. Do not invent an ASCII or other character encoding at the transport/application framing layer.
+
+Merged master MR !12156, authored by John Thacker and approved by Anders Broman, changes `http.file_data` from `FT_STRING` to `FT_BYTES`. HTTP message content can be text or arbitrary binary data, and its encoding belongs to the selected media handler/subdissector rather than the HTTP framing code. The accepted change removes `tvb_get_string_enc(..., ENC_ASCII)`, adds the bytes field directly, and updates decryption tests because TShark now exports the field as its byte representation rather than pretending it is an ASCII string.
+
+**Implementation rule:** choose `FT_STRING` only when the owning protocol layer actually specifies text semantics and an encoding contract. For opaque/raw content, use `FT_BYTES`; let a media type, subdissector, or later semantic layer decode text when that layer has enough information to do so correctly.
+
+**Testing rule:** a field-type correction can intentionally change display-filter/export output even when the packet-tree label remains human-friendly. Update tests of `-e`/export behavior to validate the typed representation, not the old incidental formatting.
+
+**Confidence:** Very high. Merged master semantic correction authored by John Thacker, with matching tests and explicit rationale about HTTP content being an encoding-neutral octet stream at this layer.
