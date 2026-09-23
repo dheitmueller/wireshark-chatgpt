@@ -18,11 +18,13 @@ For an integer field with a nonzero bitmask, Wireshark applies the mask and shif
 
 Merged master MR !14551, authored and merged by Martin Mathieson, audits cases reported by the typed-item checker where `VALS` entries did not fit their field masks. The accepted corrections change values such as `0x20/0x40/0x60` to logical values `0x01/0x02/0x03` and `0x80` to `0x01` for masked fields. The MR also leaves an explicitly documented exceptional LoRa case rather than mechanically rewriting an entry whose surrounding API behavior is unusual.
 
+Earlier merged MR !12607, also by Martin Mathieson, fixes another set of `check_typed_item_calls.py` findings by changing masked-field value tables from wire-positioned constants to the corresponding logical values. It provides independent evidence that these checker warnings identify a real field-registration semantic error rather than a formatting preference.
+
 **Implementation rule:** when registering a masked field with `VALS`, define table keys in the post-mask/post-shift value domain consumed by the field. Review the field type, mask, and value table together rather than treating the table as a representation of raw wire-positioned bits.
 
 **Review rule:** checker warnings that a value does not fit a field mask should normally be treated as evidence of a semantic mismatch, not silenced with casts or a wider field. If an exceptional API path intentionally uses a different value domain, document why rather than relying on an apparently impossible table entry.
 
-**Confidence:** Very high. Merged master correctness cleanup authored and merged by Martin Mathieson, with multiple concrete field corrections and an intentionally documented exception.
+**Confidence:** Very high. Repeated merged correctness cleanups by Martin Mathieson, with multiple concrete field corrections and an intentionally documented exception in the later audit.
 
 ## Size a field for the value stored in the protocol tree, not only for its wire encoding
 
