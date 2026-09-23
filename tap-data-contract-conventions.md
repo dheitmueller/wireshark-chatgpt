@@ -41,3 +41,29 @@ Merged master MR !13765, authored and merged by John Thacker, changes SCTP so as
 **Testing rule:** include truncated or malformed packets that fail after the association/packet metadata has been established and verify that the tap still receives the valid metadata exactly once. Also cover legal bundled messages and, where possible, illegal mixtures so packet identity and expert diagnostics remain separate concerns.
 
 **Confidence:** Very high. Merged master correctness change authored and merged by John Thacker, with the exception/tap behavior and first-chunk association semantics documented directly in the MR.
+
+## Allocate per-emission tap records for the packet lifetime instead of recycling a fixed static pool
+
+A dissector can be invoked more times within one frame than an old implementation happened to anticipate. Tap records handed to downstream consumers therefore must not be backed by a tiny static rotating scratch array whose entries can be overwritten by a later invocation in the same packet.
+
+Merged master MR !12004, authored by John Thacker and merged by Anders Broman, removes RTP's static four-entry `rtp_info` array and rotating index. More than four RTP packets can occur inside one frame, for example with RFC 4571 RTP-over-TCP combined with out-of-order TCP handling. The accepted implementation allocates a zeroed `rtp_info` for every `dissect_rtp()` invocation from `pinfo->pool`, eliminating both the arbitrary four-record ceiling and aliasing between tap deliveries.
+
+**Lifetime rule:** if a tap record may still be observed after the dissector continues, give each logical emission distinct storage that lives for at least the packet's consumer lifetime. Packet-scoped allocation is preferable to static rotating scratch buffers when the number of emissions is data-dependent.
+
+**Review rule:** treat fixed-size static pools in dissectors as suspect when their bound is not imposed by the protocol. Nested dissection, reassembly, tunneling, TCP framing, or unusual ordering can invalidate assumptions such as “at most N callbacks per frame” even if common captures never do.
+
+**Confidence:** Very high. Merged master change authored by John Thacker; the failure mode and the packet-scope replacement are explicit in the MR and accepted upstream.
+
+## Give tap fields one downstream semantic instead of mixing payload with transport framing
+
+When a tap structure exposes both the full raw packet and a semantic payload range, the payload length should describe the payload that consumers are expected to process. Consumers that need framing details can derive them from the raw representation; making every consumer repeatedly subtract padding creates duplicated logic and makes accidental inclusion likely.
+
+Merged master MR !12000, authored by John Thacker and merged by Anders Broman, changes RTP tap data so `info_payload_len` excludes RTP padding. The tap already carries the complete raw data, raw length, truncation state, payload offset, and padding indication, so padding remains recoverable when needed. Keeping padding inside `info_payload_len` had caused raw-payload export to include padding after code moved between dialogs and had long caused the RTP player to pass padding to audio codecs. The accepted fix makes the common semantic object—the codec/media payload—the direct tap value.
+
+**API rule:** name and populate tap fields according to the semantic object their consumers operate on. If complete raw bytes are separately available, do not overload a `payload` length with trailing framing/padding merely because the wire region is contiguous.
+
+**Architecture rule:** centralize protocol-specific normalization in the dissector rather than asking every statistics/UI/codec consumer to rediscover the same boundary. Preserve enough raw metadata to reconstruct framing when a specialized consumer genuinely needs it.
+
+**Testing rule:** verify both the normalized consumer path and reconstructability of excluded framing. For RTP-like data, test padded and unpadded packets, payload export, and a decoding/analysis consumer so an apparently harmless length change cannot silently alter media bytes.
+
+**Confidence:** Very high. Merged master correctness change authored by John Thacker with concrete regressions in payload export and codec input described in the MR.
