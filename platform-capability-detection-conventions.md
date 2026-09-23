@@ -29,3 +29,15 @@ The same family also shows that changing a dependency's global runtime mode, whe
 **Testing rule:** exercise the feature under the restrictive runtime mode as well as under the normal one. A successful ordinary build and test run does not demonstrate that the runtime capability remains available under policy modes such as FIPS.
 
 **Confidence:** Very high. The master feature-local fallback was authored by John Thacker and merged, immediately followed by maintained-branch backports; the related libgcrypt initialization changes were likewise accepted across supported release branches.
+
+## Exported symbols can still be nonfunctional compatibility stubs
+
+A symbol that exists in the runtime library can still fail to provide the capability its API name suggests. Platform vendors may ship compatibility stubs so applications link successfully even though a feature is unavailable. Treat successful symbol discovery as evidence of API shape, not necessarily operational capability.
+
+Merged master MR !12228, authored by Guy Harris, handles macOS 14 system libpcap routines for remote capture that are present but implemented as stubs returning `not supported`. CMake therefore finds the APIs, but they must not be used for ordinary local capture. The accepted change selects the remote-capture API only when the device name actually uses the `rpcap://` scheme, keeps local capture on `pcap_open_live()`, and translates the generic stub failure into the more actionable `Remote capture not supported`. Merged release backport !12229 carries the same behavior.
+
+**Implementation rule:** distinguish symbol presence from operational support. When a capability has a semantic precondition that can be checked cheaply—such as an input identifying a remote-capture URL—use that precondition to select the specialized API instead of calling a nominally available routine speculatively. If runtime invocation can still report unsupported, propagate that as a capability result rather than as an unexplained generic failure.
+
+**Diagnostic rule:** when a platform compatibility stub returns a generic error, translate it at the abstraction boundary into the feature the user was attempting to use. Preserve the underlying failure semantics, but make the unavailable capability clear enough to diagnose.
+
+**Confidence:** Extremely high. The master fix was authored by Guy Harris and directly documents the Sonoma libpcap stub behavior; the release backport immediately preserved the same policy.
