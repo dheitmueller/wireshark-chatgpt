@@ -17,3 +17,17 @@ Merged master MR !13435, authored and merged by John Thacker, fixes TShark so `-
 **Testing rule:** cover the option both with and without each consumer that can make it effective. For performance-sensitive frontends, verify the no-consumer form does not unexpectedly enter packet dissection or another expensive pipeline stage.
 
 **Confidence:** Extremely high. Merged master behavior fix authored and merged by John Thacker, with direct user-facing semantic guidance from Guy Harris.
+
+## Share option definitions according to semantic capability, not incidental callers
+
+When several Wireshark frontends intentionally expose the same command-line spelling and meaning, centralize the option definition at the layer representing that capability. Do not group an option under an unrelated subsystem merely because one current executable happens to exercise both.
+
+Merged master MR !12569, authored and merged by John Thacker, fixes the mismatch where TShark's documentation advertised `--read-file`, `--read-filter`, and `--display-filter` but the parser did not actually accept all of those long forms. The change also factors common option definitions so Wireshark-family frontends can stay consistent. During review, Guy Harris specifically objected to grouping `-r`/`--read-file` as a dissection option: reading a capture file is an input-source capability, not a consequence of dissecting it. John Thacker agreed and separated the read-file definition while keeping filter options with the common dissection-capable frontend definitions. Gerald Combs also requested test coverage, and the accepted MR added a focused long-option test.
+
+**Architecture rule:** place shared CLI option constants/macros in the common layer that owns the option's meaning. Use semantic capability boundaries—capture-file input, packet dissection/filtering, output, capture, and so on—rather than executable names or coincidental implementation coupling.
+
+**Consistency rule:** implementation, `--help` output, and man pages form one interface contract. If documentation claims a long or short spelling exists, parser tables must accept it; if multiple frontends deliberately share the option, keep the spelling and semantics synchronized through shared definitions where practical.
+
+**Testing rule:** when adding or refactoring shared option spellings, exercise the public spelling through the affected executable rather than testing only the underlying option constant. Include long-form aliases when the documentation promises them.
+
+**Confidence:** Extremely high. Merged master change authored and merged by John Thacker, with direct architectural correction from Guy Harris and explicit test-coverage review from Gerald Combs.
