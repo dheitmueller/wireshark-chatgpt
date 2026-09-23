@@ -18,11 +18,13 @@ Merged master MR !23170, authored and merged by John Thacker, is a strong exampl
 
 Merged master MR !23078, authored by John Thacker and merged by Anders Broman, removes the remaining `tvb_get_ptr(..., -1)` uses. The MR explicitly notes that callers of a bare pointer always need the captured length for safety and that most affected callers already retrieved that length alongside the pointer. Closely related merged MR !23076 replaces SOCKS' `tvb_get_ptr()` plus raw `find_line_end()` combination with `tvb_find_line_end()`, keeping the search within TVBuff-aware bounds while preserving the old tree presentation.
 
+Merged stable-branch MR !11776 provides direct security/correctness corroboration. The iSCSI TargetAddress parser had copied packet text into a C string and advanced raw character pointers through it, which could overrun the extracted string. The accepted backport replaces that approach with TVBuff search/extraction helpers, so delimiter searches remain subject to packet bounds while also adding IPv6 handling.
+
 **Implementation rule:** when a raw packet pointer is genuinely required, obtain and carry an explicit captured-length bound with it and pass that bound to every raw-buffer consumer. Prefer a TVBuff-aware search/parse helper when one exists, because it keeps the extent and exception semantics attached to the data rather than splitting them across a pointer and separate bookkeeping.
 
 **Review rule:** treat `tvb_get_ptr(..., -1)` and raw scans over TVBuff-derived pointers as red flags. Verify not only that the starting offset is valid, but that every downstream operation is bounded by captured data.
 
-**Confidence:** Very high. Merged master API-safety cleanup authored by John Thacker, independently reinforced by the accepted SOCKS conversion to a TVBuff-native helper.
+**Confidence:** Very high. Merged master API-safety cleanup authored by John Thacker, independently reinforced by the accepted SOCKS conversion and the iSCSI bounds-safety backport.
 
 ## Do not use protocol-declared maxima as memory-safety bounds for untrusted captures
 
@@ -63,3 +65,15 @@ Merged follow-up !11912 then replaces dozens of obvious `tvb_new_subset_length_c
 **Review rule:** when a subset call supplies the same value for reported and captured length, ask whether the caller is incorrectly assuming the full logical payload was captured. Test truncated captures so the resulting bounds exception reflects the actual missing-data condition rather than an artificial subset length.
 
 **Confidence:** Very high. Both changes are merged master work authored by John Thacker; !11864 establishes the core invariant and !11912 applies it broadly across dissectors.
+
+## Read fields progressively so truncated packets can still be dissected as far as possible
+
+A dissector should not fetch later fields early merely because they are convenient for an Info-column summary or another presentation string. Every TVBuff read is also a bounds check; an eager read of a field near the end of the structure can raise a bounds exception before earlier fields that are actually present have been displayed.
+
+Merged master MR !11805, authored and merged by Guy Harris, changes the PGM dissector so it fetches header fields only when each field is reached. The old code read several values up front to construct summary text, which meant a short/truncated packet could abort before the tree showed all bytes that were available. The accepted implementation adds fields and extends the summary incrementally as each value becomes safely readable.
+
+**Implementation rule:** order packet reads by wire-format progression and semantic need. Build presentation text incrementally from values already decoded instead of prefetching later fields solely for display convenience.
+
+**Review/testing rule:** test snaplen-truncated and otherwise short packets at multiple cut points, not only complete and completely malformed packets. A good dissector should make maximal safe progress and expose all earlier decodable fields before the first genuinely unavailable field stops it.
+
+**Confidence:** Extremely high. Merged master parsing-quality change authored and merged by Guy Harris, with the partial-dissection rationale stated directly in the MR.
