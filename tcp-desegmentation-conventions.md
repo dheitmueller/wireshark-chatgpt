@@ -41,6 +41,18 @@ Merged master MR !14999 fixes VNC replies that can span multiple TCP segments. D
 
 **Confidence:** Very high. Merged master correctness fix with explicit maintainer review from Jaap Keuter and final acceptance by Anders Broman.
 
+## Preserve outer desegmentation capability across nested dissectors
+
+`packet_info` desegmentation fields are shared call-chain state, not private scratch storage belonging to the current dissector. A subdissector that temporarily changes `pinfo->can_desegment` in order to support its own payload reassembly must restore the value it inherited from its caller; resetting it to an assumed default can destroy an outer transport's desegmentation context.
+
+Merged master MR !12106, authored and merged by John Thacker, fixes RTP payload desegmentation when RTP is itself framed over TCP (RFC 4571). RTP temporarily sets `pinfo->can_desegment = 2` while handling payload segmentation, but the old code unconditionally set the field to zero afterward. That broke the enclosing TCP/RTP framing when multiple RTP packets were present in one TCP frame. The accepted implementation saves the incoming value, performs the RTP-specific work, and restores the saved value. Merged release backports !12108 and !12109 carry the same fix to the maintained branches.
+
+**Implementation rule:** when nested dissection temporarily overrides shared `pinfo` state such as desegmentation capability, treat the override as a scoped save/restore operation. Restore the caller's exact prior value rather than assigning a hard-coded neutral value unless the API contract explicitly says the current layer owns that state outright.
+
+**Review rule:** test nested encapsulation where both the outer and inner layers can request desegmentation, including more than one inner PDU in an outer transport segment. Verify that returning from the inner dissector leaves the outer layer's desegmentation ability unchanged.
+
+**Confidence:** Very high. Merged master fix authored and merged by John Thacker with two merged stable-branch backports.
+
 ## Relationship to general heuristic guidance
 
 These rules complement `dissector-conventions.md`: heuristic probes must be safe on arbitrary traffic and may decline nonmatches, but once a stateful TCP dissector has committed to desegmentation it must not subsequently behave as though the same packet were merely an unclaimed heuristic candidate.
