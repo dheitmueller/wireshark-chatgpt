@@ -83,3 +83,15 @@ Merged master MR !15380, authored and merged by John Thacker, fixes TLS handshak
 **Review rule:** when adding reassembly for a protocol that supports migration, rebinding, tunneling changes, or other endpoint changes, test a fragmented unit that crosses the change. A correct single-tuple capture does not prove that the key models the protocol's true identity.
 
 **Confidence:** Extremely high. The master fix was authored and merged by John Thacker and documents the exact assertion failure caused by endpoint-based fragmentation; the stable QUIC migration fix corroborates the same identity model.
+
+## Treat endpoint-local channel identifiers as directional aliases, not a shared stream ID
+
+Multiplexed protocols may let each endpoint assign its own numeric identifier to the same logical channel. Those identifiers occupy different namespaces and must not be treated as though both peers necessarily chose the same value.
+
+Merged master MR !12503, authored and merged by John Thacker, fixes SSH channel handling by consuming `SSH_MSG_CHANNEL_OPEN_CONFIRMATION` and retaining per-peer maps from sender channel number to recipient channel number, plus recipient-channel mappings to the selected subdissector. The MR explicitly notes that the message establishing the pairing travels in the opposite direction from messages that configure the channel, so lookup must normalize which peer's namespace a number belongs to. It also retains a best-effort path for one-sided captures. Merged master MR !12506, again authored and merged by John Thacker, then builds SSH channel-data reassembly and SFTP dispatch on top of the corrected channel model.
+
+!12503 also records a remaining limitation: once a channel number is closed and later reassigned, a map containing only the latest association is insufficient for arbitrary random packet access. Correct historical redissection needs the identifier's lifetime/generation, or another mapping that can recover the association valid at the packet being dissected.
+
+**Implementation rule:** model each endpoint's identifier namespace separately and build cross-endpoint aliases only from protocol events that establish them. Route persistent state and subdissector lookup through the direction-correct namespace. If identifiers can be reused over the lifetime of a capture, retain enough generation/time/range history that an older packet cannot be resolved through a newer association.
+
+**Confidence:** Extremely high. Both accepted master changes were authored and merged by John Thacker, and !12503 documents the incorrect equal-number assumption, directionality of the mapping event, one-sided-capture concern, and remaining reuse/random-access limitation explicitly.
