@@ -123,3 +123,15 @@ Merged master MR !16250 changes profile switching to call `commandline_options_r
 **Implementation rule:** model preference sources by precedence and lifetime. Whenever a lower-precedence source such as a profile is reloaded, reapply active higher-precedence overrides before consumers observe effective configuration. If interactive mutation is defined to supersede or retire an override, make that transition explicit rather than relying on incidental load order.
 
 **Confidence:** Very high. Merged master behavior fix and matching user-facing documentation.
+
+## Register reusable dissectors by name during protocol registration
+
+A `dissector_handle_t` created only with `create_dissector_handle()` is sufficient for a local table binding, but it does not give generic consumers a stable registry identity. If a dissector is intended to be discoverable through `find_dissector()`, Lua `Dissector.get()`, rawshark/fuzzshark, Decode As infrastructure, or another name-based consumer, register the named handle with `register_dissector()` in `proto_register_*()` and retain that handle for the later handoff bindings.
+
+Merged master MRs !12158 and !12160 convert large sets of dissectors from anonymous handles created in `proto_reg_handoff_*()` to named handles created in `proto_register_*()`. The changes move the handles to persistent file scope, associate them with the owning `proto_*` ID, and then use the same registered handle when adding table/preference bindings in handoff. The stated goal is to make more protocols available to name-based consumers instead of only to the transport/table path that happened to create the anonymous handle.
+
+**Architecture rule:** distinguish creation of a local callable handle from registration of a reusable dissector identity. Registry identity belongs in protocol registration; handoff should consume that identity to bind ports, ethertypes, heuristics, preferences, and dependencies. Use the actual owning protocol ID rather than `-1` when that ownership is known.
+
+**Review implication:** when adding a dissector that users or other code may need to invoke by name, check that the name is actually registered rather than assuming a table-bound anonymous handle is discoverable. Conversely, do not manufacture a public name for a truly internal helper that is not intended to be a standalone dissector contract.
+
+**Confidence:** Very high. Two adjacent merged master changes apply the same lifecycle pattern across many protocols and were approved by Anders Broman.
