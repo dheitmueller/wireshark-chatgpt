@@ -13,3 +13,19 @@ Merged master MR !12920, authored and merged by Guy Harris, fixes a concrete mac
 **Review rule:** for platform capability checks, explicitly test the oldest supported runtime with a current SDK/toolchain, not only a matching build-and-run host. When relying on weak linking or source-level availability checks, verify that missing symbols can actually reach the guard rather than being resolved eagerly by the loader.
 
 **Confidence:** Extremely high. The master fix was authored and merged by Guy Harris, documents the SDK/dyld failure mode in detail, and was immediately carried to the supported release branch.
+
+## Runtime policy can revoke a capability that the library version appears to provide
+
+Compile-time headers and library-version checks are also insufficient when a dependency has runtime modes that disable otherwise-present functionality. Treat the effective runtime capability as distinct from the library's nominal API surface, and make an optional feature degrade locally when the runtime environment denies that capability.
+
+Merged master MR !12571, authored by John Thacker, handles libgcrypt FIPS mode for WireGuard. Wireshark's minimum libgcrypt version provides the required crypto APIs, but FIPS mode can make BLAKE2s and ChaCha20 unavailable at runtime. The accepted code records whether WireGuard decryption is actually supported, avoids creating or consuming key state when it is not, and reports the limitation with packet-tree expert information instead of reaching dissector assertions or emitting an unconditional startup warning even when no WireGuard traffic is present. Merged release-branch backports !12605 and !12606 carry the same behavior.
+
+The same family also shows that changing a dependency's global runtime mode, when that is an intentional application policy, has an initialization-order contract. Merged release backports !12563 and !12564 call libgcrypt's `GCRYCTL_NO_FIPS_MODE` only when the library version provides it and do so before `gcry_check_version()`, because the mode must be selected before normal library initialization. That mitigation does not remove the need for feature-local fallback on older libraries where the mode cannot be disabled.
+
+**Implementation rule:** distinguish API presence from effective runtime capability. If a policy/environment mode can revoke an algorithm or service, probe or handle that condition at runtime and keep unsupported optional functionality out of its normal state-mutating path. Prefer a feature-local unavailable result and precise expert/diagnostic information over assertions, crashes, or noisy process-wide warnings.
+
+**Initialization rule:** when Wireshark intentionally changes a dependency's global mode, obey the dependency's required pre-initialization ordering and version-gate the control API. A global-mode override and a feature-local fallback solve different compatibility cases; do not assume one eliminates the other.
+
+**Testing rule:** exercise the feature under the restrictive runtime mode as well as under the normal one. A successful ordinary build and test run does not demonstrate that the runtime capability remains available under policy modes such as FIPS.
+
+**Confidence:** Very high. The master feature-local fallback was authored by John Thacker and merged, immediately followed by maintained-branch backports; the related libgcrypt initialization changes were likewise accepted across supported release branches.
