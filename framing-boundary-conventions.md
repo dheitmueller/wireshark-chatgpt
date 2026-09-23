@@ -24,4 +24,16 @@ Merged master MR !13088, also authored and merged by John Thacker, applies the s
 
 **Implementation rule:** when a child dissector knows a shorter authoritative extent, update every representation that downstream/upstream consumers rely on: the tvbuff actual length for framing calculations and the protocol-item length for UI ownership. A correct parser boundary with a stale tree span, or vice versa, leaves contradictory interpretations of the same bytes.
 
-**Confidence:** Extremely high. The core evidence is three adjacent merged master fixes authored/merged by John Thacker, including a substantial architectural conversion of PRP from a postdissector to an Ethernet trailer heuristic and two independent short-frame boundary corrections.
+## Pass semantic sub-PDU lengths to child dissectors, not parser-cursor residuals
+
+A parent dissector that has already parsed a delimited sub-PDU usually has a stronger statement of that child's length than any "bytes remaining" calculation made after advancing its own cursor. Metadata handed to a child or subdissector must describe the semantic object being passed, not the parent's current parsing position within the enclosing tvbuff.
+
+Merged master MR !12741 fixes TECMP CAN payload metadata by setting `can_info.len` to the already-established CAN payload length (`length2`) instead of `tvb_captured_length_remaining(sub_tvb, offset2)`. The old expression was evaluated after the parent had advanced `offset2`, so it described what remained after the payload rather than the payload itself; downstream dissectors such as ISO 15765 consequently received the wrong CAN length. The same correction was merged to release branches in !12743 and !12744.
+
+**Implementation rule:** once a framing field, container descriptor, or parent parser has established a child PDU's semantic length, pass that value through child-dissection metadata. Treat `*_length_remaining(tvb, offset)` as a cursor-relative parsing primitive, not as a substitute for an already-known protocol length.
+
+**Review rule:** for metadata structures passed to subdissectors, trace each offset and length back to its coordinate system and semantic owner. A numerically plausible "remaining length" can be wrong if the cursor has already moved past the object whose metadata is being populated.
+
+**Confidence:** Extremely high. The original TECMP fix was merged to master with Pascal Quantin's approval and was immediately backported to both supported release branches, demonstrating that the semantic-length bug affected real downstream dissection.
+
+**Overall confidence:** Extremely high. The core evidence consists of merged master fixes with accepted maintainer review and release backports, including multiple independent examples where semantic boundaries—not enclosing-buffer or cursor-relative lengths—are required for correct downstream behavior.
