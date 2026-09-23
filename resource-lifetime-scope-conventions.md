@@ -25,3 +25,15 @@ Merged master MR !11838, authored and merged by John Thacker, fixes SSH decrypti
 **Review rule:** for every scoped struct/container, inspect payload members for non-wmem ownership contracts. Automatic scope teardown proves only that wmem-managed storage is reclaimed; it does not prove that external resources were released.
 
 **Confidence:** Very high. Merged master resource-leak fix authored and merged by John Thacker, directly exercising file-scope cleanup for libgcrypt contexts.
+
+## Objects that survive a reloadable runtime must not retain pointers into the old runtime instance
+
+A GUI object or other process-lifetime object can outlive an embedded interpreter instance. If it retains a pointer or callback state owned by that interpreter, reloading the interpreter turns the otherwise-live object into a holder of stale state and can produce crashes that appear far away from the reload boundary.
+
+Merged master MR !11768, authored and merged by João Valverde, fixes the Lua console after Lua-state reload. The dialog is intentionally kept open across reloads, but it no longer receives and retains a `lua_State *` that can be destroyed underneath it. Runtime-dependent print/console state is restored when the new Lua state is created, while the longer-lived UI uses the current runtime state rather than a pointer captured from the previous generation.
+
+**Implementation rule:** if an object survives plugin/interpreter/runtime reload, keep only runtime-independent state in that object. Reacquire or re-register runtime-owned pointers, callbacks, and handles at each new runtime generation instead of carrying them across the reset boundary.
+
+**Review rule:** compare the lifetime of every stored pointer/handle with the lifetime of the object storing it. Reload, profile reset, capture reset, and similar lifecycle transitions deserve explicit tests because they can invalidate resources while leaving their consumers alive.
+
+**Confidence:** Very high. Merged master crash fix authored and merged by João Valverde, with the stale Lua-state/re-registration failure mode documented directly and positive review from Stig Bjørlykke.
