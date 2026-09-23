@@ -21,3 +21,15 @@ Merged master MR !12254 demonstrates this in SOME/IP-TP. Martin Mathieson sugges
 **Testing rule:** encoding flags and post-extraction transforms are both part of the decoding contract. Exercise byte/digit ordering, masks, scaling, and partial-width edge cases that distinguish the requested encoding, rather than considering compile-only validation sufficient when a representative capture or focused synthetic vector can be produced.
 
 **Confidence:** Very high. !12239 establishes the shared BCD encoding capability that later merged dissector changes use; !12465 and !12512 independently converge on declarative field decoding. !12254 records substantive maintainer discussion of the boundary between encoded registered values and derived protocol semantics.
+
+## Let the registered field own its mask and shift exactly once
+
+A registered `hf_` mask is not only display metadata: protocol-tree integer APIs apply it to obtain the field's logical value. If code manually extracts and shifts the value first and then passes that already-normalized integer through an API associated with the same masked `hf_`, the mask/shift can be applied a second time and produce the wrong value.
+
+Merged master MR !12059, authored and merged by John Thacker, fixes SCCP RSN dissection by removing a manual fetch-and-shift path and using `proto_tree_add_item()` on the encoded bytes so the registered field performs the transformation once. The previously reviewed release backports !12063 and !12064 preserve the same correction.
+
+**Implementation rule:** decide which layer owns extraction. If an `hf_` registration already describes the bit mask/shift, normally pass the raw wire bytes to the corresponding tree API and let it decode the logical value. If parser logic needs the decoded value as well, prefer the appropriate `proto_tree_add_item_ret_*()` helper rather than independently duplicating the mask operation.
+
+**Review rule:** whenever code combines `tvb_get_*()`, manual `& mask`/`>> shift`, and `proto_tree_add_uint*()` for a field that itself has a nonzero registration mask, check for double transformation. The value supplied to an API that applies field semantics must be in the domain that API expects, not merely an integer that looks convenient at the call site.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, independently preserved in two accepted stable-branch backports.
