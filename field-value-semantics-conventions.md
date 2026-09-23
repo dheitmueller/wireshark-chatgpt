@@ -37,3 +37,15 @@ Merged master MR !14507, authored by John Thacker and merged by Anders Broman, f
 **Testing rule:** when a compact wire encoding expands to larger logical values, exercise a representative value above the raw encoding's numeric range with `dftest` or an equivalent display-filter test. A tree display that looks correct is not sufficient if the field's type metadata makes that value unfilterable.
 
 **Confidence:** Very high. Merged master correctness fix authored by John Thacker, approved/merged by Anders Broman, with a concrete before/after `dftest` reproducer.
+
+## Checker range validation must use the field's effective masked domain
+
+A typed-item checker that validates a `value_string` against only the storage width of an `FT_UINT*` field can miss impossible symbolic values when the field has a mask. The relevant domain is the extracted logical field value after Wireshark applies the mask and shift. For an ordinary bitmask field, the number of representable logical bits is the number of set bits in the mask, not the width of the underlying storage type.
+
+Merged master MR !12185, authored and merged by Martin Mathieson, first connected `VALS(...)` registrations to their parsed `value_string` tables and warned when the table's maximum value exceeded the registered field width. Its own source comment called out the remaining limitation that the calculation did not yet reduce the width for a mask. Merged master follow-up !12195 immediately fixes that limitation by counting the bits set in the field mask and using that effective width when checking the `value_string` range; the warning also reports the mask so the mismatch is diagnosable.
+
+**Checker rule:** static checks for symbolic-value ranges must model the same value domain that the protocol-tree API exposes. When a mask transforms the stored integer into a smaller logical field, validate the value table against the mask-derived logical width rather than the container type's raw width.
+
+**Review rule:** checker implementation changes should be tested against both unmasked fields and masked fields whose storage width is larger than their semantic width. A checker that understands only the `FT_UINT*` container can produce false negatives precisely where masked-field `VALS` mistakes are most likely.
+
+**Confidence:** Very high. Two consecutive merged master changes by Martin Mathieson establish both the initial range check and the accepted mask-aware correction, and later checker-driven field fixes independently corroborate the semantics.
