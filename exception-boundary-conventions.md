@@ -23,3 +23,15 @@ Merged master MR !21759, authored by John Thacker and merged by Michael Mann, do
 **Testing rule:** exercise nested calls and historical crash reproducers, not only a single successful invocation. Also test repeated/reloaded execution, because stale jump targets and cleanup errors are often exposed only after an earlier unwind has damaged transient state.
 
 **Confidence:** Very high. Merged master correctness fix authored by John Thacker, independently exercised by Stig Bjørlykke, with the stale-jump-buffer mechanism explicitly documented in the MR.
+
+## Put mandatory parent-state finalization on every exceptional and early-exit path
+
+A parent dissector can establish tree metadata or other state whose final value depends on work performed while dispatching extension headers or a child dissector. If that parent invariant must hold even when the child throws, capture truncation raises a bounds exception, or reassembly deliberately stops before normal child dispatch completes, it must not be finalized only on the normal continuation path.
+
+Merged master MR !12321, authored by John Thacker and approved/merged by Anders Broman, fixes IPv6 extension-header tree length accounting. The IPv6 item could retain a stale length when `ipv6_dissect_next()` did not return normally—for example after an exception or when a fragment path terminated before reassembly completed. The accepted implementation wraps child dispatch in `TRY`/`FINALLY` and performs the pending parent-item length update from the `FINALLY` block, so the parent tree invariant is restored regardless of how the child path exits.
+
+**Implementation rule:** identify parent-dissection postconditions that remain mandatory after child failure or early termination and place them in guaranteed finalization (`FINALLY`, cleanup handlers, or an equivalent ownership mechanism). Do not make correctness of parent metadata depend on a subdissector reaching its ordinary return statement.
+
+**Review rule:** when code updates a parent item only after a nested dissector call, ask what happens if TVB access throws, capture data is truncated, reassembly defers completion, or the nested path exits early. Distinguish mandatory state restoration from optional work that should occur only after successful child dissection.
+
+**Confidence:** Very high. Merged master correctness fix authored by John Thacker, with the exceptional/truncated/unreassembled cases explicitly described in the MR and accepted by Anders Broman.
