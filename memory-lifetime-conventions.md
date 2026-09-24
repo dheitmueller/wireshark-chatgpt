@@ -145,3 +145,26 @@ Merged master MR !20413, authored and merged by Guy Harris, fixes capture-interf
 **Implementation rule:** when a field participates in per-object replace/free semantics, initialize it with storage owned by that object rather than aliasing a shared default. Matching values do not imply shared lifetime. Audit neighboring string/collection options for consistent ownership whenever adding a new mutable option.
 
 **Confidence:** Extremely high. Merged master ownership fix authored and merged by Guy Harris, with the precise aliasing/free failure mechanism documented in the MR and carried to two release branches.
+
+## Perform potentially throwing acquisition before creating an unattached owner
+
+An object that is cleaned up only after it is attached to an ownership chain is vulnerable during the interval between construction and attachment. If another operation can throw during that interval, the not-yet-owned object can leak even though the normal completed structure has correct lifetime management.
+
+Merged master MRs !10728 and !10747, both authored and merged by John Thacker, fix this pattern in PER fragmented-value handling. \`tvb_new_octet_aligned()\` can throw on malformed input. The old order created a composite tvbuff first and then called the potentially throwing fragment constructor; if the fragment constructor threw before anything had been appended, the empty composite tvbuff had not joined a chain that would free it. The accepted code constructs the fragment first, creates the composite only after that succeeds, and then appends the fragment.
+
+**Implementation rule:** minimize the lifetime of unattached resources. When ownership becomes automatic only after an object is linked into a parent/container/chain, perform potentially throwing prerequisite work before constructing the unattached owner where semantics permit. Otherwise install an explicit exception-safe cleanup path before any operation that can throw.
+
+**Review rule:** do not judge exception safety only from the final ownership graph. Examine each acquisition step and ask who owns every object if the very next packet access throws.
+
+**Confidence:** Very high. Two independent merged master fixes by John Thacker with the exception/leak mechanism stated explicitly.
+
+## Preserve backing storage when table replacement does not end all aliases
+
+Removing or replacing an object from its primary table does not prove its backing storage is dead. Wireshark APIs can create non-owning views into tvbuff data—for example, \`set_address_tvb()\` can make an address reference bytes owned by a tvbuff—so freeing the old tvbuff at table replacement can invalidate aliases that remain in use elsewhere in the packet.
+
+Merged master MR !10723, authored and merged by John Thacker, fixes reassembly-table replacement after an older reassembly's last table reference is displaced. When both the old and replacement reassemblies have real-data tvbuffs, the accepted helper attaches the old tvbuff as a child of the replacement with \`tvb_set_child_real_data_tvbuff()\`, preserving the old backing bytes until the replacement's lifetime ends. Where that ownership transfer cannot be represented safely, the code prefers retaining/leaking the bytes over freeing storage that may still be aliased.
+
+**Implementation rule:** before freeing or replacing tvbuff-backed state, audit aliases to the backing bytes, not only references to the wrapper object. If a surviving view can point into the old storage, transfer or chain ownership so the backing data outlives every alias.
+
+**Confidence:** Very high. Merged reassembly lifetime fix authored and merged by John Thacker for a concrete use-after-free hazard.
+

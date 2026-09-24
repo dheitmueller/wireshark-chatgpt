@@ -109,3 +109,16 @@ Merged MR !11253 adds SOME/IP DTLS auto-detection. During review, Pascal Quantin
 **Review rule:** audit packet-driven calls to `dissector_add_*()` and similar registration APIs for first-pass semantics. If a learned mapping must instead vary by capture, conversation, or preference lifecycle, use a correspondingly scoped state mechanism rather than treating repeated redissection as an update signal.
 
 **Confidence:** Very high. Two merged master changes use the same first-pass pattern, with Pascal Quantin explicitly identifying the redissection issue in review and Alexis La Goutte approving the companion SOME/IP-SD fix.
+
+## Snapshot first-pass state at the PDU boundary for random-access redissection
+
+A conversation's mutable "current" state is useful while the first sequential pass is learning a protocol state machine, but it is not sufficient evidence for later random-access dissection. By the time an older packet is revisited, the conversation object normally contains the state reached by later packets. If a single frame can contain multiple PDUs, a frame-level snapshot is not precise enough either: each PDU can begin in a different state.
+
+Merged master MR !10762, authored and merged by John Thacker, fixes MySQL random-access dissection by keeping the evolving conversation fields only as first-pass working state and snapshotting the state needed to interpret each PDU into file-scoped protocol data. The snapshot includes the state, prepared-statement identifier, remaining field-packet count, and field metadata. It is keyed with the PDU's raw tvbuff offset so multiple PDUs in one frame remain distinguishable. Mutations of the live conversation state and creation of persistent prepared-statement data are guarded by \`!pinfo->fd->visited\`; later passes read the stored PDU snapshot instead of replaying the state machine.
+
+**Architecture rule:** separate first-pass working state from redissection state. When packet interpretation depends on the sequential history of a conversation, persist the minimal state needed to interpret each semantic unit at the boundary where that unit begins. If several PDUs can share a frame, key the snapshot by a stable per-PDU identity such as its raw offset rather than by frame number alone.
+
+**Redissection rule:** mutate the live learned state only on the intended first pass. Random access and later passes should consume the stored snapshot and must not require replaying all earlier packets to reconstruct the correct interpretation.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with the first-pass versus random-access contract documented directly in the accepted implementation.
+

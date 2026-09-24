@@ -67,3 +67,14 @@ Merged master MR !15667 changes SMB2 request/response frame bookkeeping to use `
 **Review rule:** when a state field doubles as both data and validity marker, audit all producers and comparisons for legitimate boundary values. A sentinel collision can make valid state appear missing and can be especially hard to diagnose when only captures near the boundary exercise it.
 
 **Confidence:** High. Merged master correctness change in a multi-commit protocol series; the commit message explicitly records the reason for abandoning zero as the invalid marker.
+
+## Represent "default" and "none" as distinct states when both are meaningful
+
+A null/absent value cannot safely double as "reset to the default" when explicit absence is itself a valid user or protocol state. Overloading those meanings makes one state impossible to express and causes later code to infer intent from representation accidents.
+
+Merged master MR !10732, authored and merged by John Thacker, changes Decode As so selecting \`(none)\` for one dissector-table entry really means "no table-bound dissector", while resetting means restoring the separately tracked default dissector. Those states are intentionally different: explicit none still lets heuristic dissectors try the payload, disabling a dissector globally has broader scope, and forcing the Data dissector has different dispatch behavior. The accepted model therefore retains the default handle independently and permits a NULL current handle as an explicit value instead of interpreting NULL as "use default". Merged precursor !10727 also keeps the current handle and description encapsulated and updates them in tandem.
+
+**Representation rule:** if "inherit/reset to default" and "explicitly no value" have different behavior, give them distinct representations. Preserve the actual default separately from the current override rather than assigning multiple semantics to NULL or another sentinel.
+
+**Confidence:** Very high. Merged master behavior/API change authored and merged by John Thacker, with the semantic distinctions documented explicitly.
+
