@@ -1,0 +1,25 @@
+# Typed Item Checker Conventions
+
+This file records durable conventions for Wireshark's source-level typed-item checks and their relationship to proto-tree APIs. Current checker behavior remains authoritative.
+
+## Run bitmask-field validation continuously, not only during ad hoc review
+
+Bitmask metadata is part of a dissector's decoding contract. Mechanical checks for invalid or suspicious masks are most useful when they run in normal CI for proposed commits rather than depending on a reviewer to remember a special checker mode.
+
+Merged MR !11689, authored and merged by Martin Mathieson, adds `--check-bitmask-fields` to the GitLab CI invocation of `tools/check_typed_item_calls.py`, alongside the existing consecutive-filter, label, mask, and commit-scoped checks. This turns bitmask validation into routine repository validation.
+
+**Testing rule:** before submitting dissector changes, run the same typed-item checks expected by CI, including `--check-bitmask-fields`. Treat failures as field-definition/API-contract issues to investigate rather than cosmetic lints.
+
+**Confidence:** Very high. Merged CI policy change authored and merged by Martin Mathieson.
+
+## Static checker rules must model valid proto-tree idioms precisely
+
+A checker should reject semantically inconsistent field metadata without flagging a legitimate API pattern merely because it resembles the invalid case. For `proto_tree_add_bitmask()`-style field lists, an all-bits-set mask can be valid when that field is the first and only header field representing the entire value; it should not be rejected by a rule intended to catch overlapping or nonsensical component masks.
+
+Merged MR !11698, authored and merged by Martin Mathieson, adds exactly this exception to `check_typed_item_calls.py`: an all-set mask is accepted when it is the first and sole `hf_` item in the bitmask list. The change refines the checker instead of weakening bitmask checking globally.
+
+**Checker-design rule:** encode exceptions in terms of the API shape that makes them valid. Prefer a narrow structural exception over disabling or broadly suppressing a correctness check.
+
+**Review rule:** when a new checker produces findings in existing dissectors, separate true metadata bugs from established valid proto-tree idioms. Fix the dissector for the former and improve the checker model for the latter.
+
+**Confidence:** Very high. Merged checker refinement authored and merged by Martin Mathieson immediately around the CI rollout of bitmask validation.
