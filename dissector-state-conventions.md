@@ -122,3 +122,16 @@ Merged master MR !10762, authored and merged by John Thacker, fixes MySQL random
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with the first-pass versus random-access contract documented directly in the accepted implementation.
 
+## Version state mappings when protocol identifiers can be reused
+
+An identifier that is unique only at one instant is not a sufficient key for file-scoped historical state. If a protocol can reuse the same channel, transaction, stream, or object ID later in the same connection, overwriting a single map entry destroys the mapping needed to dissect earlier packets correctly during random access.
+
+Merged master MR !10685 fixes RDP dynamic virtual channels, where a server can reuse a channel ID after an earlier Create Channel attempt fails. The accepted implementation replaces a fixed one-entry-per-ID array with a file-scoped `wmem_multimap_t`: first-pass Create Channel packets insert a record keyed by channel ID and frame number, and later packet dissection uses `wmem_multimap_lookup32_le(..., pinfo->num)` to obtain the most recent assignment that existed at that point in capture history.
+
+**Architecture rule:** when an on-wire identifier can be reused, include a generation/time dimension in the stored identity or retain versioned mappings keyed by a stable capture position. Lookup during redissection must select the mapping valid at the packet being dissected, not merely the newest mapping learned anywhere in the capture.
+
+**Redissection rule:** create/version these mappings on the intended first pass and preserve the historical records needed for arbitrary packet access. A plain hash from reusable ID to "current object" is only correct if the protocol guarantees the ID cannot be reused within the state object's lifetime.
+
+Merged master MRs !10665 and !10696 independently reinforce the same historical-state principle for MySQL: conversation state can hold the latest first-pass value, while per-frame/PDU snapshots provide the value that was valid at the packet being revisited.
+
+**Confidence:** Very high. Merged master RDP fix accepted by Alexis La Goutte, independently corroborated by John Thacker's merged MySQL random-access fixes.

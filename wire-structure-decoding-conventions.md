@@ -15,3 +15,15 @@ Merged master MR !11038 fixes SMB2 Query Info decoding after review pushed the i
 **Review rule:** flag packet-pointer-to-struct casts, packed protocol structs, and `sizeof(struct)` used as proof of an on-wire header size. Check that each field's offset and endianness come from the specification and that truncation remains governed by TVBuff bounds.
 
 **Confidence:** Very high. Merged master correctness work whose review explicitly rejected struct-packing dependence and converged on TVBuff-native field decoding.
+
+## Validate the bounded record before forming or using a typed view
+
+When a capture-file reader works from a bounded page or record buffer, the fixed header must be proven to fit inside that boundary before code treats the current offset as a complete typed structure. A cast does not establish that the bytes exist. Putting the bounds check first also keeps future field accesses from accidentally escaping the validation.
+
+Merged master MR !10692, authored and approved by Guy Harris, hardens the NetScaler wiretap reader by checking that the full fixed record structure remains in the current page before assigning the typed pointer, and by adding the same length proof to several record-type branches before accessing their fields. Guy explicitly described the accepted ordering as "test-before-casting," matching the pattern used elsewhere. Release-4.0 and release-3.6 backports !10693 and !10694 preserve the change.
+
+**Implementation rule:** before creating or dereferencing a typed view into a bounded file/page buffer, verify that the entire fixed portion required by that view lies inside the current boundary. Keep the proof adjacent to and before the view where practical; later semantic length checks do not substitute for the initial storage-bounds proof.
+
+This is a defensive rule for legacy/file-reader code that still uses typed views; it does not weaken the stronger dissector rule above to prefer explicit TVBuff offsets and endianness over native C structure overlays for packet decoding.
+
+**Confidence:** Extremely high. Merged master bounds fix authored and approved by Guy Harris and carried to two stable branches.

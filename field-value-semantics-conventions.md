@@ -73,3 +73,15 @@ Merged master MR !11176 initially proposed displaying the NGAP Common Network In
 **Review rule:** when a patch changes `FT_BYTES` to a string type for presentation reasons, check the normative field definition and every allowed encoding first. “Usually printable” is a display observation, not a type guarantee.
 
 **Confidence:** Very high. Merged master change with detailed specification-based review from Pascal Quantin and corroborating encoding discussion from John Thacker.
+
+## Never index a value_string directly with packet data
+
+A `value_string` is a key/value mapping, not a dense array whose indexes are guaranteed to match every possible wire value. Directly using a packet field as the C array index can read beyond the table when the packet value is larger than the set of defined entries, and it also bypasses the table's normal unknown-value behavior.
+
+Merged master MR !10704, authored and merged by John Thacker, fixes Synphasor by replacing direct indexing of `conf_phasor_type` with `val_to_str_const(..., conf_phasor_type, "Unknown")`. The release-branch counterparts !10714 and !10713 had already supplied corroborating evidence and are now anchored by the merged master change.
+
+**Implementation rule:** resolve packet-derived numeric values through the `val_to_str*` / `try_val_to_str*` family (or the appropriate Wireshark mapping helper) and provide an intentional unknown fallback when the protocol permits unrecognized values. Do not treat a `value_string` as a C array indexed by the wire value.
+
+**Review rule:** flag expressions where a packet-derived value indexes a `value_string`, `range_string`, or similar mapping table directly. Check both bounds safety and the semantic behavior for unknown/reserved values.
+
+**Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with two previously reviewed stable counterparts.
