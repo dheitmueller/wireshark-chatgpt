@@ -79,3 +79,19 @@ The same review found PIDL-side changes that Samba should receive independently.
 **Submission rule:** separate generator-engine changes from protocol/schema changes when their upstream destinations or cherry-pick paths differ. This makes synchronization with projects such as Samba practical and lets each change be reviewed at the layer that owns it.
 
 **Confidence:** Very high. The MR was merged after extensive review, and the direction came from Stefan Metzmacher in his area of direct Samba/PIDL authority, with Wireshark maintainers incorporating the requested restructuring.
+
+## Make regeneration a cheap CI invariant at the authoritative source layer
+
+When generated source is version-controlled, CI should not merely build the checked-in artifact. It should run the canonical generator over the authoritative IDL/conformance inputs and fail if regeneration changes tracked files. That turns source/output parity into a continuously enforced invariant and catches both direct edits to generated files and forgotten regeneration after source changes.
+
+Merged master MR !11208, authored by John Thacker, extends Wireshark's existing generated-dissector checks to PIDL output. The check regenerates the relevant sources and treats a resulting repository diff as failure. In review, Alexis La Goutte asked whether this belonged in a faster Commit Check and whether the same model applied to ASN.1; John noted that ASN.1 was already covered and that the PIDL step added only about four seconds, making the fail-fast code-check stage appropriate. Adjacent merged MRs !11209 and !11203 demonstrate the other half of the invariant: when generated DCE/RPC output had already been corrected, the conformance/source inputs were changed to reproduce that accepted output rather than leaving source and artifact divergent. Merged !11210 then regenerates DFS through the canonical PIDL path.
+
+Merged !11174 provides operational corroboration for scheduled generation: an upstream Asterix specification change required Wireshark's generator/tests to be adjusted before the next automatic regeneration, and the accepted MR fixed the resulting CI expectation rather than allowing the scheduled update to land broken output.
+
+**CI rule:** expose a deterministic regeneration path, run it in the cheapest suitable pre-merge stage, and fail if tracked generated artifacts change. Prefer an early/fail-fast check when regeneration is inexpensive enough that contributors get the source-of-truth error before expensive downstream jobs.
+
+**Source-of-truth rule:** when the generated result is correct but regeneration does not reproduce it, repair the IDL/conformance/template/generator input. Do not normalize the generated file by hand and leave the authoritative source stale.
+
+**Automation rule:** if generated content is refreshed automatically from an external specification, land generator/schema compatibility changes and matching tests before the scheduled refresh that depends on them.
+
+**Confidence:** Very high. The core CI invariant is merged master work authored by John Thacker, aligns with an already-established ASN.1 check, and is reinforced by several accepted source/output synchronization MRs in the same series.
