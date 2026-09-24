@@ -77,3 +77,17 @@ Merged master MR !11805, authored and merged by Guy Harris, changes the PGM diss
 **Review/testing rule:** test snaplen-truncated and otherwise short packets at multiple cut points, not only complete and completely malformed packets. A good dissector should make maximal safe progress and expose all earlier decodable fields before the first genuinely unavailable field stops it.
 
 **Confidence:** Extremely high. Merged master parsing-quality change authored and merged by Guy Harris, with the partial-dissection rationale stated directly in the MR.
+
+## Keep malformed child parsing bounded without destroying forward progress
+
+When a parent container declares a child length that exceeds the bytes remaining in that parent, diagnose the malformed length but do not “recover” by forcing the child length to zero if the enclosing parser advances by that value. Zeroing a consumed length can turn one malformed element into a no-progress loop. Instead, preserve the parser's progress semantics and constrain the nested dissector with a subset TVBuff representing the child/container boundary.
+
+Merged master MR !11639, authored and merged by John Thacker, fixes Bluetooth SDP parsing where an oversized declared length was replaced with zero. That avoided an immediate overrun but left the offset unchanged, so malformed input could repeatedly parse the same location. The accepted change keeps the malformed-length expert indication and hands nested parsing a bounded `tvb_new_subset_length()` rather than letting child parsing escape its containing element. Stable-branch MRs !11644 and !11645 carry the same fix.
+
+**Progress rule:** every successful or recoverable parser iteration must either advance the input position or terminate/propagate failure. Do not use a substituted zero length as a generic malformed-input recovery when that length controls loop progress.
+
+**Containment rule:** if a nested structure is semantically bounded by its parent, express that boundary with a subset TVBuff and let TVBuff exception semantics enforce it. A child parser should not be able to consume bytes belonging to the next sibling merely because the backing packet contains them.
+
+**Review/testing rule:** for malformed declared lengths, test both oversize and truncation cases and verify two independent properties: the parser cannot escape the parent boundary, and the enclosing loop still makes forward progress or exits cleanly.
+
+**Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker with stable-branch propagation and a concrete no-progress failure mode.
