@@ -61,3 +61,15 @@ Merged master MR !11228, also authored and approved by Guy Harris, makes the dis
 **Review rule:** when a dissector uses a libc/OS symbolic decoder for an on-wire number, ask whether the numeric namespace is guaranteed identical on every sender, receiver, architecture, and supported Wireshark host. Similar names or values on the developer's machine are not sufficient evidence.
 
 **Confidence:** Extremely high. Two independent merged master fixes authored and approved by Guy Harris, plus four accepted stable backports, with the cross-platform numeric-namespace problem documented explicitly.
+
+## Report a failing API through the error channel owned by that API
+
+Host error reporting has namespaces as well as numeric values. A Windows operation that reports failure through `GetLastError()` cannot safely be diagnosed by reading POSIX `errno`, just as an errno-returning libc call should not be decoded as a Win32 error. Mixing the operation and error channel can produce stale or unrelated diagnostics even when both mechanisms are available in the same process.
+
+Merged master MR !11169, authored by John Thacker and explicitly approved by Guy Harris, fixes the Windows-only capture-child quit path. After `ws_write()` reports failure in that Win32 path, the accepted code uses `GetLastError()` with `win32strerror()` instead of `errno` with `g_strerror()`. The same correction was accepted into release-4.0 and release-3.6 as !11180 and !11181.
+
+**Implementation rule:** pair each OS/library operation with the error-reporting contract that operation documents. Capture or format the native error promptly after failure so later calls cannot overwrite it. Do not choose an error formatter merely because its strings look familiar or because another platform implementation of the wrapper uses a different channel.
+
+**Review rule:** for cross-platform wrappers, inspect each platform branch independently: determine whether failure is reported by return value plus `errno`, `GetLastError()`, an API-specific status code, or another mechanism, and make the diagnostic consume exactly that domain.
+
+**Confidence:** Extremely high. Merged master fix authored by John Thacker, directly approved by Guy Harris, plus two accepted stable backports.
