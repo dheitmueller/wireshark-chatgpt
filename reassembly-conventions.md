@@ -81,3 +81,17 @@ Merged master MR !13397 changes TCP's segment annotation so it is added only whe
 **Testing rule:** cover both a capture that really completes a multi-frame PDU and a case where completion never occurs, such as a truncated or missing-tail capture. The completed case should name the reassembly frame; the incomplete case should not claim that reassembly occurred.
 
 **Confidence:** High. Merged master TCP presentation fix whose accepted condition is the concrete `reassembled_in` state supplied by the reassembly framework.
+
+## Move protocol-private streaming reassembly onto the common framework once it can express the protocol
+
+A protocol-private implementation of a generally useful streaming-reassembly algorithm becomes a maintenance liability once the same behavior exists in the common reassembly layer. Keeping both copies means later correctness fixes can land in one path but not the other, and callers may reach into reassembly internals to answer questions the framework should expose through a stable API.
+
+Merged master MR !11268 migrates HTTP/2 back onto `reassemble_streaming_data_and_call_subdissector()`. The MR explains that the common helper originally grew out of HTTP/2's own streaming mechanism and subsequently gained improvements; using it from HTTP/2 again makes future streaming-reassembly fixes common rather than protocol-specific. John Thacker approved and merged the change. The same MR adds `additional_bytes_expected_to_complete_reassembly()` as a public query over streaming-reassembly state, returning zero when complete and preserving `DESEGMENT_ONE_MORE_SEGMENT` semantics, rather than requiring the HTTP/2 dissector to duplicate or inspect internal bookkeeping. Its gRPC/HTTP2 regression tests were also changed to run with `tshark -2` because some reassembly behavior is observable on the second pass.
+
+**Architecture rule:** when a common reassembly helper can represent the protocol's semantics, prefer it over a protocol-local copy of the same state machine. Put reusable correctness logic in the framework so fixes benefit every caller.
+
+**API rule:** if a caller needs a framework-owned property such as whether streaming reassembly is complete or how many bytes remain expected, expose that property through a named public helper instead of coupling the caller to internal fields.
+
+**Testing rule:** for streaming-reassembly changes, exercise the pass model in which the affected behavior is evaluated. Where redissection can reveal distinct behavior, include a two-pass `tshark -2` regression in addition to appropriate first-pass/live coverage rather than assuming one execution model proves the other.
+
+**Confidence:** Very high. Merged master framework consolidation approved and merged by John Thacker, with both the maintenance rationale and the second-pass testing requirement documented in the accepted change.
