@@ -19,3 +19,17 @@ The same MR also separates file/conversation-lived configuration from per-dissec
 **Redissection rule:** persistent state creation must be idempotent across redissection. Check for existing conversation/protocol data before allocating and attaching a replacement object.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, motivated by concrete assertion failures and lifetime misuse.
+
+## Key conversations by the protocol's real correlation invariants
+
+A conversation key should contain the fields that are stable for the protocol relationship being tracked, not every transport-tuple value that happens to be present in one packet. If a peer is permitted to reply from a different source port or another endpoint component can legitimately vary, including that component in the key can split one logical request/response exchange into multiple conversations and break both stateful dissection and Follow Stream behavior.
+
+Merged master MR !11629, authored and merged by John Thacker, fixes SNMP request/response tracking where a fully specified UDP conversation failed when an agent replied from a different ephemeral port. The accepted implementation uses the appropriate wildcard-port conversation semantics so replies remain associated with the request. The same change also fixes the SMUX entry path, which could reach shared SNMP processing without the conversation state expected by that code and trigger an assertion.
+
+**Identity rule:** choose conversation-key fields from the protocol's actual correlation contract. Wildcard transport fields that may validly vary; do not overconstrain identity merely because the first packet supplies a concrete value.
+
+**Initialization rule:** every supported entry path into shared stateful dissection must establish the same required conversation/protocol state before common code consumes it. An alternate encapsulation or handoff path must not rely on initialization having happened through the primary path.
+
+**Review implication:** when request/response correlation is wrong, audit both key specificity and state initialization across all entry points. Symptoms such as unmatched responses, duplicate Follow Stream entries, or assertions can all arise from a conversation key or setup path that does not match the protocol's real topology.
+
+**Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker, with concrete request/response and assertion failures described in the MR.
