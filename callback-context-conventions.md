@@ -15,3 +15,17 @@ Merged master MR !13652 fixes UAT file loading after the loader invoked a field'
 **Testing rule:** exercise callback users that deliberately provide different context objects for neighboring callbacks. This exposes accidental cross-wiring that can remain invisible when all callback context pointers are NULL or happen to reference the same object.
 
 **Confidence:** Very high. Merged master memory-correctness fix with a concrete callback/context mismatch and an existing correct parallel call path for comparison.
+
+## Carry negotiated runtime metadata explicitly through plugin callback context
+
+A plugin's identity does not necessarily determine all of the parameters needed to interpret its data. When behavior depends on values negotiated elsewhere in the protocol stack, pass those values explicitly through a typed callback context rather than requiring the plugin to infer them from global state, payload numbers, or unrelated caller internals.
+
+Merged master MR !11378, authored and merged by John Thacker, changed the codec callback interface from an opaque codec-private `void *` to a `codec_context_t` that carries the RTP/SDP-negotiated sample rate and channel count alongside a separate `priv` member for decoder-owned state. That lets dynamically assigned RTP payload formats such as L16 use parameters supplied by SDP while preserving codec-specific state behind the same callback interface. Follow-up MR !11410 extends the same direction by passing negotiated `fmtp` data so AMR can distinguish octet-aligned from bandwidth-efficient framing.
+
+**Implementation rule:** if a callback implementation needs both caller-owned negotiated/configuration metadata and plugin-owned mutable state, model those as distinct members of an explicit context object. The caller should initialize the shared metadata; the plugin should own only its private state portion.
+
+**Architecture rule:** avoid baking negotiated parameters into plugin selection or assuming that a registered codec/protocol name uniquely determines wire behavior. Dynamic protocol assignments should make their negotiated context an explicit part of the API contract.
+
+**Review rule:** when widening a plugin callback API, check creation, decode/use, query, and teardown paths together. A typed wrapper context is useful only if every callback receives the same semantic context and private-state ownership remains unambiguous.
+
+**Confidence:** Very high. Merged master codec-interface redesign authored and merged by John Thacker, immediately followed by additional negotiated-parameter use in merged !11410.
