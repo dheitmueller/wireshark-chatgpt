@@ -13,3 +13,17 @@ Merged master MR !11445, authored and merged by John Thacker, fixes a crash whil
 **Review rule:** treat length-return semantics as part of the API contract. A helper and its caller can both be individually reasonable yet incompatible if one reports required/logical length while the other interprets the value as bytes written. Check truncation cases explicitly whenever the returned length feeds later pointer arithmetic or concatenation.
 
 **Confidence:** Extremely high. Merged master crash fix authored and merged by John Thacker, with the `strlcpy()`-style return-value mismatch stated directly in the commit rationale.
+
+## Recompute length after representation-changing conversions
+
+A source buffer's byte count is not automatically the byte count of a converted result. Character-set conversion, escaping, normalization, decompression, decoding, or any other representation-changing operation can expand or shrink the materialized output, so downstream APIs must receive a length in the output representation's domain.
+
+Merged MR !11382 fixes WSLua `TvbRange:string()` after `tvb_get_string_enc()` converted packet bytes into a C string. The old code passed the original `TvbRange` byte length to `lua_pushlstring()`, even though the encoding conversion could change the number of output bytes. The accepted change determines the length from the converted result before handing it to Lua.
+
+**Implementation rule:** after a function produces a transformed buffer, derive the downstream length from the transformed object or from an explicit produced-length result. Do not reuse the input range length unless the API contract guarantees a length-preserving transformation.
+
+**Review rule:** annotate mentally which representation each offset and length belongs to. Source-wire length, decoded-character length, encoded-output byte length, and destination capacity are different domains even when they happen to have the same numeric value for common ASCII inputs.
+
+**Caveat:** use a length-discovery method compatible with the output representation. `strlen()` is appropriate only when that representation is guaranteed to be NUL-terminated and not to contain significant embedded NUL bytes; binary or length-bearing text results should preserve an explicit produced length instead.
+
+**Confidence:** High. Merged correctness fix approved and merged by Anders Broman; the concrete failure is a source-length/output-length domain mismatch, while the exact way to obtain the output length remains dependent on the conversion API's contract.
