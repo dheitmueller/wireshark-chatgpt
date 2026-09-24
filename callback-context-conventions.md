@@ -22,10 +22,14 @@ A plugin's identity does not necessarily determine all of the parameters needed 
 
 Merged master MR !11378, authored and merged by John Thacker, changed the codec callback interface from an opaque codec-private `void *` to a `codec_context_t` that carries the RTP/SDP-negotiated sample rate and channel count alongside a separate `priv` member for decoder-owned state. That lets dynamically assigned RTP payload formats such as L16 use parameters supplied by SDP while preserving codec-specific state behind the same callback interface. Follow-up MR !11410 extends the same direction by passing negotiated `fmtp` data so AMR can distinguish octet-aligned from bandwidth-efficient framing.
 
+Merged master MR !11337, also authored and merged by John Thacker, establishes the preceding layer boundary. SDP format-specific parameters are allowed by RFC 8866 to be media-format-specific and opaque to SDP itself. The accepted implementation retains those parameters keyed to the RTP payload and passes them onward unchanged; RTP/media-specific code such as the AMR path interprets the parameters later, at the layer that owns their semantics. This avoids forcing the signaling dissector to accumulate codec-specific knowledge merely so downstream consumers can receive negotiated metadata.
+
 **Implementation rule:** if a callback implementation needs both caller-owned negotiated/configuration metadata and plugin-owned mutable state, model those as distinct members of an explicit context object. The caller should initialize the shared metadata; the plugin should own only its private state portion.
+
+**Layering rule:** a signaling or negotiation layer need not understand every parameter it transports. When the protocol defines metadata as opaque or consumer-specific, preserve it faithfully and forward it through explicit state/context until it reaches the decoder or subsystem that owns its semantics. Do not discard unknown-but-valid negotiation data, and do not move consumer-specific parsing upward merely to make the handoff convenient.
 
 **Architecture rule:** avoid baking negotiated parameters into plugin selection or assuming that a registered codec/protocol name uniquely determines wire behavior. Dynamic protocol assignments should make their negotiated context an explicit part of the API contract.
 
 **Review rule:** when widening a plugin callback API, check creation, decode/use, query, and teardown paths together. A typed wrapper context is useful only if every callback receives the same semantic context and private-state ownership remains unambiguous.
 
-**Confidence:** Very high. Merged master codec-interface redesign authored and merged by John Thacker, immediately followed by additional negotiated-parameter use in merged !11410.
+**Confidence:** Very high. The codec-interface redesign and the opaque-SDP-parameter handoff are merged master changes authored and merged by John Thacker, with !11410 immediately demonstrating the downstream use of the forwarded metadata.
