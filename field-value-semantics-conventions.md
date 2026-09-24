@@ -73,3 +73,17 @@ Merged master MR !11176 initially proposed displaying the NGAP Common Network In
 **Review rule:** when a patch changes `FT_BYTES` to a string type for presentation reasons, check the normative field definition and every allowed encoding first. “Usually printable” is a display observation, not a type guarantee.
 
 **Confidence:** Very high. Merged master change with detailed specification-based review from Pascal Quantin and corroborating encoding discussion from John Thacker.
+
+## Preserve lexical identity when leading zeros or fixed width are semantically significant
+
+A protocol identifier can be composed entirely of decimal digits without being a number. If its fixed width or leading zeros distinguish valid identities, storing it as an integer destroys information that users need for display filters, TShark field extraction, and external processing.
+
+Merged master MR !10916 changes E.212 MCC and MNC fields from integer fields to strings. The motivating failure was especially visible for MNCs such as `007` and `01`: integer storage reduced them to `7` and `1`, so `tshark -e` could no longer reconstruct the original identifier and users had to know Wireshark's lossy representation when filtering. During review Pascal Quantin initially raised the compatibility cost of changing a long-standing field type and suggested an additional string field. After discussion with the dissector author, the accepted master-branch decision was to switch both MCC and MNC to strings for semantic consistency, while retaining the numeric lookup tables internally for efficient operator-name lookup.
+
+**Implementation rule:** choose a numeric protocol-tree type only when arithmetic numeric identity is the protocol semantics. Use a string representation for digit sequences whose width, leading zeros, or exact lexical spelling are part of the value.
+
+**Compatibility rule:** changing an existing field type is a user-visible display-filter/API change and should be deliberate. Compatibility matters, but an old representation that irreversibly loses protocol information may justify a coordinated master-branch correction; audit related fields together so equivalent identifiers do not end up with inconsistent types.
+
+**Testing rule:** include identifiers with leading zeros and verify both display-filter matching and `tshark -e` output. A packet-tree label that manually re-adds padding is not sufficient if the stored field value remains lossy.
+
+**Confidence:** Very high. Merged master change with explicit Pascal Quantin compatibility review and a documented consensus to preserve the actual E.212 identifier semantics.
