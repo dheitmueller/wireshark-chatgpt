@@ -145,3 +145,15 @@ Merged master MR !11725, authored by Guy Harris, replaces `dissect_opts_init()` 
 **Implementation rule:** use explicit declaration-time initialization for nonzero/sentinel defaults in global static state when those values are compile-time constants. Reserve runtime initialization for state that genuinely depends on runtime inputs or requires ordered resource construction; do not impose an avoidable “call this first” requirement on all consumers.
 
 **Confidence:** Extremely high. Merged master lifecycle simplification authored and approved by Guy Harris, motivated by concrete missing initialization in supported command-line frontends.
+
+## Use init, cleanup, and shutdown hooks according to their documented reset boundaries
+
+Wireshark's lifecycle callback families have different repetition semantics. An init routine can run before each dissection pass through a capture, including after opening a new file and when redissection is triggered by filtering, coloring, or preference changes. Cleanup runs when the corresponding capture/dissection state is being torn down and before a later init when preferences require rebuilding state. Shutdown runs once when the process/epan lifetime is ending.
+
+Merged master MR !11630, authored by Guy Harris, documents these distinctions directly in the registration APIs. In particular, resources acquired by an init routine must be releasable by the matching cleanup path; putting their only teardown in shutdown leaks or preserves stale state across intermediate reinitializations. Conversely, truly process-lifetime state should not be rebuilt merely because a capture is rescanned.
+
+**Lifecycle rule:** choose a hook from the invalidation boundary of the state it owns. Use init/cleanup for state whose validity follows capture/dissection passes or preference-driven reinitialization, and shutdown for one-time process/epan teardown. Do not treat shutdown as a universal cleanup callback or assume init runs only once.
+
+**Review implication:** for every lifecycle registration, enumerate the transitions that can invoke it: new capture, redissection, display-filter/coloring changes, preference changes, and process exit. Verify that repeated init/cleanup cycles are safe and that resources do not survive beyond the state from which they were derived.
+
+**Confidence:** Extremely high. Merged master documentation authored by Guy Harris that defines the lifecycle contract itself, corroborating the later accepted resource-lifetime fixes already recorded above.
