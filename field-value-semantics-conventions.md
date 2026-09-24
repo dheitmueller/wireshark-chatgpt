@@ -61,3 +61,15 @@ Merged master MR !12156, authored by John Thacker and approved by Anders Broman,
 **Testing rule:** a field-type correction can intentionally change display-filter/export output even when the packet-tree label remains human-friendly. Update tests of `-e`/export behavior to validate the typed representation, not the old incidental formatting.
 
 **Confidence:** Very high. Merged master semantic correction authored by John Thacker, with matching tests and explicit rationale about HTTP content being an encoding-neutral octet stream at this layer.
+
+## Preserve an octet-string field when the specification permits both binary and textual forms
+
+A protocol field can be defined as an octet string while allowing particular encodings inside those octets, such as an APN or domain-name form. The existence of common printable examples does not narrow the wire contract to `FT_STRING`. Retain a bytes-typed representation when arbitrary/non-text octets remain legal, and add human-friendly text presentation only when the actual bytes and specified sub-encoding support it.
+
+Merged master MR !11176 initially proposed displaying the NGAP Common Network Instance as a string. Pascal Quantin cited the governing 3GPP text: the value is an `OctetString` and may contain a network identifier encoded as a domain name or APN, so it is not necessarily a string. He recommended preserving the bytes and using printable-text display support where appropriate; the discussion also notes that APN encoding is not simply the dotted-string form seen in documentation. John Thacker reinforced that protocol-specific APN/DNS handling may require more than generic string rendering.
+
+**Implementation rule:** register according to the protocol's full value domain, not the most common sample. If a bytes field has recognized textual sub-encodings, preserve the raw `FT_BYTES` value and layer the interpretation/presentation on top rather than changing the field to `FT_STRING` and making non-text values unrepresentable.
+
+**Review rule:** when a patch changes `FT_BYTES` to a string type for presentation reasons, check the normative field definition and every allowed encoding first. “Usually printable” is a display observation, not a type guarantee.
+
+**Confidence:** Very high. Merged master change with detailed specification-based review from Pascal Quantin and corroborating encoding discussion from John Thacker.
