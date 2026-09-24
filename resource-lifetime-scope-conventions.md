@@ -37,3 +37,15 @@ Merged master MR !11768, authored and merged by João Valverde, fixes the Lua co
 **Review rule:** compare the lifetime of every stored pointer/handle with the lifetime of the object storing it. Reload, profile reset, capture reset, and similar lifecycle transitions deserve explicit tests because they can invalidate resources while leaving their consumers alive.
 
 **Confidence:** Very high. Merged master crash fix authored and merged by João Valverde, with the stale Lua-state/re-registration failure mode documented directly and positive review from Stig Bjørlykke.
+
+## Do not duplicate conversation-stable state in every packet record
+
+Lifetime matching applies not only to allocation arenas but also to the shape of persistent data structures. Values that are invariant for an entire conversation should live with conversation state; packet records should retain only information that genuinely differs per packet. Copying conversation-stable data into every packet wastes file-scope memory and makes the packet/conversation ownership boundary harder to reason about.
+
+Merged master MR !11496, authored and merged by John Thacker, follows the RTP state-key correction by separating the structures used for conversation and per-packet data. The MR explicitly notes that most RTP information remains the same for the whole conversation and should be retrieved from conversation state when needed; only extended sequence-number and timestamp information truly needs to be stored for each packet. The types were renamed to reflect those distinct roles instead of continuing to imply that the same structure represented both lifetimes.
+
+**Implementation rule:** partition retained dissector state by the smallest semantic lifetime over which each value varies. Keep session/conversation invariants once at that scope and store only packet-varying results in packet records. Do not use a single convenient “all state” structure at multiple lifetimes when doing so replicates stable data for every frame.
+
+**Review rule:** when a per-packet structure contains addresses, negotiation results, configuration, codec/session metadata, or other data that normally remains fixed across many packets, ask whether the packet needs its own copy. Conversely, do not move genuinely historical packet results to conversation scope merely to save memory.
+
+**Confidence:** Very high. Merged master RTP memory/structure cleanup authored and merged by John Thacker, with the per-packet versus conversation storage rationale stated explicitly.
