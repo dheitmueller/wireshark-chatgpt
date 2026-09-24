@@ -97,3 +97,15 @@ Merged master MR !14923 converts the World of Warcraft dissector to autogenerate
 **Architecture rule:** if a version, mode, capability set, or negotiated dialect belongs to a connection/session, store it in state keyed by that connection/session. Do not use a mutable global merely because most ordinary captures contain only one protocol revision. Tests for version-sensitive dissectors should include multiple conversations or sequential sessions with different negotiated versions so cross-session leakage is visible.
 
 **Confidence:** Very high. Merged master state correction exercised by a capture containing multiple protocol versions.
+
+## Apply traffic-learned dissector-table registrations only on the first dissection pass
+
+Some dissectors learn future dispatch mappings from packets—for example, a control or discovery message may reveal a port that should subsequently be registered with another dissector. Updating a dissector table is a persistent side effect, not presentation work for the current packet. Replaying that mutation every time the same frame is redisected makes global dispatch state depend on how often the UI, filters, or other consumers revisit a packet.
+
+Merged MR !11253 adds SOME/IP DTLS auto-detection. During review, Pascal Quantin explicitly pointed out that calling `dissector_add_uint()` on every dissection of the packet would repeatedly mutate the table and required the registration to be guarded by `!PINFO_FD_VISITED(pinfo)`. The accepted diff uses exactly that first-pass guard before adding the learned `dtls.port` mapping. Merged MR !11254 applies the same rule to SOME/IP-SD's learned service-port registrations; its accepted diff registers those ports only when the frame has not already been visited, and Alexis La Goutte approved and merged it.
+
+**Architecture rule:** when packet analysis discovers a persistent dissector-table or equivalent global dispatch registration that is intended to affect later packets, perform that registration only on the first sequential dissection pass. Redissection may consume the established mapping and may still perform ordinary packet presentation, but it must not replay the persistent registration side effect merely because the frame is being visited again.
+
+**Review rule:** audit packet-driven calls to `dissector_add_*()` and similar registration APIs for first-pass semantics. If a learned mapping must instead vary by capture, conversation, or preference lifecycle, use a correspondingly scoped state mechanism rather than treating repeated redissection as an update signal.
+
+**Confidence:** Very high. Two merged master changes use the same first-pass pattern, with Pascal Quantin explicitly identifying the redissection issue in review and Alexis La Goutte approving the companion SOME/IP-SD fix.
