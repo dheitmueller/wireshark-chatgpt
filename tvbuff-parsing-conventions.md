@@ -91,3 +91,15 @@ Merged master MR !11639, authored and merged by John Thacker, fixes Bluetooth SD
 **Review/testing rule:** for malformed declared lengths, test both oversize and truncation cases and verify two independent properties: the parser cannot escape the parent boundary, and the enclosing loop still makes forward progress or exits cleanly.
 
 **Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker with stable-branch propagation and a concrete no-progress failure mode.
+
+## Keep delimiter search and text extraction inside the same bounded packet domain
+
+Packet text that is not NUL-terminated is still a bounded TVBuff range, not an ordinary C string. Extracting it to a temporary buffer and then advancing raw pointers with `strchr()`/`sscanf()` creates a second, easier-to-break length model and can lose the packet's original bounds semantics. When Wireshark provides TVBuff search, substring, and conversion helpers, use them to identify delimiters and extract exactly the bounded token being parsed.
+
+Merged master MR !11196, authored by John Thacker, fixes iSCSI `TargetAddress` parsing by replacing a raw C-string/pointer-walking path with TVBuff-native delimiter search and bounded extraction before address conversion. The prior path could walk beyond the extracted target string; the accepted path keeps parsing tied to TVBuff offsets and also handles IPv4 and IPv6 forms correctly. Merged release-4.0 backport !11206 carries the same bounds-safety fix.
+
+**Implementation rule:** for packet-derived textual fields, search for separators with TVBuff-aware helpers, compute token extents from validated TVBuff offsets, and convert only that bounded token. Avoid moving packet parsing into unbounded C-string routines merely for convenience.
+
+**Review rule:** distinguish a string's logical syntax from its storage guarantee. A protocol token may look like a C string while the packet only promises a length-delimited byte range; parsing code must honor the latter.
+
+**Confidence:** Very high. Merged master safety fix authored by John Thacker with an accepted stable backport and a concrete out-of-bounds failure mode.
