@@ -95,3 +95,15 @@ Merged master MR !11268 migrates HTTP/2 back onto `reassemble_streaming_data_and
 **Testing rule:** for streaming-reassembly changes, exercise the pass model in which the affected behavior is evaluated. Where redissection can reveal distinct behavior, include a two-pass `tshark -2` regression in addition to appropriate first-pass/live coverage rather than assuming one execution model proves the other.
 
 **Confidence:** Very high. Merged master framework consolidation approved and merged by John Thacker, with both the maintenance rationale and the second-pass testing requirement documented in the accepted change.
+
+## Use `DESEGMENT_ONE_MORE_SEGMENT` when the total missing length is not yet knowable
+
+A streaming dissector sometimes knows that the current bytes are insufficient without being able to calculate the final PDU length. In that state, inventing an exact `desegment_len` couples the caller to a false length estimate. Wireshark has an explicit sentinel for this contract: request one more segment and let the dissector reconsider once additional bytes are available.
+
+Merged master MR !11184 improves the documentation around `reassemble_streaming_data_and_call_subdissector()` and its callback contract. The accepted comments explicitly recommend `pinfo->desegment_len = DESEGMENT_ONE_MORE_SEGMENT` when the subdissector cannot determine how many additional bytes are ultimately required, and document how the helper's return value distinguishes completed data, exact additional-byte requests, and the one-more-segment sentinel.
+
+**Implementation rule:** distinguish “need N more bytes” from “need more data but final length is unknown.” Use an exact positive length only when the protocol parser can justify it; otherwise use `DESEGMENT_ONE_MORE_SEGMENT` and preserve that state through helper APIs rather than converting it to an arbitrary number.
+
+**API/documentation rule:** helpers that wrap desegmentation should document how sentinel values propagate and what their return values mean, so callers do not accidentally treat a control value as an ordinary byte count.
+
+**Confidence:** High. Merged master reassembly API/documentation change that clarifies the intended sentinel semantics used by common streaming reassembly.
