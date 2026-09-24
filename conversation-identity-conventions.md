@@ -47,3 +47,15 @@ The closed predecessor !13693 is useful testing evidence even though it is not i
 **Testing rule:** test both directions across the endpoint change, especially a reverse-direction packet that cannot identify the connection by itself. Include a real migrated/rebound capture and any required decryption secrets, and verify packets after the migration rather than only the first packet that announces or reveals the new path.
 
 **Confidence:** Very high. Merged master fix with detailed John Thacker review and concrete capture/keylog reproduction from its superseded predecessor; it also corroborates the notebook's existing reassembly rule that protocol session identity can outlive endpoint tuples.
+
+## Scope protocol sequence/timestamp state by the protocol-defined namespace, not merely the transport session
+
+A transport conversation can contain several independent protocol state spaces. When the specification defines a discriminator that owns its own sequence numbers, timestamps, counters, or generations, persistent state must be keyed by that discriminator even when all of those streams share one address/port tuple.
+
+Merged master MR !11493, authored and merged by John Thacker, fixes RTP extended sequence-number and timestamp tracking. RTP defines each SSRC as its own timing and sequence-number space, but the old conversation data retained only one most-recent sequence number/timestamp pair for the whole RTP conversation. Multiple SSRCs on one 5-tuple could therefore make one stream appear to wrap or jump based on another stream's history. The accepted implementation stores that state per SSRC while packet-local data continues to contain only the values relevant to the packet being dissected. The same change also improves 5-tuple reuse because a newly observed SSRC starts in its own number space rather than inheriting cycle state from an older sender.
+
+**Architecture rule:** distinguish the identity of the enclosing Wireshark conversation from the identity of each state namespace inside it. If the protocol says a field such as SSRC, channel ID, stream ID, generation, or direction defines an independent sequence/timestamp/counter space, include that field in the state key rather than treating the enclosing transport tuple as sufficient identity.
+
+**Review rule:** when code keeps a “last”, “highest”, cycle count, rolling timestamp, or similar history at conversation scope, ask whether every packet in that conversation is normatively part of the same number space. Multi-stream captures and reuse of a familiar 5-tuple are useful tests for state-key collisions.
+
+**Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker, with the protocol namespace requirement stated directly from RTP/RFC semantics.
