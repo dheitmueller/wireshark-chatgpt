@@ -25,3 +25,25 @@ Merged master MR !11665, authored by Guy Harris, fixes `radiotap-gen` by copying
 **Review rule:** distinguish value compatibility from C type identity. In code that crosses libc, libpcap, OS, or SDK boundaries, audit aggregate assignments and casts for assumptions the API contract does not actually promise.
 
 **Confidence:** Extremely high. Guy Harris-authored merged master correction with accepted release backport and explicit type-portability rationale.
+
+## Report only the platform facts that the system API can actually guarantee
+
+System introspection APIs can expose a compatibility or emulation view rather than the physical host identity. Do not turn a reliable coarse fact into an unreliable specific claim merely because a structure contains an architecture field.
+
+Merged master MR !11469, authored by Guy Harris, extends Windows bitness reporting for ARM64. Its rationale documents an important `GetNativeSystemInfo()` limitation: an x86/x64 application running under emulation on ARM64 can be given an x86/x64 view rather than the host's native instruction-set identity. The accepted code therefore uses the result to report the trustworthy property—32-bit versus 64-bit Windows—but deliberately avoids claiming that the host itself is x86-64 or ARM64 when that distinction cannot be established reliably.
+
+**Implementation rule:** distinguish the semantic guarantee of an OS query from the apparent precision of its return structure. Under emulation, compatibility layers, containers, or virtualization, prefer a coarser statement that the API actually guarantees over a more specific but potentially false platform identity.
+
+**Review rule:** for platform-detection code, ask whether the API reports the process view, compatibility view, kernel view, or physical host. If those can differ, document the limitation and constrain user-visible diagnostics to what can be known.
+
+**Confidence:** Extremely high. Guy Harris-authored merged master change with the emulation limitation and resulting presentation choice documented directly in the source/MR rationale.
+
+## Remove obsolete compatibility branches when the supported baseline already requires the newer contract
+
+Legacy platform workarounds should not survive indefinitely after the rest of the code and supported build baseline already depend on the APIs or structure members they were intended to avoid. Keeping such dead compatibility paths makes platform code harder to audit and can obscure the real minimum contract.
+
+Merged master MR !11468, authored by Guy Harris, removes an old MSVC 6 workaround around `VER_NT_WORKSTATION`/`OSVERSIONINFOEX`. The rationale is not merely that MSVC 6 is old: neighboring Wireshark code already required the same modern declarations and members and had been building successfully, so the conditional workaround no longer represented an actual supported configuration. The accepted change centralizes the workstation test in one helper using the supported API directly.
+
+**Implementation rule:** before preserving a historical `#ifdef` workaround, compare it with the repository's current compiler/SDK support floor and nearby code. If supported builds already require the supposedly unavailable facility, remove the workaround and make the real baseline explicit rather than maintaining contradictory compatibility paths.
+
+**Confidence:** Extremely high. Guy Harris-authored and merged cleanup with the obsolete-support rationale stated directly.
