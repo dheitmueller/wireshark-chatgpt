@@ -51,3 +51,13 @@ Merged master MR !24394 fixes RTPS parameter parsing by resetting `param_length_
 **Implementation rule:** initialize record-local parser mode inside the repeated-record loop, not merely before it. Likewise, when one container carries multiple fragments/elements, derive each element's source position from its index/consumed length rather than reusing the container's initial payload offset.
 
 **Confidence:** High. Merged master correctness fix approved by Jaap Keuter with focused capture validation.
+
+## Continue after a nested nonfatal error when the parent owns reliable sibling boundaries
+
+A child dissector failure does not always invalidate later siblings. If the enclosing protocol has already decoded trustworthy length/type metadata for each child, it can contain a nonfatal child exception, report it at that child's subtree, advance by the parent-owned length, and continue to later independent siblings. Fatal exceptions and failures that destroy the parent's framing knowledge must still propagate.
+
+Merged master MR !11333, authored and merged by John Thacker, applies this to RTP RFC 2198 redundant data. The wrapper already knows each secondary encoding's offset, length, and payload type from the RFC 2198 headers. It therefore catches `CATCH_NONFATAL_ERRORS` around each nested `dissect_rtp_data()` call, displays the exception, restores `pinfo->current_proto`, advances by the known child length, and continues so a malformed secondary codec does not prevent dissection of the primary codec or later entries.
+
+**Implementation rule:** establish this kind of recovery boundary only when the parent has independently validated the next sibling boundary. Restore mutable packet context that a failed child may have changed before continuing. Do not guess an advancement length from partially consumed child state, and do not catch fatal exceptions simply to keep parsing.
+
+**Confidence:** Extremely high. Merged master parser-control fix authored and merged by John Thacker, with the recoverable/fatal distinction stated directly in the change.
