@@ -63,3 +63,19 @@ Merged master MR !16095, authored and merged by John Thacker, imports upstream P
 **Review rule:** provenance or proximity to upstream is evidence that a change is relevant, not evidence that it is correct for Wireshark. Pay particular attention to commits that alter generated call signatures, signedness, field types, ownership, or wire-decoding behavior.
 
 **Confidence:** Extremely high. The accepted merged change was authored and merged by John Thacker and contains an explicit rationale for importing one upstream generator capability while intentionally rejecting the adjacent upstream semantic change.
+
+## Keep shared generator inputs reviewable and synchronize generator changes separately
+
+When Wireshark intentionally shares an IDL or generator with another project, preserve a clean semantic relationship to that upstream source. Avoid wholesale whitespace rewrites or unrelated formatting churn in shared IDL because it obscures the protocol changes reviewers need to inspect and makes later bidirectional ports unnecessarily difficult. When the generator itself must change, keep that engine change separable from the protocol/IDL change if another project needs to import it independently.
+
+Merged MR !11597 is a detailed PIDL/DRSUAPI example. Stefan Metzmacher, an authoritative Samba/PIDL maintainer, objected when a tab-to-space rewrite made the Wireshark/Samba IDL diff difficult to review and asked that the IDL remain close enough to Samba's version that the semantic changes could be ported cleanly. He also clarified that this source belonged under Wireshark's PIDL-owned tree and regeneration workflow rather than the neighboring `idl2wrs` path. The contributor moved the inputs accordingly and cleaned up the IDL diff.
+
+The same review found PIDL-side changes that Samba should receive independently. Metzmacher explicitly requested that the generator fix use the appropriate force/regeneration path and be made as a separate commit so he could import it into Samba's PIDL. The accepted series therefore treated generator maintenance, shared IDL synchronization, and generated dissector output as related but distinct review units.
+
+**Implementation rule:** for generator-owned dissectors, first identify the correct generator-specific source tree and canonical regeneration workflow. Do not choose an input directory or tool merely because it produces superficially similar output.
+
+**Review rule:** keep shared IDL/specification diffs semantically focused. If formatting churn hides the actual protocol change, restore a clean relationship to the upstream/shared source before review. Fix deterministic generator defects in the generator rather than repeatedly polishing its output.
+
+**Submission rule:** separate generator-engine changes from protocol/schema changes when their upstream destinations or cherry-pick paths differ. This makes synchronization with projects such as Samba practical and lets each change be reviewed at the layer that owns it.
+
+**Confidence:** Very high. The MR was merged after extensive review, and the direction came from Stefan Metzmacher in his area of direct Samba/PIDL authority, with Wireshark maintainers incorporating the requested restructuring.
