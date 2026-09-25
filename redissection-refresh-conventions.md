@@ -1,1 +1,0 @@
-# Redissection Refresh Conventions
