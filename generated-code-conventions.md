@@ -95,3 +95,13 @@ Merged !11174 provides operational corroboration for scheduled generation: an up
 **Automation rule:** if generated content is refreshed automatically from an external specification, land generator/schema compatibility changes and matching tests before the scheduled refresh that depends on them.
 
 **Confidence:** Very high. The core CI invariant is merged master work authored by John Thacker, aligns with an already-established ASN.1 check, and is reinforced by several accepted source/output synchronization MRs in the same series.
+
+## Repeated maintainer corrections reinforce ASN.1 source-of-truth discipline
+
+Several merged April 2023 MRs provide unusually direct Guy Harris evidence for the generated-source rule. In !10330 (SPNEGO) and !10341 (ATN-ULCS), Guy pointed out that the changed `packet-*.c` files are generated and that the corresponding ASN.1 template/configuration source must be changed and the dissector regenerated. He then supplied merged corrective MRs !10353 and !10351. Likewise, in !10343 he identified a direct edit to generated `packet-ilp.c`; merged !10352 applies the same change to `epan/dissectors/asn1/ilp/ilp.cnf`. Merged !10320 independently fixes GDT/Z39.50 templates after an earlier change had touched generated output only.
+
+**Review rule:** when a change lands in generated ASN.1 output, verify that the authoritative template/conformance input carries the same semantic change. A correct generated diff does not excuse a stale source-of-truth file.
+
+**Maintenance rule:** if a generated-output-only fix has already merged, follow it promptly with a source-side correction so the next regeneration cannot silently revert the behavior.
+
+**Confidence:** Extremely high. Multiple merged corrections, including three authored by Guy Harris in direct response to generated-output-only changes.

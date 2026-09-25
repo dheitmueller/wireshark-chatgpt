@@ -83,3 +83,13 @@ Merged master MR !11748, authored and merged by Martin Mathieson, extends `check
 **Testing rule:** when a correctness invariant is knowable from repository source, prefer checking the definition directly rather than relying only on one runtime consumer to exercise it. Runtime checks and source checkers are complementary: runtime validation protects dynamic state, while source tooling can catch dormant or differently consumed definitions before they become reachable.
 
 **Confidence:** Very high. Merged checker enhancement authored and merged by Martin Mathieson, with the coverage gap between the static checker and `proto.c` stated directly in the MR description.
+
+## Keep recoverable argument-contract diagnostics observable without making fuzzing treat them as fatal
+
+A failed defensive argument check can represent a programmer mistake without implying that process state is inconsistent or that fuzzing should stop. If the helper is explicitly designed to return safely after the failed precondition, its default diagnostic severity should match that recoverability; developers can still opt into fatal handling for focused debugging.
+
+Merged master MR !10332, authored and merged by João Valverde, changes the `ws_return.h` invalid-argument diagnostics from the fatal-critical path to an informational `InvalidArg` log domain. The MR's rationale is explicit: these are recoverable programming errors, but making them critical caused fuzzers configured with fatal critical logging to trip constantly. The dedicated domain preserves the ability to make just invalid-argument diagnostics fatal during debugging.
+
+**Testing rule:** do not use default log severity as a surrogate assertion when the API intentionally recovers. Separate semantic category/domain from fatality so fuzzing can continue past recoverable contract violations while targeted debugging can still promote them.
+
+**Confidence:** Very high. Merged core utility change with the fuzzer interaction and debugging intent documented directly in the MR.

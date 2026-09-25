@@ -35,3 +35,15 @@ Merged master MR !13547, authored by Martin Kaiser and merged by Martin Mathieso
 **Review rule:** when adding a new checker mode or directory layout, compare the file lists produced by whole-tree and changed-file invocations. A checker that reaches a file only through one mode has a coverage bug even if each mode appears internally consistent.
 
 **Confidence:** Very high. The inconsistency and concrete missed nested dissector file are stated directly in merged master MR !13547, and the accepted change was specifically to make the outputs consistent.
+
+## Resolve simple macro constants before applying mask-width rules
+
+Source checkers should reason about the numeric value of a field mask when that value is available through a simple macro definition. Treating every macro spelling as opaque hides exactly the width and contiguity defects the checker is intended to find.
+
+Merged master MR !10315, authored and merged by Martin Mathieson, teaches `check_typed_item_calls.py` to substitute discovered mask macros before evaluating mask width, significant digits and contiguity. Running the stronger check exposed real field-registration errors across several dissectors, including a 16-bit value registered as `FT_UINT8`, a 24-bit VP8 value registered as `FT_UINT8`, and boolean/container-width mismatches. Merged !10341 independently shows the same checker surfacing incorrect MPEG masks and an ATN-ULCS width mismatch.
+
+**Implementation rule:** resolve straightforward compile-time aliases before applying numeric source checks; retain an explicit unknown/unresolved path for expressions the checker cannot safely evaluate.
+
+**Review rule:** checker improvements should be validated against the findings they newly expose. Fix the semantic field type/mask/container mismatch rather than merely reshaping the source until the warning disappears.
+
+**Confidence:** Very high. Merged checker work by Martin Mathieson with concrete correctness bugs uncovered immediately by the added macro substitution.
