@@ -45,3 +45,24 @@ Merged master MR !9489, authored and merged by John Thacker, fixes EtherCAT FoE 
 
 **Confidence:** Extremely high. Merged master correction authored and merged by John Thacker, with the malformed-encoding rationale stated directly in the MR.
 
+## Advance decoder state by consumed input, not merely by produced output
+
+Malformed-text recovery has two independent quantities: bytes consumed from the source and bytes copied into valid output. A decoder must advance its cursor and remaining-length accounting by the former even when an invalid sequence produces no directly copied bytes. Conflating them can duplicate replacement characters, reprocess input, or mishandle adjacent invalid bytes.
+
+Merged master MR !9214, authored and merged by Gerald Combs with corrective review from John Thacker, fixes UTF-8 recovery so the remaining length is reduced by ptr - prev, the complete source span consumed by validation, rather than only by the number of valid bytes. John specifically noted that the wrong accounting could append extra replacement characters. Merged master MR !9248, authored and merged by John Thacker, fixes the analogous ASCII conversion state after !9224's batching optimization: prev must advance past an invalid byte even when two invalid bytes are adjacent and there were zero valid bytes to append between them.
+
+**Implementation rule:** keep source progress, valid-output length, and replacement emission as separate state. After a validation step, update the source cursor/remaining length for every consumed byte regardless of whether the output path appended a valid run.
+
+**Testing rule:** text-decoder optimizations must include adjacent invalid bytes, malformed/truncated multibyte sequences, invalid bytes at run boundaries, and valid text on both sides. These cases expose progress bugs that a mostly-valid sample will not.
+
+**Confidence:** Extremely high. Two merged core-charset correctness fixes, with the UTF-8 accounting correction supplied directly by John Thacker.
+
+## Document wire-order transformations that look opposite to the access API
+
+Sometimes a specification defines text as byte groups inside endian-sensitive machine words, making the correct implementation look backwards when viewed only at the integer-read call. In those cases, document the complete transformation from wire bytes to text rather than changing one apparently inverted endian operation in isolation.
+
+Merged master MR !9226, authored by Guy Harris, expands the SRT string-decoding comments to explain the protocol's unusual representation: the payload is stored as 32-bit little-endian words, while the string octets within each word are consumed in the corresponding reversed byte order, and unused bytes are NUL padding rather than a NUL terminator. The implementation's big-endian word read followed by low-to-high byte extraction is therefore equivalent to a little-endian word read followed by high-to-low extraction.
+
+**Implementation rule:** when byte order, bit extraction, or padding rules make the code intentionally non-obvious, place a specification-level equivalence explanation next to the transform. Distinguish padding from termination because the latter changes string length and malformed-input behavior.
+
+**Confidence:** Extremely high. Merged explanatory change authored by Guy Harris for an otherwise counterintuitive on-wire text representation.

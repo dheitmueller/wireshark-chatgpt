@@ -69,3 +69,15 @@ Merged master MR !9562, authored and merged by Martin Mathieson, extends `check_
 **Implementation rule:** keep the byte-decoding control plane separate from the value being decoded. A runtime protocol value is never a substitute for `ENC_*` flags merely because both are integer-compatible in C.
 
 **Confidence:** Very high. Merged project-wide checker and cleanup work by Martin Mathieson, with multiple concrete call-site corrections.
+
+## Mark calculated protocol-tree values as generated rather than wire-backed
+
+A protocol-tree field that is computed from other fields or parser state is semantically different from a field directly backed by the highlighted packet bytes. Preserve that distinction in the tree so users and downstream tooling are not told that the synthesized value literally occupies the supplied byte range.
+
+During review of merged master MR !9223, Alexis La Goutte asked that calculated ALP values be marked as generated; the contributor then applied generated marking to all calculated values in the new dissector. The same review also preferred standard proto_tree_add_item decoding for values that really are present on the wire.
+
+**Implementation rule:** use the standard registered-field extraction API for wire-backed values where possible. When a value is derived by arithmetic, reconstruction, or state rather than read directly from those bytes, add the derived value separately and mark the resulting protocol item as generated using the current generated-item API.
+
+**Review rule:** inspect add_uint/add_string/add_* calls whose value argument comes from a local calculation rather than the TVBuff. Decide whether the field is a decoded wire value or a synthesized semantic value and mark or present it accordingly.
+
+**Confidence:** Very high. Merged new-dissector review with the generated-field request made explicitly by Alexis La Goutte and applied across the calculated fields before merge.

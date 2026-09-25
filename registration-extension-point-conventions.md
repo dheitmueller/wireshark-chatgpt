@@ -47,3 +47,15 @@ Merged master MR !9957, authored by John Thacker, removes the fixed Follow Strea
 **UI rule:** dynamic extension menus should have an explicit empty-state behavior, normally disabling or hiding the action rather than presenting a submenu that appears to be waiting for entries.
 
 **Confidence:** Very high. Merged master architectural refactor authored by John Thacker, with direct review of the dynamic-menu behavior.
+
+## Carry optional protocol-specific frontend behavior through the capability registry
+
+When a registered capability has optional protocol-specific behavior that a generic frontend needs, put that behavior in the capability registration itself rather than teaching the frontend a closed list of protocol names or including dissector-private headers.
+
+Merged master MR !9259, authored by John Thacker, extends Follow Stream registration with an optional callback for finding valid sub-stream IDs. The CLI and Qt Follow Stream code then query that registered callback instead of special-casing HTTP/2 and QUIC. This removes direct Qt dependencies on those dissectors and lets future followers expose sub-stream behavior without another common-UI change. Review also exposed why the abstraction matters: the shared UI had assumed sub-stream 0 always exists because that is true for HTTP/2 control traffic, but QUIC stream 0 is an ordinary stream and may not exist at all.
+
+**Architecture rule:** make the registration object the authoritative description of an extensible feature's optional capabilities. Represent absence explicitly (for example with a NULL callback), and let generic UI/CLI code derive visibility, accepted syntax, and navigation behavior from that capability rather than from protocol identity.
+
+**Review rule:** when common code branches on specific registered protocol names, ask whether the differing behavior belongs in registration metadata or a callback owned by the protocol. Avoid moving protocol-specific assumptions into the generic layer merely because the first two implementations happened to share them.
+
+**Confidence:** Extremely high. Merged master extension-point refactor authored by John Thacker, with a concrete protocol-assumption bug found during review.

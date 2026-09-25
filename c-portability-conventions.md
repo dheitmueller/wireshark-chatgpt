@@ -57,3 +57,15 @@ Merged master MR !11809, authored and merged by João Valverde, fixes an unalign
 **Review rule:** when a callback receives `void *`, trace the concrete type the calling library will pass at runtime. Treat casts that reinterpret it as a different struct as portability red flags even when they appear to work on x86.
 
 **Confidence:** Very high. Merged master portability/correctness fix authored and merged by João Valverde with a concrete unaligned-access failure mode.
+
+## Identify the actual compiler front end before selecting compiler-specific intrinsics
+
+Compiler compatibility macros are not unique identities. Clang-cl and Intel compilers can define _MSC_VER for Microsoft compatibility, and Intel/Clang can define GNU-style macros on other platforms. Selecting an implementation from one compatibility macro can therefore route a different compiler through intrinsics or assumptions it does not optimize or support in the same way.
+
+Merged master MR !9238, authored by John Thacker, optimizes Wireshark's unaligned integer helpers after comparing generated code across GCC, Clang, MSVC, and Intel compilers. GCC and Clang retain the portable shift/mask implementation because they optimize it well; MSVC and Intel take a memcpy-based path with compiler-appropriate byte-swap intrinsics. The preprocessor tests explicitly exclude clang-cl and distinguish Intel compilers even where they advertise MSVC compatibility. Guy Harris's review explored the architecture/alignment implications and alternative MSVC unaligned support.
+
+**Implementation rule:** choose compiler-specific code from the actual front end and feature contract, not from a compatibility macro in isolation. Prefer a portable implementation when optimizers handle it well; introduce a specialized path only with evidence that it improves supported toolchains without changing alignment, aliasing, or endian semantics.
+
+**Review rule:** for _MSC_VER, __GNUC__, and similar tests, ask which compatibility compilers also define the macro. Compiler Explorer or equivalent generated-code evidence is useful for performance-motivated specialization, but correctness must remain defined independently of the optimization.
+
+**Confidence:** Extremely high. Merged portability/performance work authored by John Thacker with extensive architecture/compiler review from Guy Harris.

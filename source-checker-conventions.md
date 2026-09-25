@@ -75,3 +75,23 @@ Merged MR !9283, authored by Martin Mathieson, extends `check_typed_item_calls.p
 **Checker rule:** establish the semantic role of a helper array from its consuming API before enforcing API-specific invariants. For bitmask arrays, validate relationships between member masks rather than checking each field only in isolation.
 
 **Confidence:** Very high. Merged checker work by Martin Mathieson with multiple concrete defects found and fixed.
+
+## Cover sibling APIs that share the same semantic contract
+
+A repository checker can give a false sense of safety if it validates one API spelling but silently skips sibling APIs with the same field contract. Once a check is known to apply to a family of protocol-tree operations, audit that family rather than relying on whichever entry points were originally implemented.
+
+Merged master MR !9243, authored and merged by Martin Mathieson, enables check_typed_item_calls.py checks for proto_tree_add_bits_item() and proto_tree_add_bits_ret_val() instead of leaving those sibling APIs commented out. The same field metadata and mask/type invariants therefore apply whether the caller adds an ordinary item or a bit-addressed item.
+
+**Checker rule:** when extending a source checker, enumerate sibling APIs that consume the same semantic metadata and either cover them or document why their contracts differ. A checked API family should be defined by semantics, not by an accidental historical list of function names.
+
+**Confidence:** Very high. Merged project checker expansion authored and merged by Martin Mathieson.
+
+## Roll out advisory checks with severities that match their semantic impact
+
+A source checker should distinguish correctness failures from cleanup opportunities. Labeling "could use the common helper" as an error makes the checker noisy and encourages mechanical churn; enabling a noisy advisory checker in mandatory CI before the existing baseline is understood makes that worse.
+
+Merged master MR !9234, authored and merged by Martin Mathieson, adds an optional check_tfs.py mode that finds local two-value value_string tables matching shared true_false_string definitions. Jaap Keuter objected to reporting exact matches as errors and capitalization-only differences as warnings because both findings are suggestions rather than correctness defects. Martin also stated that he would not enable the option in the pipeline before the existing warning set was cleared.
+
+**Checker rule:** assign severity from semantic consequence: correctness/invariant violations may be errors; style/deduplication opportunities are warnings or notes. Before making a new check mandatory, inspect and triage its whole-tree baseline so CI starts from actionable signal rather than inherited noise.
+
+**Confidence:** High. Merged checker work with explicit review discussion about severity and CI rollout from Jaap Keuter and Martin Mathieson.

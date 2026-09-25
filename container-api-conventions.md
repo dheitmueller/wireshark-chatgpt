@@ -93,3 +93,15 @@ Merged master MR !14305, authored by Gerald Combs and merged by Jaap Keuter, mak
 **Review rule:** if many callers are repeating the same defensive NULL check because an optional collection is semantically empty when absent, consider centralizing the contract in the collection helper. Conversely, do not hide programmer errors where absence is not a valid state.
 
 **Confidence:** Very high. Merged master API change authored by project lead Gerald Combs, merged by Jaap Keuter, and propagated to multiple maintained branches.
+
+## Remove indexed state from the index implied by its current key before changing that key
+
+Objects stored in several indexes according to which parts of their key are currently known must be removed from the exact index corresponding to their pre-mutation state. Removing from a sibling index is not a harmless miss if the removal helper assumes membership; it can turn an ordinary state transition into a NULL lookup or crash.
+
+Merged master MR !9249, authored and merged by John Thacker, fixes conversation_set_addr2(): a conversation that already had port2 but lacked addr2 was incorrectly removed from the no-port2 table instead of the no-addr2 table before addr2 was installed. John noted that the wrong line had survived for about ten years and that issue #18766 reached a segfault because conversation_remove_from_hashtable did not expect its lookup to return NULL. The same correction was carried in merged stable backports !9254 and !9256.
+
+**Implementation rule:** when key fields or options determine container membership, treat mutation as an ordered transition: identify and remove the object from the index described by the old key, mutate the key and flags, then insert into the index described by the new key. Do not infer the old container from the field being changed; derive it from the object's complete current state.
+
+**Review rule:** for indexed state machines with several partial-key tables, enumerate the possible option and key combinations and verify every setter's remove/reinsert pair against that matrix. A wrong-table removal may remain latent for years if the unusual partial-key transition is rarely exercised.
+
+**Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker, preserved in two release backports, with a concrete crash and root-cause explanation.
