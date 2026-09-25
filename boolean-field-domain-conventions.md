@@ -15,3 +15,15 @@ Merged master MR !9336, authored by Martin Mathieson, explicitly reverts several
 Later merged !9597 supplies the complementary positive case: when a protocol explicitly defines any nonzero value as true, `FT_BOOLEAN` is the correct representation.
 
 **Confidence:** Very high. Direct merged correction authored by Martin Mathieson, independently complemented by a later merged Boolean-domain fix.
+
+## Preserve the protocol's declared scalar domain even when the named states look Boolean
+
+A pair of human-readable values such as "Enabled/Disabled" or "On/Off" does not by itself make an on-wire field Boolean. Preserve the field type and domain defined by the protocol specification, especially when the protocol defines a full-width scalar rather than a one-bit predicate.
+
+Merged MR !9281 converted a number of 0/1 integer fields to `FT_BOOLEAN` with shared `true_false_string` tables. During review, Pascal Quantin called out the MBIM cases specifically: the MBIM specification defines those fields as 32-bit integer values, not as single-bit Boolean fields, so they should retain their integer representation. Merged follow-up !9298, authored and merged by Martin Mathieson, restores those MBIM fields to `FT_UINT32` plus explicit `value_string` tables.
+
+**Implementation rule:** use the protocol's semantic data model, not merely its current display vocabulary, to choose `FT_BOOLEAN` versus `FT_UINT*`. A scalar enum with presently assigned values 0 and 1 remains an integer enum when other numeric values are reserved, invalid, or available for future assignment.
+
+**Review rule:** before replacing a two-entry `value_string` with a common TFS, verify both the specification's declared field type and the meaning of values outside 0 and 1.
+
+**Confidence:** Very high. Direct Pascal Quantin review on a merged cleanup, followed immediately by a merged corrective MR from Martin Mathieson.
