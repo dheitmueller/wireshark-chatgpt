@@ -35,3 +35,12 @@ Merged master MR !10605 fixes several BGP findings from the typed-item checker. 
 **Testing rule:** rerun the checker after the correction and inspect all call sites of any registration whose type, mask, or width changed. A warning disappearing at one location is not sufficient evidence that the shared field is now correct.
 
 **Confidence:** High. Merged master checker-driven fix with direct review from Martin Mathieson about the risks of changing a field shared by wider accesses.
+
+
+## Passing a checker does not prove protocol semantics
+
+Merged MR 10493 made broad typed-item checker driven corrections, but Lars Volker later reported that the change had broken at least one dissector. This reinforces the existing all-use audit rule: a checker can prove that metadata and call patterns satisfy its model, but it cannot prove that the resulting field width, mask, or interpretation matches the protocol.
+
+**Review rule:** after checker-driven metadata changes, verify the protocol semantics and all affected call sites, and run representative behavior tests where practical.
+
+**Confidence:** High. This is a concrete regression report attached to a merged checker-cleanup MR and directly corroborates the stronger MR 10605 rule above.
