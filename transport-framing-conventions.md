@@ -35,3 +35,12 @@ Merged master MR !10423, also authored and merged by John Thacker, provides comp
 **Architecture rule:** expose transport/representation-specific wrappers around a reusable semantic decoder when a protocol is carried in materially different framing contexts. Let the layer that knows the framing own reassembly and PDU boundaries; do not make an embedded caller emulate TCP merely to reach the decoder.
 
 **Confidence:** Very high. Both examples are merged master changes authored by John Thacker; !10460 was independently accepted by Alexis La Goutte.
+
+## Earlier high-authority media-type example
+
+Merged master MR 10389, authored and merged by Guy Harris, gives an explicit example of why a byte-stream wrapper is not interchangeable with a complete-PDU decoder. ILP and ULP keep TCP-facing entry points that own stream framing and reassembly, while the media-type table calls the ASN.1 PDU decoder directly because its caller already supplies one reassembled PDU. Release backports 10391 and 10392 preserve the same separation.
+
+**Implementation rule:** bind each carrier to an entry point whose framing contract matches what that carrier supplies. Do not run TCP PDU-carving/reassembly logic on an already delimited media-type payload.
+
+**Confidence:** Extremely high. Merged Guy Harris master change plus two accepted stable backports.
+

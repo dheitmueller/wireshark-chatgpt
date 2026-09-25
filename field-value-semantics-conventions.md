@@ -85,3 +85,16 @@ Merged master MR !10704, authored and merged by John Thacker, fixes Synphasor by
 **Review rule:** flag expressions where a packet-derived value indexes a `value_string`, `range_string`, or similar mapping table directly. Check both bounds safety and the semantic behavior for unknown/reserved values.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with two previously reviewed stable counterparts.
+
+## Match value-string helpers to the fallback's semantics
+
+The formatted `val_to_str()` and `rval_to_str()` helpers interpret their final argument as a numeric fallback format when lookup fails. When the unknown case is fixed text, use the corresponding `*_const()` helper instead. When the unknown case includes the value, use a conversion that matches the numeric lookup key.
+
+Merged master MR !10396 demonstrated that a mismatched fallback format in the MySQL dissector could crash when an unknown value reached that path. Martin Mathieson followed with merged master MR !10407, introducing `tools/check_val_to_str.py` to detect this class of misuse. Merged MR !10397 converted broad `rval_to_str()` uses with literal unknown text to `rval_to_str_const()`.
+
+A checker finding still needs semantic triage for stable-branch decisions. Martin noted cases whose inputs were constrained so every reachable value was present in the table; those calls were worth cleaning up, but the faulty fallback was unreachable and therefore did not justify a correctness backport.
+
+**Implementation rule:** use `*_const()` for fixed unknown text and formatted helpers only when the fallback needs to render the numeric key with a type-correct conversion. Determine whether the fallback is actually reachable before classifying a checker hit as a runtime bug or stable-branch fix.
+
+**Confidence:** Very high. Reproduced failure, merged checker work by Martin Mathieson, and merged cleanup.
+

@@ -11,3 +11,14 @@ Closed MR !10525 proposed accepting a one-byte NGAP transparent container. Pasca
 **Submission rule:** attach or otherwise preserve the reproducing capture when possible, state the target revision used for reproduction, and call out whether the packet is known-valid, known-invalid, or uncertain.
 
 **Confidence:** High. Both source MRs were closed rather than merged, so they are negative review evidence; the guidance is strengthened by direct review from Alexis La Goutte and Pascal Quantin and by the concrete disproving evidence in each case.
+
+## Treat a representative capture as primary reproducer evidence
+
+For non-trivial packet-analysis bugs, screenshots and prose do not replace the packet data needed to reproduce the behavior. A representative capture is also valuable for protocol enhancements because reviewers can exercise the actual dissector path and preserve the case for regression testing.
+
+Merged master MR !10412 updates Wireshark's issue templates to state that a capture file is essential for non-trivial bugs and that screenshots are not enough. The feature template similarly encourages a capture suitable for testing the requested behavior. Merged new-dissector MR !10405 independently shows Alexis La Goutte requesting both a pcap and fuzzing evidence before merge; the contributor supplied both.
+
+**Review/submission rule:** request and preserve a representative capture for non-trivial dissector bugs and enhancements whenever possible. Treat logs, screenshots and prose as supplemental context rather than substitutes for a reproducible capture.
+
+**Confidence:** Very high. The expectation is encoded in merged project templates and independently exercised in merged dissector review.
+

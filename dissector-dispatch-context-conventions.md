@@ -33,3 +33,14 @@ Merged MR !25741 adds an RDM manufacturer-specific PID dissector table and demon
 **Implementation rule:** model protocol-defined extension namespaces as registration points rather than hard-coded private switches. For plugin-facing tables, validate both the wire dispatch and a realistic external registration path.
 
 **Confidence:** High. Merged master extension design with sample capture and Lua-plugin validation.
+
+## Adapt entry points when caller data contracts differ
+
+The `void *data` argument is part of a dissector call's contract even though its C type is untyped. A common semantic decoder must not blindly interpret that pointer as one caller's private structure when the same decoder is registered in another table with a different data contract.
+
+Merged master MR !10376, authored by Guy Harris, fixes COSE media-type registrations that reused entry points expecting a `wscbor_tag_t *`. The `media_type` table does not pass that structure. The accepted design creates media-type-specific adapter entry points and calls the common COSE decoder with context it can legitimately assume. Release backports !10380 and !10381 preserve the same contract. Merged !10382 provides complementary evidence by passing HTTP content information to heuristic subdissectors that legitimately depend on that context.
+
+**Implementation rule:** document and honor the data contract for each dissector table or direct-call path. When one parser is exposed through entry points with different caller context, use thin adapters that translate or deliberately omit context; do not reinterpret one table's `data` as another's private type.
+
+**Confidence:** Extremely high for the adapter rule; the master fix was authored by Guy Harris and accepted on two stable branches.
+

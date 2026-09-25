@@ -89,3 +89,16 @@ Merged master MR !12020, authored and approved by Guy Harris, changes the captur
 **Review rule:** if code is matching or heuristically parsing an error sentence emitted by another process in order to decide behavior, treat that as evidence that the IPC protocol is missing a structured status field.
 
 **Confidence:** Extremely high. Merged master capture-process error-contract change authored and approved by Guy Harris, with the permission-denied use case stated explicitly in the MR rationale.
+
+## Classify capture-open failures before rendering user guidance
+
+Capture-open failures should be normalized into meaningful status values before higher layers choose user-facing advice. Permission guidance is misleading when the failure is known to have a different cause.
+
+Merged master MR !10393, authored by Guy Harris, expands Wireshark's capture-open status domain to represent specific libpcap results such as no-such-device, unsupported monitor mode, interface-down and permission failures. Dumpcap then selects diagnostics from that structured status and retains detailed libpcap text for cases not handled specifically. Release-4.0 MR !10394 backports the same design.
+
+Merged master follow-up !10395 recognizes Linux EAFNOTSUP and adds secondary guidance about likely sandbox or kernel causes; !10408 backports it. That follow-up must recognize a libpcap error string because the older external interface does not expose a richer code for the case, which reinforces preferring structured status when the dependency makes one available.
+
+**Implementation rule:** translate dependency/platform failures into a project-owned semantic status before deciding what to tell the user. Attach cause-specific remediation only when the classification supports it, and retain raw library detail as supplemental evidence for unknown cases.
+
+**Confidence:** Extremely high. Merged Guy Harris master changes with accepted stable-branch backports.
+

@@ -25,3 +25,14 @@ Merged master MR !15122, authored and merged by Guy Harris, changes the OSI CLNP
 **Review rule:** when a change teaches a generic dissector about one named downstream profile, ask whether the base protocol actually assigns that interpretation or merely carries opaque/profile-defined data. If the latter, look for a dissector table, heuristic list, or Decode-As boundary instead of direct coupling.
 
 **Confidence:** Extremely high. The accepted design is a merged master architectural change authored and merged by Guy Harris, and it turns a profile-specific special case into an explicit reusable extension mechanism.
+
+## Place shared extension points at their semantic owner
+
+A dissector table or context structure that represents a protocol-independent standard namespace should not remain owned by whichever protocol happened to use it first. Put the registry and its caller contract in a neutral component whose names describe the shared semantic domain.
+
+Merged master MR !10371, authored by Guy Harris, decouples the `media_type` dissector table from HTTP. Internet media types are used by HTTP, SIP, CoAP and other carriers, so the accepted change moves table registration and the data contract out of `packet-http.[ch]` into `packet-media-type.[ch]` and renames HTTP/message-specific types to media-container/content terminology.
+
+**Architecture rule:** choose the owner, public header, type names and registration location of a shared extension point from the semantic namespace it models. If unrelated carriers use the same dispatch namespace, extract it from a carrier-specific dissector rather than making those callers depend on the historical first implementation.
+
+**Confidence:** Extremely high. Merged master architectural refactor authored by Guy Harris.
+
