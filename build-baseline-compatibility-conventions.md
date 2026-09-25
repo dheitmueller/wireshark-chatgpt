@@ -19,3 +19,12 @@ The same !9822 → !9836 → !9844 sequence shows that a green general pipeline 
 **Review rule:** when a compatibility failure is found outside the main pipeline, consider whether a lightweight targeted configuration can permanently cover the missed baseline. A correction for one compiler error should be tested against the full baseline rather than only the environment that exposed the first failure.
 
 **Confidence:** Very high. Three consecutive merged changes expose both source-level and CI-matrix failure modes, with the final correction explicitly motivated by Qt 5/Qt 6 compatibility.
+
+## Evaluate minimum-version changes against the declared support matrix
+
+Merged !9697 raises the Qt minimum from 5.10 to 5.11 after review compared the proposed baseline against distributions that then-current Wireshark actually supported. John Thacker noted that RHEL 8 already provided Qt 5.11+ and that older RHEL generations cited in discussion could not build that Wireshark generation because of other dependency requirements. The change deliberately stopped at Qt 5.11 because no code required 5.12 and Debian Buster still shipped 5.11.3.
+
+**Review rule:** judge a dependency-baseline change against the project's declared supported platforms and their real dependency versions. Require a concrete technical or maintenance reason for the bump, and do not infer indefinite support solely from the existence of older deployed systems.
+
+**Confidence:** High. Merged change with substantive review discussion and explicit distribution/version evidence.
+
