@@ -109,3 +109,15 @@ Merged master MR !9732 initially proposed an `FT_BOOLEAN` field named `smpp.comm
 **Derived-value rule:** when request/response or similar classification is derived from another wire field rather than occupying its own bytes, expose the convenience field as generated rather than implying an independent on-wire representation.
 
 **Confidence:** Very high. Direct field-semantics review from Gilbert Ramirez in a merged master MR, with the requested semantic redesign reflected in the accepted implementation.
+
+## Normalize zero/nonzero wire semantics through Boolean field APIs
+
+When a protocol defines a value as false for zero and true for any nonzero representation, model that semantic value as a Boolean rather than as an integer whose callers happen to expect 0 or 1. The tree API should perform the normalization so another nonzero wire encoding does not leak an accidental numeric convention into downstream state.
+
+In merged master MR !9597, Pascal Quantin reviewed Exported-PDU TCP dissector data whose specification says the reassembly flag is nonzero when true. He requested an `FT_BOOLEAN` field rather than an integer mapping and explicitly warned against relying on a 0/1 representation. The accepted implementation uses `proto_tree_add_item_ret_boolean()`, which both adds the field and returns normalized Boolean state. The same review uses a correctly sized `guint32` temporary for `proto_tree_add_item_ret_uint()` outputs before assigning into narrower destination members, respecting the helper's output-pointer contract.
+
+**Field rule:** if the protocol semantics are zero-versus-nonzero, register and retrieve the value as Boolean when the common API supports it. Do not encode a hidden 0/1 assumption in a numeric field or value table.
+
+**API rule:** match `*_ret_*` output pointers to the helper's documented output type; convert afterward when destination state uses a narrower representation.
+
+**Confidence:** Very high. The merged implementation reflects direct Pascal Quantin review and changes both the field semantics and the retrieval API accordingly.

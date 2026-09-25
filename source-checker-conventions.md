@@ -47,3 +47,23 @@ Merged master MR !10315, authored and merged by Martin Mathieson, teaches `check
 **Review rule:** checker improvements should be validated against the findings they newly expose. Fix the semantic field type/mask/container mismatch rather than merely reshaping the source until the warning disappears.
 
 **Confidence:** Very high. Merged checker work by Martin Mathieson with concrete correctness bugs uncovered immediately by the added macro substitution.
+
+## Tolerate legal source formatting when recognizing checked API calls
+
+A source checker's coverage should not depend on incidental whitespace between an API name and its opening parenthesis. If two calls are syntactically equivalent C, ordinary formatting differences should not decide whether one is checked and the other silently escapes analysis.
+
+Merged master MR !9592 corrected two TWAMP MBZ fields from `FT_UINT8` to `FT_UINT16`. Martin Mathieson explicitly noted that `tools/check_typed_item_calls.py` had missed the defect because the call contained whitespace between the function name and `(`. Merged follow-up !9593, authored and merged by Martin, changes the checker's call-matching regular expressions to accept that whitespace.
+
+**Checker rule:** when a repository checker recognizes C call sites textually, include normal legal formatting variants in its parse surface and add a regression example for the form that exposed the gap. A style difference must not become a correctness-check bypass.
+
+**Confidence:** Very high. The missed semantic field-width defect and the checker repair are both merged, and Martin Mathieson identified the exact recognition failure.
+
+## Validate API argument domains, not only C-compatible types
+
+Many Wireshark APIs accept several integer-like arguments whose meanings are not interchangeable. A source checker can catch real bugs by validating that an argument comes from the documented semantic domain even when the C compiler sees a type-compatible integer.
+
+Merged master MR !9562, authored and merged by Martin Mathieson, extends `check_typed_item_calls.py` to inspect the final encoding argument of `proto_tree_add_item()` and `ptvcursor_add()`. Applying the check found multiple real call-site mistakes where packet values or arbitrary numeric values were being passed as the encoding/control argument. The same MR fixes those sites to use `ENC_BIG_ENDIAN`, `ENC_NA`, or another appropriate encoding value.
+
+**Checker rule:** model stable argument-role domains such as `ENC_*` flags when they are mechanically recognizable. A successful integer conversion is not proof that the argument is semantically valid. Keep explicit exceptions narrow for legitimate computed encoding variables rather than disabling the domain check.
+
+**Confidence:** Very high. Merged project-wide checker work by Martin Mathieson immediately found and corrected concrete semantic API misuse.

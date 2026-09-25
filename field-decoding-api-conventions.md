@@ -59,3 +59,13 @@ Merged master MR !11819, authored and merged by John Thacker, fixes CAMEL time/t
 **Review rule:** for string-producing numeric/BCD helpers, test malformed/sentinel nibbles and shortened output, not only well-formed examples. Confirm that every subsequent index or substring operation is guarded by the post-decode length/format actually guaranteed by the API.
 
 **Confidence:** Very high. Merged master malformed-input correctness fix authored and merged by John Thacker, with direct Guy Harris review of the resulting timezone presentation.
+
+## Encoding parameters are control metadata, not decoded field values
+
+The final encoding argument to the registered-field tree APIs tells Wireshark how to interpret bytes. It must come from the API's encoding domain, not from the packet value that happens to have just been decoded.
+
+Merged master MR !9562, authored and merged by Martin Mathieson, extends `check_typed_item_calls.py` to identify suspicious final arguments to `proto_tree_add_item()` and `ptvcursor_add()`. Applying the check found real calls that passed extracted protocol values or arbitrary numeric values as the encoding argument. The accepted fixes replace them with explicit `ENC_BIG_ENDIAN`, `ENC_NA`, or another type-appropriate encoding.
+
+**Implementation rule:** keep the byte-decoding control plane separate from the value being decoded. A runtime protocol value is never a substitute for `ENC_*` flags merely because both are integer-compatible in C.
+
+**Confidence:** Very high. Merged project-wide checker and cleanup work by Martin Mathieson, with multiple concrete call-site corrections.

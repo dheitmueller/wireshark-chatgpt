@@ -13,3 +13,17 @@ Merged master MR !15138, authored and merged by John Thacker, fixes `reordercap`
 **Review rule:** test capture transforms with metadata blocks interleaved among packets, not only canonical files with every metadata block at the front. Also identify format structures whose identity is scoped by sections; !15138 explicitly notes that multiple pcapng Section Header Blocks may require additional IDB-number rewriting and therefore remain a separate correctness concern.
 
 **Confidence:** Very high. The rule is supported by a John Thacker-authored and -merged master fix plus an accepted maintained-branch backport.
+
+## Treat pcapng metadata as a stream, not only as an open-time header
+
+pcapng non-packet metadata can appear before the first packet and can also arrive later between packet records. Readers and transforming writers therefore need explicit semantics for both early internal blocks and metadata discovered incrementally while packets are processed.
+
+Merged master MR !9573, authored and merged by John Thacker, changes `pcapng_open()` to consume all initially encountered built-in block types that Wiretap handles internally, including NRBs and DSBs that can appear before an IDB. The code is deliberately conservative for plugin-registered/custom block types: whether those are internal cannot be known reliably without actually reading them, so open-time preconsumption stops rather than guessing ownership.
+
+Merged master MR !9608, also authored and merged by John Thacker, carries the same model into output. Name Resolution Blocks are kept in a growing reader-owned array; dumpers refer to that live array and track how many entries have already been emitted, while mergecap keeps a per-input `nrbs_seen` cursor. That allows streaming transforms to preserve NRBs learned after output initialization instead of snapshotting only the metadata visible at open time.
+
+**Architecture rule:** distinguish built-in internal metadata, externally visible records, and extension-defined blocks whose ownership is not statically known. For metadata that can grow during reading, either delay output metadata finalization until discovery is complete or retain an explicitly live/growing view plus an emitted/seen cursor.
+
+**Review rule:** exercise files with NRB/DSB/IDB metadata before the first packet and interleaved later in the stream. Do not assume a capture's meaningful file-level state is complete after the initial headers.
+
+**Confidence:** Extremely high. Both master changes were authored and merged by John Thacker and form a coherent reader/writer treatment of pcapng metadata discovery.

@@ -123,3 +123,15 @@ Merged master MR !11723, authored by Guy Harris, moves `TS_NOT_SET` / `TS_PREC_N
 **API rule:** keep absence/presence sentinels at the layer that owns that distinction. Lower-level mutation APIs should normally receive values they are actually being asked to apply, rather than knowing about every upstream configuration source's “not specified” token.
 
 **Confidence:** Extremely high. Merged master semantic cleanup authored and approved by Guy Harris, with the sentinel meaning and ownership stated explicitly.
+
+## Keep buffer capacity separate from logical initialized length
+
+Reserving memory in a growable buffer does not make those bytes part of the buffer's valid logical contents. Append-style code must write at the current logical end and advance the length only after the new bytes were successfully produced; overwrite-style entry points should explicitly reset the buffer before population.
+
+Merged master MR !9596 introduces common Wiretap helpers for constructing Exported-PDU records and exposes a pre-existing buffer-contract problem. `wtap_read_packet_bytes()` previously wrote at the buffer start, which would overwrite tags already appended by a reader. The accepted implementation writes at `ws_buffer_end_ptr()`, calls `ws_buffer_increase_length()` only after the underlying read succeeds, and has top-level `wtap_read()` / `wtap_seek_read()` clean the buffer before invoking a file subtype whose contract is to populate a fresh record. The new append helpers follow the same sequence: assure capacity, write at the end, then publish the added length.
+
+**API rule:** treat capacity, initialized contents, and logical length as three distinct states. An `assure_space`-style reservation is not a length update. Advance logical length only for bytes that were actually initialized successfully, and make append-versus-replace behavior explicit at the API boundary.
+
+**Review rule:** when refactoring raw pointer writes to buffer helpers, test both an initially empty buffer and an already populated buffer, plus the failure path where the producer does not fill all requested bytes.
+
+**Confidence:** High. The merged Wiretap refactor fixes a concrete overwrite contract and applies the same pattern consistently; later MSVC follow-up work concerned integer-width warnings rather than the append/length model itself.
