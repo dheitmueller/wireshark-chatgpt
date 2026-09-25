@@ -67,3 +67,11 @@ Merged master MR !9562, authored and merged by Martin Mathieson, extends `check_
 **Checker rule:** model stable argument-role domains such as `ENC_*` flags when they are mechanically recognizable. A successful integer conversion is not proof that the argument is semantically valid. Keep explicit exceptions narrow for legitimate computed encoding variables rather than disabling the domain check.
 
 **Confidence:** Very high. Merged project-wide checker work by Martin Mathieson immediately found and corrected concrete semantic API misuse.
+
+## Cross-reference bitmask field arrays to real API use and detect overlapping members
+
+Merged MR !9283, authored by Martin Mathieson, extends `check_typed_item_calls.py` to capture the field-array argument from bitmask calls, ignore similarly shaped arrays that are not actually consumed by those APIs, and detect overlapping member masks. The stronger checker immediately found and corrected real LAT, NFS, and RTLS mask defects.
+
+**Checker rule:** establish the semantic role of a helper array from its consuming API before enforcing API-specific invariants. For bitmask arrays, validate relationships between member masks rather than checking each field only in isolation.
+
+**Confidence:** Very high. Merged checker work by Martin Mathieson with multiple concrete defects found and fixed.
