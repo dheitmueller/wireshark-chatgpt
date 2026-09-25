@@ -51,3 +51,12 @@ Merged master MR !9731 originally combined a fix for header-field problems intro
 **Review rule:** if reviewers can confidently approve one commit while needing substantially more protocol/design review for another, treat that as a strong signal that the work should be split into separate MRs.
 
 **Confidence:** Very high. Explicit scope guidance from Stig Bjørlykke with the requested split performed before the accepted fix was merged.
+
+## Stable branches do not take refactors or enhancements as backports
+
+Closed MR !9501 attempted to backport a PFCP grouped-IE refactor to release-4.0. Alexis La Goutte explicitly stated that stable branches backport bug fixes, not enhancements; the contributor accepted that policy and the MR remained unmerged.
+
+**Submission rule:** classify a master change before proposing a stable backport. Correctness and security fixes are candidates; cleanup, refactors, and enhancements should remain on master unless project policy explicitly says otherwise.
+
+**Confidence:** High as branch-policy evidence. The implementation itself is down-weighted because it was not merged, but the maintainer statement is explicit and corroborates other stable-branch review history.
+
