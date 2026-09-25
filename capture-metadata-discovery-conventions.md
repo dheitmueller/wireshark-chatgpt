@@ -27,3 +27,16 @@ Merged master MR !9608, also authored and merged by John Thacker, carries the sa
 **Review rule:** exercise files with NRB/DSB/IDB metadata before the first packet and interleaved later in the stream. Do not assume a capture's meaningful file-level state is complete after the initial headers.
 
 **Confidence:** Extremely high. Both master changes were authored and merged by John Thacker and form a coherent reader/writer treatment of pcapng metadata discovery.
+
+
+## Replay retained metadata when redissection recreates downstream consumers
+
+Discovering capture metadata is not enough if the consumer that used it can later be destroyed and recreated. When redissection tears down higher-level state without physically rereading every non-packet record, Wiretap must be able to resupply metadata that was already encountered during the original sequential scan.
+
+Merged master MR !9550, authored by John Thacker, changes pcapng Name Resolution Blocks so their IPv4 and IPv6 mappings are retained as mandatory block data and the already-read NRBs remain attached to the capture reader. Installing fresh name-resolution callbacks then replays those stored blocks. `rescan_packets()` deliberately reinstalls the callbacks during redissection, matching the existing decryption-secrets replay pattern.
+
+**Architecture rule:** capture metadata that contributes to rebuildable dissection state needs both durable storage and replay semantics. A callback that fires only when the block is first read is insufficient if its consumer can be recreated later.
+
+**Review rule:** test redissection after metadata-backed state has been torn down. Verify that name resolution, decryption secrets, and similar non-packet context are restored even when the rescan path rereads packet records rather than every original metadata block.
+
+**Confidence:** Extremely high. Merged master correctness fix authored by John Thacker, and it directly complements the later pcapng streaming-metadata work in !9573 and !9608.

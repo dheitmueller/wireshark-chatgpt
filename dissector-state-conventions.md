@@ -158,3 +158,16 @@ Merged master MR !9950, authored by John Thacker, fixes TLS 1.2-and-earlier rene
 **Architecture rule:** when a later-pass decoder depends on negotiated state that can change later in the same conversation, snapshot the minimum required value at the packet or PDU boundary while doing the first sequential pass. Later passes should consume that historical snapshot rather than trusting the conversation object's final value.
 
 **Confidence:** Very high. Merged master correctness fix authored by John Thacker; it is an early direct example of the same first-pass-versus-random-access distinction later generalized by !10456, !10685, and !10762.
+
+
+## Reset learned state at protocol-defined identity boundaries
+
+State used for reassembly, retransmission detection, or other sequential analysis must not survive an event that creates a new logical protocol identity merely because the implementation reuses the same address slot or endpoint number.
+
+Merged master MR !9554 fixes USBLL by clearing endpoint state when a valid SET ADDRESS request assigns a nonzero device address. This prevents transfer fragments and retransmission history from crossing the device reset/address boundary. The accepted implementation deliberately preserves the default-address case because control enumeration still needs the learned endpoint-zero packet size.
+
+**Architecture rule:** invalidate analysis state when an authoritative protocol event ends the lifetime of the identity that owns that state. Preserve only narrowly defined bootstrap or negotiated facts whose validity explicitly crosses the transition.
+
+**Review rule:** for state keyed by addresses, ports, channels, endpoint IDs, or similar reusable identifiers, identify the protocol events that recycle or reset those identifiers and test that old reassembly/session state does not leak into the new lifecycle.
+
+**Confidence:** High. Merged master correctness fix with the state boundary and the intentional default-address exception explained directly in the MR.

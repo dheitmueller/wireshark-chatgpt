@@ -121,3 +121,24 @@ In merged master MR !9597, Pascal Quantin reviewed Exported-PDU TCP dissector da
 **API rule:** match `*_ret_*` output pointers to the helper's documented output type; convert afterward when destination state uses a narrower representation.
 
 **Confidence:** Very high. The merged implementation reflects direct Pascal Quantin review and changes both the field semantics and the retrieval API accordingly.
+
+
+## Put reusable custom display formatting in field registration metadata
+
+When a field's human-readable formatting is meant to follow the field into custom columns and other consumers, it should be part of the registered field definition rather than text attached only to one tree insertion.
+
+Merged master MR !9527, authored by John Thacker, converts DHCP time-valued options from one-off formatted tree additions to typed fields using `BASE_CUSTOM` formatter functions. The dissector then adds ordinary typed items, while the same signed/unsigned time presentation and special infinity value are available outside the protocol-tree call site.
+
+**Implementation rule:** keep the underlying field type semantically correct and place reusable presentation in field metadata. Use call-site formatting only when the text is intentionally local to that one item.
+
+**Confidence:** Very high. Merged master correctness/presentation fix authored by John Thacker.
+
+## Use no-value field semantics for synthetic grouping items
+
+A field that exists only to provide a protocol-tree grouping node should not pretend to contain an empty string value, and its registration metadata still has to satisfy the type's mask contract.
+
+Merged MR !9512 registered an O-RAN grouping item as `FT_STRING` with a nonzero mask even though it always added an empty string. John Thacker stated in post-merge review that the mask must be zero for `FT_STRING` or `FT_NONE`, and that `FT_NONE` better represented a grouping-only item. The change was promptly reverted by merged !9516 after it broke Wireshark.
+
+**Implementation rule:** use `FT_NONE` for a synthetic grouping item with no semantic value, and do not attach integer-style masks to string or no-value fields.
+
+**Confidence:** High as negative-plus-corrective evidence: direct John Thacker review followed by an immediate merged revert.

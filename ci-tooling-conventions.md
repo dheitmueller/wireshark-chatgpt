@@ -117,3 +117,13 @@ Merged master MR !15389, authored by Gerald Combs and merged by Anders Broman, u
 **Review rule:** when CI platform lifecycle semantics change, audit both cleanup and diagnostic paths. Test/inspect at least success, failure, and cancellation separately; a change that fixes canceled-job errors can accidentally suppress the evidence needed to diagnose a genuine failed job.
 
 **Confidence:** Extremely high. Two merged master CI changes from Gerald Combs, with the second immediately correcting the failure-versus-cancellation distinction exposed by the first.
+
+## Keep CI package source identity aligned with the triggering revision
+
+A packaging-oriented CI path can report on the wrong source if the package layer resolves a moving branch independently of the revision that started the job.
+
+Merged master MR !9545 corrects the MSYS2 workflow by carrying the workflow's immutable revision into the package build and using that same revision for source selection and version description. Previously the package build could follow the current tip of master instead.
+
+**CI rule:** a job's package-build source identity should remain the same as the revision being validated. When a nested build system resolves source independently, pass it the immutable revision from the outer CI job rather than relying on a moving branch name.
+
+**Confidence:** High. Merged master build-infrastructure correction whose MR description identifies the branch-tip mismatch.
