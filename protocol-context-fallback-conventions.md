@@ -15,3 +15,13 @@ Merged master MR !12834 extends NR-RRC UE-ID lookup so RRC configuration works f
 The same review also reiterates Wireshark's generated-dissector workflow: for ASN.1 dissectors, persistent custom logic belongs in the template/conformance inputs and the generated source is then regenerated. That convention already exists in `generated-code-conventions.md`, so it is not duplicated here.
 
 **Confidence:** Very high. Merged master change with direct protocol-expert guidance from Martin Mathieson and maintainer review from Pascal Quantin that changed the accepted design.
+
+## Prefer protocol-discovered identity over values inferred from conventional transport mappings
+
+A default port formula can be a useful fallback, but it is weaker evidence than identity/context explicitly learned from protocol discovery. Non-default port mappings are common enough that a derived value should not overwrite or outrank discovered state.
+
+Merged master MR !9654 changes RTPS DomainId handling so the dissector stores discovered DomainId values keyed by participant GUID for both TCP and UDP. Later packets first consult that discovered participant state. Only when no DomainId has been discovered does UDP fall back to the standard port-derived mapping; the tree text explicitly marks that calculated DomainId as potentially inaccurate. TCP, where the port formula is not valid, remains unknown until discovery supplies the value.
+
+**Context rule:** when the protocol itself can advertise or establish an identifier, use that state as the authoritative source. Keep transport/port arithmetic as a documented fallback only in contexts where the specification permits it, and make inferred values visibly distinguishable when they can be wrong under non-default deployment choices.
+
+**Confidence:** High. Merged master correctness fix whose accepted data flow explicitly orders discovered state ahead of port-derived inference.

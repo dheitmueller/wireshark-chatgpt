@@ -13,3 +13,13 @@ Merged master MR !14155, authored by John Thacker and merged by Anders Broman, f
 **Testing rule:** pathname code that must run on Windows should include mixed/alternate valid separator forms as well as ordinary native paths, particularly when deriving suffixes or filename components used for output.
 
 **Confidence:** Very high. Merged master portability fix authored by John Thacker, accepted by Anders Broman, and propagated to two stable branches.
+
+## Resolve resource paths from the actual packaging mode, and apply safe explicit overrides before platform defaults
+
+The target operating system does not by itself determine how Wireshark was packaged. A macOS build can run from an application bundle or from an ordinary build/install tree, and resource lookup should test the layout that was actually enabled rather than treating `__APPLE__` as synonymous with bundle semantics.
+
+Merged master MR !9621, authored and merged by Gerald Combs, changes bundle-specific filesystem logic to key off `ENABLE_APPLICATION_BUNDLE` instead of `__APPLE__`. The same change also makes the namespace-specific `DATA_DIR` and `PLUGIN_DIR` environment overrides take precedence consistently before Windows, build-directory, bundle, or installed-prefix path selection, while still refusing those overrides when the process started with special privileges.
+
+**Path rule:** condition runtime resource-layout logic on the build/package mode that creates that layout, not on a broader OS macro. Apply explicit user/environment path overrides consistently across supported platforms before derived defaults, subject to the privilege/security rules that make an override unsafe.
+
+**Confidence:** Extremely high. Merged filesystem/runtime cleanup authored and merged by project lead Gerald Combs.

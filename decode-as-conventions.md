@@ -13,3 +13,13 @@ Merged master MR !20567, authored by John Thacker and merged by Anders Broman, c
 **Review implication:** inspect Decode As presentation when adding multiple table entries that share a protocol ID, especially media-type/string tables. Registration metadata is user-facing behavior, not merely an internal label.
 
 **Confidence:** Extremely high. Merged master work authored by John Thacker, accepted by Anders Broman, and applied across multiple unrelated dissectors.
+
+## Use the actual dissector-table match key when direction logic must survive Decode As
+
+A dissector bound through a transport table can be selected on a user-chosen Decode As port rather than only on its conventional/IANA port. Direction logic that compares the packet ports against a hard-coded service port therefore breaks when the same dissector is rebound.
+
+During review of MR !9658, John Thacker explicitly requested using `pinfo->match_uint` to determine which TCP port selected the dissector, comparing that dispatch-table key with `pinfo->destport` or `pinfo->srcport`. He noted that this keeps the code correct when the dissector is assigned to another port through Decode As. !9658 was later superseded for branch-history reasons by merged MR !10124, and the accepted MS-DO dissector retains the `match_uint` direction pattern.
+
+**Implementation rule:** when a transport-table dissector needs to know which endpoint corresponds to the registered/selected service, use the table match value supplied in `packet_info` rather than assuming the protocol's default port. Treat the conventional port as registration metadata, not as the authoritative identity of the dispatch that actually occurred.
+
+**Confidence:** Very high. Direct John Thacker review, followed by a merged successor implementation and continued upstream use of the requested pattern.
