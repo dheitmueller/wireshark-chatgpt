@@ -22,3 +22,16 @@ Merged master MR !9720, authored and merged by John Thacker, replaces several PR
 **Implementation rule:** when the registered `hf_` type and on-wire encoding already describe the string, add it directly from the TVBuff with the appropriate `ENC_*` value. Use explicit extraction/copying only when the caller truly needs a separately materialized or transformed string.
 
 **Confidence:** Extremely high. Merged cleanup authored and merged by John Thacker, with the validation and allocation benefits stated directly in the MR.
+
+## Preserve format-specific string semantics when sanitizing UTF-8
+
+A generic library routine can be Unicode-correct yet still be wrong for a file or protocol format if that format assigns special meaning to embedded NULs or malformed sequences. Prefer Wireshark's shared text helpers when they encode the project's required semantics, and centralize those semantics instead of open-coding slightly different conversions in each consumer.
+
+Merged !9705 fixes pcapng option handling because GLib's `g_utf8_make_valid()` replaces embedded NUL bytes with replacement characters, while pcapng string options are terminated by the first NUL. The accepted change moves the existing Wireshark UTF-8 repair implementation into `wsutil/unicode-utils` and uses it from wiretap. John Thacker verified the fix against a real Apple-generated pcapng sample. Merged !9711 then converts additional users to the shared helper.
+
+**Implementation rule:** choose a string-validation/sanitization helper based on both Unicode validity and the enclosing format's byte/string contract. If multiple subsystems need the same non-default behavior, put it in a shared Wireshark utility rather than duplicating it.
+
+**Review/tooling rule:** do not automatically ban a broadly valid upstream API merely because Wireshark has a preferred helper for some cases. In !9711 Gerald Combs asked whether `g_utf8_make_valid` should be added to `checkAPIs.pl`; João Valverde preferred, at most, a gentle hint rather than a ban because the API is not universally wrong.
+
+**Confidence:** Very high. Both changes were merged; !9705 has direct real-capture validation and !9711 includes explicit maintainer discussion about enforcement strength.
+
