@@ -82,4 +82,4 @@ Full batch notes: `review-findings-10363-10412.md`.
 
 ## Next frontier
 
-MR !10362 is the next descending candidate if it exists in the same corpus commit and has not been reviewed elsewhere. It was not counted in this run.
+MR !10362 (`wmem: Allow integer lookups with a null tree`) exists at the same corpus commit, is merged, and has no prior review-tracking match. Its metadata was inspected only to establish the next descending frontier; it was not reviewed or counted in this run.
