@@ -23,3 +23,13 @@ Merged master MR !10670, authored and approved by Guy Harris, fixes a BLF path w
 The newer wiretap taxonomy already recorded elsewhere in this notebook remains authoritative for the classification: malformed/truncated input should normally be `WTAP_ERR_BAD_FILE`, while `WTAP_ERR_INTERNAL` is reserved for violated Wireshark invariants. The durable lesson from !10670 is the boundary-semantics bug, not the old choice of `WTAP_ERR_INTERNAL`.
 
 **Confidence:** Extremely high for the error-propagation rule because the master fix was authored and approved by Guy Harris; later notebook evidence intentionally supersedes its temporary error-class choice.
+
+## Do not consume failure-only diagnostics after success
+
+An error object, message, or other diagnostic output is often defined only when the operation reports failure. A successful return does not make that failure-only output usable as a convenient warning string; it may be NULL, stale, or otherwise outside its contract. If success can carry a separate warning condition, obtain or construct that warning from the successful result itself.
+
+Merged master MR !9963, authored by Guy Harris, fixes sharkd display-filter checking after `dfilter_compile()` succeeds but the compiled filter contains deprecated tokens. The old path attempted to report the compile-error object's message as a warning even though compilation had succeeded; on master that could dereference a NULL error object and crash. The accepted path instead emits an independent warning, "Filter contains deprecated tokens". Release-4.0 and release-3.6 backports !9964 and !9965 carry the same correction.
+
+**API rule:** make the success/failure validity domain of every out-parameter explicit. On success, do not inspect outputs documented only for failure; on failure, do not inspect outputs documented only for success. A secondary warning state must have its own valid source rather than borrowing storage from the opposite result path.
+
+**Confidence:** Extremely high. The master fix and both stable backports were authored by Guy Harris and correct a concrete crash/error-contract violation.

@@ -51,3 +51,13 @@ Merged master MR !12421 fixes the pcapng file dissector when a later Section Hea
 **Confidence:** Very high. !12421 is a merged master correctness fix; John Thacker materially shaped the accepted failure path and merged the change.
 
 **Overall confidence:** Extremely high. The core evidence consists of merged master fixes with accepted maintainer review and release backports, including multiple independent examples where semantic boundaries—not enclosing-buffer or cursor-relative lengths—are required for correct downstream behavior.
+
+## Bound child tvbuffs to the semantic structure being dissected
+
+When a parent parser already knows the byte range of a child structure, give the child a tvbuff limited to that structure rather than the remainder of the enclosing packet. This makes the API boundary encode the framing contract and prevents the child from accidentally treating following extensions, trailers, or sibling objects as part of its own data.
+
+Merged master MR !10301, authored by Guy Harris, changes NHRP so `dissect_nhrp_mand()` receives a tvbuff containing only the Mandatory Part and not the following extension area. The same cleanup makes diagnostics about the extension-offset field attach directly to that field, but the reusable architectural point is the bounded child view: the parent that knows the Mandatory Part boundary enforces it before delegation.
+
+**Implementation rule:** prefer an exact subset tvbuff at semantic parser boundaries when the enclosing format supplies a trustworthy length or offset. Do not force a child helper to rediscover where its object ends from unrelated bytes that the parent already knows belong elsewhere.
+
+**Confidence:** Extremely high. Merged master framing cleanup authored by Guy Harris.

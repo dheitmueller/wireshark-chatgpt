@@ -77,3 +77,15 @@ Merged master MR !14463 adds an LTP heuristic while extending cancel/cancel-ack 
 **Review rule:** assess both selectivity and cost. Positive sample captures demonstrate correctness after a match, but they do not measure the aggregate overhead of running the heuristic on unrelated traffic; benchmark or reason about the no-match path when registration is broad.
 
 **Confidence:** High. Direct Anders Broman review, author agreement/change, and merged result. The evidence establishes the default-policy principle even though exact acceptable cost remains protocol- and dispatch-context dependent.
+
+## Returning TRUE from a heuristic is a protocol-ownership claim
+
+A heuristic dissector's boolean result is part of dispatch control, not merely an indication that its function ran. Returning TRUE tells Wireshark that this packet has been recognized and claimed, preventing later candidates from interpreting it. Therefore the positive return must be conditional on the protocol-identifying test actually succeeding.
+
+Merged master MR !9991 fixes the SOME/IP UDP heuristic, which previously returned TRUE even when `test_someip()` rejected the packet. The accepted implementation returns FALSE when the structural SOME/IP test fails and only claims the packet after recognition succeeds. Martin Mathieson merged the correction, and the discussion immediately identified it as a stable-branch bug-fix candidate.
+
+**Implementation rule:** structure heuristic entry points as recognize-then-dissect-then-claim. Every path where the recognition predicate fails must return FALSE without leaving the packet claimed as that protocol. Do not use an unconditional TRUE merely because the helper reached the end of its function.
+
+**Review rule:** include a negative/non-protocol packet when testing a heuristic. A positive capture proves the dissector can recognize its own traffic; it does not prove that unrelated traffic remains available to other heuristic candidates.
+
+**Confidence:** Very high. Merged master correctness fix with maintainer merge and explicit release-branch impact.

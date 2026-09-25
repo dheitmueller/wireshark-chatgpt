@@ -17,3 +17,5 @@ Merged master MR !12635 (`BLF: Fix CAN parsing`) provides explicit maintainer gu
 ## Stable branches normally take fixes rather than enhancements
 
 Merged MR 10474 and its release backports 10489 and 10490 provide direct maintainer evidence for the existing scope rule. Alexis La Goutte explained that fixes are candidates for backport while enhancements generally are not, with judgment required for borderline cases. Keep correctness changes separable so release branches can take the fix without unrelated feature work.
+
+Closed MR !9977 supplies direct release-policy corroboration for the rule above. It attempted to carry already-merged IPv6 APN6 feature support to release-4.0; Jaap Keuter explicitly cited Wireshark's release policy and closed it because new features are not backported to stable releases. The implementation itself is down-weighted because the MR was not merged, but the maintainer statement is authoritative evidence for branch scope.

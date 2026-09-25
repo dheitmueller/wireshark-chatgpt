@@ -95,3 +95,13 @@ Merged master MR !12503, authored and merged by John Thacker, fixes SSH channel 
 **Implementation rule:** model each endpoint's identifier namespace separately and build cross-endpoint aliases only from protocol events that establish them. Route persistent state and subdissector lookup through the direction-correct namespace. If identifiers can be reused over the lifetime of a capture, retain enough generation/time/range history that an older packet cannot be resolved through a newer association.
 
 **Confidence:** Extremely high. Both accepted master changes were authored and merged by John Thacker, and !12503 documents the incorrect equal-number assumption, directionality of the mapping event, one-sided-capture concern, and remaining reuse/random-access limitation explicitly.
+
+## Complete reassembly identity can require both transport and protocol dimensions
+
+Replacing a transport-derived reassembly key with protocol fields is not automatically an improvement if either set of fields can collide independently. The key must model the complete identity of simultaneously active fragment streams, which can require combining endpoint/service-instance information with protocol-level message and session identifiers.
+
+Merged master MR !9996 fixes SOME/IP-TP reassembly after an address/port-only key collided for distinct messages. The proposed replacement added SOME/IP service ID, method ID, client ID, session ID, message type, and major version. During review Lars Völker pointed out that protocol fields alone can also collide because distinct service instances may be differentiated only by IP addresses and ports. The accepted structured key therefore includes the transport endpoints/ports together with the SOME/IP identity fields. Anders Broman merged the result.
+
+**Implementation rule:** when a collision exposes an incomplete key, do not simply swap one partial identity model for another. Enumerate all independent namespaces that can distinguish concurrent instances and combine the dimensions required by the protocol and its deployment model.
+
+**Confidence:** Very high. Merged master reassembly correction with direct protocol-maintainer review identifying the missing identity dimensions.
