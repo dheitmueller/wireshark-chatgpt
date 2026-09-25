@@ -36,3 +36,14 @@ Merged master MR !10371, authored by Guy Harris, decouples the `media_type` diss
 
 **Confidence:** Extremely high. Merged master architectural refactor authored by Guy Harris.
 
+## Build extension UI from the registration registry rather than a parallel protocol list
+
+When a core registry already describes an extensible capability, frontend menus and dialogs should derive their available actions from that registry instead of maintaining a second hard-coded enum or protocol list. Otherwise plugins can register the backend capability while remaining invisible or partially wired in the UI.
+
+Merged master MR !9957, authored by John Thacker, removes the fixed Follow Stream type enum from the Qt path, uses protocol IDs to resolve registered followers, and dynamically creates Follow Stream actions from the registered follower set. The stated result is that dissectors, including plugins, can self-contain the information needed to add follow support. During review Chuck Craft pointed out that an empty dynamically generated Follow submenu was confusing; John agreed that disabling the empty action was preferable to restoring a large static list.
+
+**Architecture rule:** treat the capability registry as the authoritative list for extensible frontend actions. Pass stable registry/protocol identity through UI layers and discover the registered capability at runtime rather than duplicating a closed-world enum in the frontend.
+
+**UI rule:** dynamic extension menus should have an explicit empty-state behavior, normally disabling or hiding the action rather than presenting a submenu that appears to be waiting for entries.
+
+**Confidence:** Very high. Merged master architectural refactor authored by John Thacker, with direct review of the dynamic-menu behavior.

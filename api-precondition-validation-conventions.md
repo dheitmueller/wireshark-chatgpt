@@ -25,3 +25,13 @@ Merged master MR !9999, authored by Guy Harris, reworks `json_dumper` this way. 
 **Implementation rule:** validate the precondition at the transition that would violate it, before state mutation or array access. Prefer one authoritative failure path that records the broken state and useful transition context over several callers independently setting flags after the invariant has already been crossed.
 
 **Confidence:** Extremely high. Merged master state-machine hardening authored by Guy Harris, with the overflow/underflow and centralized-error rationale stated directly in the MR.
+
+## Validate signed length domains before arithmetic can normalize invalid values
+
+Length validation must happen while the value still retains the information needed to distinguish an invalid domain value from a legitimate boundary case. Signed-to-size arithmetic can otherwise transform a small negative length into zero or another apparently harmless value and let it bypass downstream checks.
+
+Merged master MR !9925, authored and merged by John Thacker, hardens the core proto-tree bit-item APIs. Negative bit lengths are invalid, but values from -1 through -7 could previously become an octet length of zero through (no_of_bits + 7) >> 3 and therefore evade the ordinary bounds checks. The accepted change explicitly rejects no_of_bits < 0 before performing that conversion and throws ReportedBoundsError.
+
+**Implementation rule:** validate the semantic domain of a signed length/count before rounding, shifting, casting to unsigned, or converting units. Do not rely on the converted byte count to preserve evidence that the original argument was invalid.
+
+**Confidence:** Extremely high. Merged core-EPAN correctness fix authored and merged by John Thacker.

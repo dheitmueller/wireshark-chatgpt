@@ -13,3 +13,11 @@ Merged master MR !13551, authored and merged by John Thacker, fixes RDP address 
 **Review rule:** for each stored `address`, identify (1) how long the destination survives, (2) whether the copy is shallow or owns duplicated storage, and (3) which allocator owns that storage. Do not review `address` copies as ordinary value copies merely because the outer structure itself is copied by value.
 
 **Confidence:** Very high. Merged master correctness/lifetime cleanup authored and merged by John Thacker, with the temporary-versus-file-scope distinction stated explicitly in the MR description.
+
+## Temporary lookup identities may borrow address storage; retained identities must own it
+
+Merged master MR !9921, authored and merged by John Thacker, provides an earlier RTP example of the same lifetime rule. A stack-local stream ID used only to search the current tap state now shallow-copies packet addresses because it is examined immediately and never freed as an owner. Only when a new stream entry is retained does the code deep-copy the addresses into the stored stream ID.
+
+**Implementation rule:** do not deep-copy address storage merely to construct an ephemeral lookup key, and do not shallow-copy when the destination will outlive the source. The copy mode is determined by the destination lifetime and ownership contract, not by the field type alone.
+
+**Confidence:** Extremely high. Merged master memory-leak fix authored and merged by John Thacker; independently corroborates the later !13551 RDP example.

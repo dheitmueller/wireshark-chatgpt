@@ -148,3 +148,13 @@ This is an earlier direct example of the same principle later sharpened by !1076
 **Architecture rule:** if packet interpretation depends on conversation history, decide whether callers need only the newest state or the state as of an arbitrary packet. For the latter, store a time/versioned transition history or per-PDU snapshot and look up the version valid at the packet being revisited.
 
 **Confidence:** Very high. Merged master correctness change authored and merged by John Thacker, with the sequential-versus-random-access failure stated directly in the MR.
+
+## Snapshot negotiated state needed by later passes before conversation state advances
+
+A conversation-level negotiated value can be correct while walking the capture sequentially and still be wrong when an earlier packet is revisited. If the value can change later in the same connection, packet-local dissection that depends on the historical value must preserve the value that was current at that packet.
+
+Merged master MR !9950, authored by John Thacker, fixes TLS 1.2-and-earlier renegotiation. Client and Server Key Exchange are decoded according to the selected cipher, but the conversation session object eventually contains the last cipher selected in the connection. The accepted change stores the cipher in TLS packet data on the first pass and restores that packet-specific cipher on later passes before decoding the Key Exchange message.
+
+**Architecture rule:** when a later-pass decoder depends on negotiated state that can change later in the same conversation, snapshot the minimum required value at the packet or PDU boundary while doing the first sequential pass. Later passes should consume that historical snapshot rather than trusting the conversation object's final value.
+
+**Confidence:** Very high. Merged master correctness fix authored by John Thacker; it is an early direct example of the same first-pass-versus-random-access distinction later generalized by !10456, !10685, and !10762.

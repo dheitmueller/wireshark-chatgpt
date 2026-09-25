@@ -56,3 +56,13 @@ Merged master MR !13797 fixes Bluetooth ATT automatic protocol registration afte
 **Testing rule:** include boundary values around reserved/member/experimental classes and at least one currently unassigned value inside a structurally reserved class. This catches code that accidentally turns a future allocation into a Decode As or fixed-registration conflict.
 
 **Confidence:** Very high. Merged master correctness fix prompted by real Bluetooth registry growth; the accepted range change encodes the broader member-assignment class rather than the present set of assigned UUIDs.
+
+## Distinguish nested-call context from final packet state before restoring packet_info fields
+
+Not every mutable packet_info field is purely call-local. Some fields are also consumed after dissection by GUI or analysis helpers as the final state associated with the packet. Saving and restoring such a field around every dissector call can therefore erase the value that post-dissection consumers are supposed to see.
+
+Merged master MR !9914, authored and merged by John Thacker, reverts an earlier change that restored the current conversation elements after each dissector call. The MR explains that resetting those values can be desirable when starting a new PDU at the same protocol level, but find_conversation_pinfo() and other post-dissection consumers rely on the final conversation/address information remaining available after the last PDU. John explicitly notes that a cleaner long-term model may require separating "state for the next dissector call" from "final value for the packet."
+
+**Architecture rule:** before automatically restoring packet_info state after a nested dissector, classify the field as call-local, next-PDU working state, final packet result, or some combination. If two lifetimes are required, represent them separately rather than using unconditional save/restore at the call boundary.
+
+**Confidence:** Very high for the negative rule. The accepted merged action was a revert by John Thacker after a concrete regression, and the MR documents the lifetime ambiguity directly.
