@@ -13,3 +13,17 @@ Merged master MR !13293, authored by John Thacker, fixes RSVD `SenseDataEx` deco
 **Review implication:** document which revisions define the discriminator and why the chosen invariant is unambiguous. Include representative packets for each supported layout when possible, plus malformed/ambiguous cases if the invariant can be violated on the wire.
 
 **Confidence:** Very high. Merged master fix by John Thacker whose MR description and implementation explicitly use the specification's version-dependent fixed structure size to distinguish revisions lacking an explicit version marker.
+
+## Derive negotiated version state from both peers and update it only on the learning pass
+
+When a protocol negotiates a version or capability from information advertised by both endpoints, the dissector should model the negotiation rule rather than assuming that one peer's maximum is the negotiated result. If that inferred value becomes conversation state, repeated random-access dissection should consume the recorded state rather than mutating it according to whichever handshake packet happened to be revisited.
+
+Merged master MR !10611, authored by John Thacker and merged by Anders Broman, improves TDS version detection. It records the client and server program versions separately, derives the expected negotiated TDS version from the highest version supported by both sides when both are known, and guards version mutations with `PINFO_FD_VISITED(pinfo)`. This also handles captures where a server response is visible before the corresponding client information or where an encrypted LOGIN7 hides the definitive version until later.
+
+**State rule:** learn negotiation state on the first sequential analysis pass and make redissection read that state. Do not let random packet access reorder or repeatedly overwrite conversation-wide version inference.
+
+**Inference rule:** when both peers contribute to negotiation, apply the protocol's actual compatibility/selection rule to both advertisements. Do not equate "server supports version X" (or the corresponding client fact) with "the session negotiated X" unless the protocol guarantees that implication.
+
+**Review/testing rule:** include captures with asymmetric peer capabilities and, where practical, partial or encrypted handshakes in which only one side is initially visible. Verify that packet display remains stable under random access and two-pass dissection.
+
+**Confidence:** Very high. Merged master state/inference correction authored by John Thacker with the random-access and asymmetric-capability cases documented in the MR.

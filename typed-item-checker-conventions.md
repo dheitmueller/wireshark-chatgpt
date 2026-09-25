@@ -23,3 +23,15 @@ Merged MR !11698, authored and merged by Martin Mathieson, adds exactly this exc
 **Review rule:** when a new checker produces findings in existing dissectors, separate true metadata bugs from established valid proto-tree idioms. Fix the dissector for the former and improve the checker model for the latter.
 
 **Confidence:** Very high. Merged checker refinement authored and merged by Martin Mathieson immediately around the CI rollout of bitmask validation.
+
+## Audit every use of a shared field before changing its metadata
+
+A typed-item checker warning describes a mismatch between a particular call site and the registered field contract, but an `hf_` entry can be shared by multiple call sites. Changing the field type, width, display value, or mask solely to satisfy one warning can make the other uses incorrect.
+
+Merged master MR !10605 fixes several BGP findings from the typed-item checker. For the MPLS label-stack fields, the accepted change aligns both the access width and the registered metadata with the full three-byte masked value. During review, Martin Mathieson explicitly rejected a proposed change for another field because the same symbol was used by two other, wider fields. His review demonstrates that checker remediation requires auditing the complete use set rather than mechanically editing the registration nearest the reported warning.
+
+**Review rule:** when a checker reports an `hf_` mismatch, search all uses of that field before deciding whether the defect is in the registration or in one call site. Choose metadata that represents the field's real value domain and make each access compatible with that contract; split the field when apparently shared uses actually have different semantics.
+
+**Testing rule:** rerun the checker after the correction and inspect all call sites of any registration whose type, mask, or width changed. A warning disappearing at one location is not sufficient evidence that the shared field is now correct.
+
+**Confidence:** High. Merged master checker-driven fix with direct review from Martin Mathieson about the risks of changing a field shared by wider accesses.

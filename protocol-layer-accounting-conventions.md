@@ -19,3 +19,15 @@ Merged master MR !14101, also authored by John Thacker, provides the concrete re
 This is distinct from semantic nesting depth. The guidance in `protocol-nesting-and-token-boundary-conventions.md` explains that true nested instances of the same protocol should use explicit semantic depth rather than generic invocation order. The rule here is that generic layer accounting itself must also avoid recording transient no-contribution invocations that make later identity unstable.
 
 **Confidence:** Very high. Both principal fixes were merged to master and authored by John Thacker; !14106 generalized the behavior after !14101 exposed the concrete cross-pass reassembly failure, with additional review by Peter Wu.
+
+## Use protocol-relative occurrence identity for repeated instances of the same protocol
+
+A total protocol-stack layer number is not a stable identity for one instance of a protocol when unrelated subdissectors can appear or disappear between the first pass and redissection. Reassembly can change which lower-level or child dissectors are invoked, shifting the total layer count even though the semantic instance being decoded is the same.
+
+Merged master MR !10565, authored by John Thacker and merged by Anders Broman, fixes TLS tunneled within TLS by replacing use of `pinfo->curr_layer_num` with `pinfo->curr_proto_layer_num`. The MR documents the failure mode: on redissection an HTTP dissector might no longer be called for an earlier fragmented TLS record, so the total current-layer number changes. Counting occurrences of TLS itself preserves the identity needed to retrieve the correct TLS state. The change adds focused captures and tests for both TLS-over-TLS and TLS reassembly over TCP reassembly, including a two-pass (`-2`) test.
+
+**State rule:** when state distinguishes repeated or nested instances of the same protocol, use an identity tied to that protocol's semantic occurrence rather than the absolute position of the protocol in the whole dissector stack. A total layer index is suitable only if its stability across all relevant first-pass, reassembly, and redissection paths is proven.
+
+**Testing rule:** when protocol-instance identity participates in persistent or reassembly state, test both ordinary and two-pass dissection and include a case where fragmentation changes which unrelated subdissectors run. Nested same-protocol cases are especially valuable because they expose accidental collapsing of distinct instances.
+
+**Confidence:** Very high. Merged master correctness fix by John Thacker with two targeted regression captures and explicit first-pass/redissection analysis.

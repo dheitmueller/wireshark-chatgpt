@@ -73,3 +73,15 @@ Merged master MR !13744 fixes GTP MS Network Capability handling. TS 29.060 expl
 **Review/testing rule:** include valid empty encodings in dissector tests, especially for optional IEs. Confirm both that no misleading child fields are emitted and that the enclosing item remains understandable.
 
 **Confidence:** High. Merged master protocol fix with the zero-length semantics quoted from the specification and discussed during review.
+
+## Expose independently useful protocol values as real fields, not only formatted text
+
+A compact formatted tree label can be convenient for human reading while still hiding most of the protocol semantics from display filters, TShark field extraction, and other machine consumers. If the wire structure contains independently meaningful values that users may reasonably filter or export, those values should have registered fields of their own rather than existing only inside a composite presentation string.
+
+Merged master MR !10584 restructures BGP labeled IPv6 VPN NLRI output. The previous implementation rendered the label stack, Route Distinguisher, IPv6 prefix, and prefix length together through one formatted item, leaving TShark users without fields for most of the components. After Alexis La Goutte asked to see the before/after presentation, the merged implementation exposes the prefix length, label stack, Route Distinguisher, and IPv6 prefix as distinct tree fields while retaining readable display formatting where appropriate.
+
+**Implementation rule:** use formatted text to enrich presentation, not as the sole representation of semantically distinct values. When a composite protocol structure contains stable components with independent meaning, register those components as fields so GUI presentation and machine-readable extraction share the same decoded model.
+
+**Review rule:** for a proposed formatted or composite tree item, ask what a `tshark -T fields` user could extract. Do not create fields for purely decorative text, but do not bury useful protocol values in labels that cannot be filtered or exported independently.
+
+**Confidence:** High. Merged master usability/API improvement with the TShark extraction motivation stated by the contributor and the before/after structure reviewed by Alexis La Goutte.
