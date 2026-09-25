@@ -157,3 +157,19 @@ Merged master MR !11630, authored by Guy Harris, documents these distinctions di
 **Review implication:** for every lifecycle registration, enumerate the transitions that can invoke it: new capture, redissection, display-filter/coloring changes, preference changes, and process exit. Verify that repeated init/cleanup cycles are safe and that resources do not survive beyond the state from which they were derived.
 
 **Confidence:** Extremely high. Merged master documentation authored by Guy Harris that defines the lifecycle contract itself, corroborating the later accepted resource-lifetime fixes already recorded above.
+
+## Initialize diagnostic/reporting facilities before any startup input can invoke them
+
+Initialization order must follow first possible use, including error paths. A configuration parser that can report a syntax warning already depends on the reporting subsystem even if ordinary successful startup would not otherwise use that subsystem until later.
+
+Merged master MR !10445, authored and merged by John Thacker, moves `init_report_message()` earlier in Wireshark and Logray startup. A prior change routed syntax problems in recent/preference files through `report_warning()`; reading those files before installing the reporting routines could therefore dereference a null callback and crash. The accepted fix initializes reporting before those files are opened.
+
+**Lifecycle rule:** audit startup ordering against failure paths as well as the happy path. Any subsystem that can be reached while parsing configuration, profiles, recent files, or command-line state must be initialized before the first such parse can report through it.
+
+**Confidence:** Very high. Merged master crash fix authored and merged by John Thacker.
+
+## Historical corroboration for named dissector registration
+
+Merged master MR !10453, authored by David Perry and merged by Anders Broman, is broad earlier evidence for the named-dissector rule above. It converts many ASN.1 dissectors from anonymous `create_dissector_handle()` handles to `register_dissector()` identities specifically so generic consumers such as `find_dissector()`, fuzzshark/rawshark, and Lua `Dissector.get()` can find them. The MR deliberately leaves truly private handles anonymous when they are only passed directly to another handler and have no standalone discovery contract.
+
+This reinforces the distinction already recorded from !12158/!12160: public/reusable registry identity belongs in `proto_register_*()`; anonymous handles remain appropriate for private wiring.

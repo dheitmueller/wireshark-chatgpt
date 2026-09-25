@@ -135,3 +135,16 @@ Merged master MR !10685 fixes RDP dynamic virtual channels, where a server can r
 Merged master MRs !10665 and !10696 independently reinforce the same historical-state principle for MySQL: conversation state can hold the latest first-pass value, while per-frame/PDU snapshots provide the value that was valid at the packet being revisited.
 
 **Confidence:** Very high. Merged master RDP fix accepted by Alexis La Goutte, independently corroborated by John Thacker's merged MySQL random-access fixes.
+
+
+## Retain a history of state transitions when packet interpretation depends on past state
+
+A single mutable "current state" in conversation data is not enough when the same capture can be dissected out of order. If the meaning of packet N depends on the state established by packets before N, redissection of N must be able to recover the state that was valid at N rather than observing the final state learned after the entire capture was scanned.
+
+Merged master MR !10456, authored and merged by John Thacker, fixes PostgreSQL authentication/encryption-state handling by replacing one last-state value with a file-scoped transition tree. The MR explicitly notes that the previous design worked only for sequential processing. The accepted code records state transitions as the conversation is learned and looks up the transition applicable to the packet being dissected, allowing SSL/GSSENC responses and later protocol states to remain correct during random access.
+
+This is an earlier direct example of the same principle later sharpened by !10762 and !10685: conversation state may track the newest first-pass value, but historical interpretation requires state keyed by capture position or otherwise versioned over time.
+
+**Architecture rule:** if packet interpretation depends on conversation history, decide whether callers need only the newest state or the state as of an arbitrary packet. For the latter, store a time/versioned transition history or per-PDU snapshot and look up the version valid at the packet being revisited.
+
+**Confidence:** Very high. Merged master correctness change authored and merged by John Thacker, with the sequential-versus-random-access failure stated directly in the MR.

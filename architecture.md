@@ -104,3 +104,15 @@ Do not repurpose an extcap's ordinary stdout/stderr as a structured control prot
 ## Provenance
 
 Architectural claims should ultimately cite current upstream files, commits, or review discussions in prose so stale assumptions are easier to detect and revalidate.
+
+## Persistent caches must not retain shorter-lived allocator objects
+
+A container can survive while the objects it references have already been invalidated by a shorter allocator scope. Persistent caches therefore need payload storage whose lifetime matches the cache, plus explicit invalidation when the external source from which the cache was derived changes.
+
+Merged master MR !10441, authored by Fabian Bäumer and merged after detailed John Thacker review, fixes SSH keylog handling that mixed process-lifetime hash-table state with file-scope key objects. Closing a capture destroyed the file-scope values but left the hash table and keylog file state alive, so reopening a capture could reuse dangling/missing entries without rereading the keylog. John explicitly rejected simply rereading the keylog on every capture open because that would do unnecessary work and would weaken live keylog-file change handling. The accepted implementation copies hash keys and values into GLib-owned allocations, gives the table destroy callbacks with `g_hash_table_new_full()`, clears entries when the keylog source is reopened or fails, and destroys the table at shutdown.
+
+**Architecture rule:** make the lifetime of cached keys/values at least as long as the cache that owns their pointers. If an external file can be replaced while Wireshark is running, treat that replacement as an explicit cache invalidation event rather than tying cache reconstruction to unrelated capture-file lifecycle events.
+
+**Lifecycle rule:** choose init/cleanup/shutdown based on the cache's real invalidation boundary. Process-lifetime caches should use process-lifetime storage and shutdown teardown; capture-lifetime objects must not be retained in them.
+
+**Confidence:** Very high. Merged correctness fix with detailed lifetime and invalidation review from John Thacker.
