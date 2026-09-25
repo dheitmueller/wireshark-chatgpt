@@ -28,3 +28,12 @@ Merged !9697 raises the Qt minimum from 5.10 to 5.11 after review compared the p
 
 **Confidence:** High. Merged change with substantive review discussion and explicit distribution/version evidence.
 
+## Treat generated-code warning behavior as part of the supported compiler/generator matrix
+
+Merged !9272 simplified the display-filter Flex scanner and removed old warning workarounds. Joakim Karlsson then reproduced unused-parameter warnings in Flex-generated functions on RHEL 7.9 with GCC 4.8.5. João Valverde asked for the exact environment, added a narrow generated-Flex diagnostic suppression in merged follow-up !9303, and Joakim confirmed that it fixed the affected build.
+
+**Implementation rule:** when a warning comes from generator-emitted boilerplate that project code cannot reasonably rewrite, keep any suppression narrow and generator-specific rather than disabling the warning globally.
+
+**Review rule:** after deleting a generator workaround, exercise the oldest relevant generator/compiler combination or get confirmation from an environment that still uses it. A clean modern build is not proof that generated output is warning-clean across the support matrix.
+
+**Confidence:** High. The regression was reported against a concrete older environment and the targeted follow-up was merged and explicitly verified there.
