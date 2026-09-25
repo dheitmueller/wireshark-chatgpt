@@ -98,3 +98,14 @@ A checker finding still needs semantic triage for stable-branch decisions. Marti
 
 **Confidence:** Very high. Reproduced failure, merged checker work by Martin Mathieson, and merged cleanup.
 
+## Boolean filter fields should read as predicates or presence assertions
+
+A Boolean display-filter field should have semantics that remain understandable when users read both the positive and negated forms. A categorical noun such as `command_type` is a poor Boolean name because neither `smpp.command_type` nor `!smpp.command_type` tells the reader which state TRUE represents.
+
+Merged master MR !9732 initially proposed an `FT_BOOLEAN` field named `smpp.command_type`. Gilbert Ramirez explicitly called out the filter-readability problem and suggested either a predicate-style Boolean such as `smpp.is_command` or a numeric `FT_UINT8` plus `value_string` if the field was meant to represent a category. The accepted revision instead follows the HTTP pattern: it adds generated `smpp.request` or `smpp.response` Boolean items according to the derived command-ID classification.
+
+**Field rule:** name Boolean fields so their truth value is self-describing. Prefer predicate/presence semantics (`is_...`, `has_...`, `request`, `response`, etc.) over categorical nouns whose TRUE meaning must be remembered externally. If the protocol value is really an enumeration/category, use an integer field plus the appropriate value mapping instead of forcing it into a Boolean.
+
+**Derived-value rule:** when request/response or similar classification is derived from another wire field rather than occupying its own bytes, expose the convenience field as generated rather than implying an independent on-wire representation.
+
+**Confidence:** Very high. Direct field-semantics review from Gilbert Ramirez in a merged master MR, with the requested semantic redesign reflected in the accepted implementation.

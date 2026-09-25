@@ -39,3 +39,15 @@ Merged master MR !15047, authored and merged by John Thacker, fixes Mongo BSON h
 **Review rule:** trace length values across helper boundaries. Validation inside a callee is ineffective if later caller arithmetic still uses the unsanitized source value.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with multiple accepted stable-branch backports.
+
+## Error-recovery helpers used by loops must make monotonic progress
+
+A helper whose contract is to skip or recover past malformed input must not quietly rewind the caller to the same malformed item and return a recoverable failure. If the caller loops based on the offset, that turns error handling into non-progress and can amplify a malformed count or nested structure into an infinite loop or memory-exhaustion condition.
+
+Merged master MR !9752, authored and merged by John Thacker, fixes this in the shared CBOR support. `wscbor_skip_next_item_internal()` called `wscbor_chunk_read()`, but on an error it reset `*offset` to the chunk start before returning `FALSE`. That contradicted `wscbor_skip_if_errors()`'s purpose: a caller trying to skip a bad item could be handed the same starting offset again. The MR explicitly identifies memory exhaustion and infinite looping for malformed lists with very large item counts. The accepted fix stops rewinding the offset, preserving the progress already made while diagnosing the malformed item.
+
+**Implementation rule:** for parser/recovery APIs used inside loops, define the failure-path progress contract explicitly. A recover-and-continue result must either advance past the offending input or provide an unmistakable terminal result that makes the caller stop. Do not combine “try to skip this item” semantics with resetting the input cursor to the same item.
+
+**Review rule:** trace offsets/iterators on every malformed-input exit, not only successful decode paths. If a failure is intended to be recoverable, verify that the next loop iteration cannot observe exactly the same state indefinitely.
+
+**Confidence:** Extremely high. Merged core-library robustness fix authored and merged by John Thacker, with the denial-of-service failure mode stated directly in the MR.

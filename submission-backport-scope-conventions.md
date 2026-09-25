@@ -39,3 +39,15 @@ Closed MR !9907 was an automatic update targeting a release branch that unexpect
 **Automation rule:** encode stable-branch policy into update tooling itself. Review automated diffs for generated code or feature-bearing artifacts rather than assuming that a routine registry/data refresh is branch-neutral.
 
 **Confidence:** Very high for the policy lesson. The MR itself was closed and is not an implementation exemplar, but Jaap Keuter's review and Gerald Combs's accepted automation correction are authoritative evidence.
+
+## Split a narrow regression fix from a larger follow-up refactor or feature
+
+Reviewability is itself a reason to separate work even when two changes touch the same protocol. A small correction to an already-merged regression can often be reviewed and merged immediately, while a broader feature/refactor needs more design time. Keeping them in one MR unnecessarily couples the urgent, low-risk fix to the slower change.
+
+Merged master MR !9731 originally combined a fix for header-field problems introduced by an earlier CoAP change with additional Q-Block refactoring. Stig Bjørlykke explicitly asked for the two commits to be split: the bug fix was easy to review and merge, while the Q-Block improvement required more time. The contributor narrowed !9731 to the fix and moved the Q-Block work to draft MR !9742. The focused fix merged; !9742 remained open in this corpus snapshot and is therefore lower-weight design evidence.
+
+**Submission rule:** when one part of a series repairs a concrete regression and another part expands or restructures behavior, submit them separately unless they are inseparable for correctness. Let the obvious fix land without making it wait for review of exploratory follow-up work.
+
+**Review rule:** if reviewers can confidently approve one commit while needing substantially more protocol/design review for another, treat that as a strong signal that the work should be split into separate MRs.
+
+**Confidence:** Very high. Explicit scope guidance from Stig Bjørlykke with the requested split performed before the accepted fix was merged.

@@ -116,3 +116,15 @@ Merged master MR !10441, authored by Fabian Bäumer and merged after detailed Jo
 **Lifecycle rule:** choose init/cleanup/shutdown based on the cache's real invalidation boundary. Process-lifetime caches should use process-lifetime storage and shutdown teardown; capture-lifetime objects must not be retained in them.
 
 **Confidence:** Very high. Merged correctness fix with detailed lifetime and invalidation review from John Thacker.
+
+## Retain your own reference when a callee unreferences shared record state
+
+Reference-counted ownership is part of an API call contract. If a callee is allowed to drop the caller-visible reference to an object, a caller that still needs that object after the call must acquire its own reference first rather than assuming the pointer remains valid.
+
+Merged master MR !9716, authored and merged by John Thacker, fixes tshark packet-option preservation while dissecting and then writing packets. `epan_dissect_run_*` and `epan_dissect_reset()` unreference the `wtap_rec` block. tshark still needs that block afterward to copy record options, so the accepted code takes a `wtap_block_ref()` before dissection and restores the retained block after reset; the packet loop's later `wtap_rec_reset()` remains responsible for the eventual release. Merged release-4.0 backport !9727 carries the same correction.
+
+**Ownership rule:** when an API unreferences a shared object but the caller's semantic lifetime extends beyond the call, take an explicit owning reference before invoking it and release that ownership at the caller's real lifetime boundary.
+
+**Review rule:** for refcounted objects embedded in larger records or contexts, trace who owns a reference before and after each lifecycle API. Reset functions deserve particular attention because they may clear structure state and release objects that later output or copy code still expects.
+
+**Confidence:** Extremely high. Merged master lifetime fix authored and merged by John Thacker, plus an accepted stable backport.
