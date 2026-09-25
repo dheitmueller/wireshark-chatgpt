@@ -60,3 +60,12 @@ Closed MR !9501 attempted to backport a PFCP grouped-IE refactor to release-4.0.
 
 **Confidence:** High as branch-policy evidence. The implementation itself is down-weighted because it was not merged, but the maintainer statement is explicit and corroborates other stable-branch review history.
 
+## Land the master fix first, then create release-branch backports from the accepted change
+
+Closed MR !9299 targeted the OPC UA DiagnosticInfo fix at a release branch; Alexis La Goutte asked the contributor to put the fix on master first and backport it afterward. Merged master MR !9266 provides corroborating workflow evidence for a CQL fix: after the master change was ready, the affected stable branch was handled separately in merged release-4.0 backport !9280.
+
+**Submission rule:** unless project policy or an emergency release process says otherwise, settle the fix on master first, then create explicit backports for supported release branches that demonstrably need it.
+
+**Review rule:** keep each backport mechanically close to the accepted master fix and avoid mixing unrelated branch history or multiple release targets into one submission.
+
+**Confidence:** High. Direct maintainer guidance from Alexis La Goutte, corroborated by a merged master-fix/backport sequence.
