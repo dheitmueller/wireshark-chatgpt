@@ -20,7 +20,7 @@ The corpus has no `mr_9604.json` at the reviewed commit. The fifty highest-numbe
 !9581, !9580, !9579, !9578, !9577, !9576, !9575, !9574, !9573, !9572,
 !9571, !9570, !9569, !9568, !9567, !9566, !9565, !9564, !9563, !9562
 
-Count: **50 unique MRs**. Maximum: **!9612**. Minimum: **!9562**. Missing corpus entry inside the span: **!9604**.
+Count: **50 unique MRs**. Maximum: **!9612**. Minimum: **!9562**. Missing corpus file inside the span: **mr_9604.json**.
 
 ## Per-MR review notes
 
