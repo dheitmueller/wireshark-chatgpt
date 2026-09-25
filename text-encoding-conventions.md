@@ -35,3 +35,13 @@ Merged !9705 fixes pcapng option handling because GLib's `g_utf8_make_valid()` r
 
 **Confidence:** Very high. Both changes were merged; !9705 has direct real-capture validation and !9711 includes explicit maintainer discussion about enforcement strength.
 
+## Use encoding-aware TVBuff extraction even for nominally ASCII strings
+
+A protocol string being specified as ASCII does not make a raw byte copy equivalent to string decoding. Captured traffic can contain invalid bytes, and callers that surface the result in columns or other text interfaces should receive Wireshark's normal replacement/validation behavior rather than an unchecked byte buffer.
+
+Merged master MR !9489, authored and merged by John Thacker, fixes EtherCAT FoE filename formatting by replacing a fixed local buffer plus `tvb_memcpy()` with `tvb_get_string_enc(..., ENC_ASCII)`. The MR rationale explicitly notes that even an expected-ASCII field can contain errors; using the encoding-aware TVBuff helper makes malformed input safe and gives it the same text-conversion semantics as other decoded strings.
+
+**Implementation rule:** when bytes are semantically text, materialize them with the appropriate `tvb_get_string*_enc()`/tree string API instead of copying raw bytes into a C string. Reserve raw `tvb_memcpy()` for data that is actually byte-oriented.
+
+**Confidence:** Extremely high. Merged master correction authored and merged by John Thacker, with the malformed-encoding rationale stated directly in the MR.
+
