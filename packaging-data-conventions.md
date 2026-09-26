@@ -23,3 +23,12 @@ Merged MR !8369 adds a 5x9 RADIUS dictionary. Alexis La Goutte immediately calle
 **Review rule:** use a comparable existing peer file to discover all packaging touch points; do not infer cross-platform packaging behavior from the source-tree layout.
 
 **Confidence:** Very high. Merged master data-file addition with direct packaging review from Alexis La Goutte.
+
+
+## RADIUS dictionary additions must update both the runtime index and explicit installers
+
+Merged MR !8369 adds a 5x9 RADIUS dictionary. Alexis La Goutte called out that adding the dictionary file and including it from the master RADIUS dictionary was not sufficient for Windows packaging; the contributor then added the new file to both NSIS manifests. Alexis also asked whether the MSI/WiX path needed a corresponding update, prompting an explicit check of that packaging path.
+
+**Submission rule:** when adding a packaged protocol dictionary or peer data file, update the runtime include/index and search every installer/package implementation for explicit manifests. Confirm which package systems gather the directory automatically and which enumerate files manually.
+
+**Confidence:** Very high. Merged master data-file addition with direct packaging review from Alexis La Goutte.

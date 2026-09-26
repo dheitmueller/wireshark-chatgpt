@@ -154,3 +154,14 @@ Merged master MR !8463, authored by João Valverde, introduces Wireshark's depre
 **Portability rule:** do not paper over differences in compiler diagnostic capabilities with a macro that claims stronger behavior than the compiler can implement; make the supported contract explicit per compiler.
 
 **Confidence:** Very high. Merged master build/API policy change authored by João Valverde.
+
+
+## Keep a warning visible when only its fatality needs to be relaxed
+
+Merged MRs !8398 and !8400, authored by João Valverde, add `DIAG_WARN()` so a narrowly scoped deprecated Qt API can remain a compiler warning without becoming fatal under the project's general `-Werror` policy. The diagnostic is pushed around the exact use and then restored, preserving visibility while allowing builds against Qt 6.4.
+
+Merged !8394 handles a different class of problem at build-system scope: optimizer-dependent static-analysis warnings such as `-Wstringop-overflow` can be dormant at lower optimization levels and prone to compiler false positives, so they remain enabled but are not promoted to errors.
+
+**Build rule:** distinguish disabling a diagnostic from demoting it. Preserve useful warnings and relax only their fatality at the narrowest practical scope. Use local diagnostic scopes for a specific call site; use global non-fatal treatment only when the warning class itself is unreliable across the tree.
+
+**Confidence:** Very high. Merged master warning-policy changes authored by João Valverde.

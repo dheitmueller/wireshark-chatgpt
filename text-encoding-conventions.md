@@ -142,3 +142,14 @@ Merged !8441, authored by João Valverde, provides complementary diagnostic beha
 
 **Confidence:** Very high. Both are merged master fixes authored by core maintainers; !8434 is John Thacker-authored and cites the protocol's code-set default directly.
 
+
+
+## Never truncate decoded UTF-8 using a wire-format byte count
+
+Merged MR !8368, authored and merged by João Valverde, fixes RPC handling that mixed protocol byte offsets with decoded text offsets. The old path could truncate an already-decoded UTF-8 string at an arbitrary byte position, splitting a multibyte character and manufacturing an encoding error.
+
+**Implementation rule:** keep wire lengths and offsets in the packet representation and decoded-string lengths in the decoded representation. If a displayed value must be shortened, use an encoding-aware operation on the decoded representation; never index a converted UTF-8 buffer with an unrelated wire-byte count.
+
+Merged !8402 (SMB) and !8379 (GTP), both authored by John Thacker, independently reinforce the same boundary by replacing raw/manual string extraction with encoding-aware TVBuff helpers.
+
+**Confidence:** Very high. Merged fixes from João Valverde and John Thacker.
