@@ -13,3 +13,15 @@ Merged master MR !14692, authored and merged by John Thacker, changes `http2_get
 **Review rule:** distinguish three layers when reviewing protocol string helpers: raw octets, baseline character decoding/sanitization, and higher-level semantic decoding. Do not let a convenience function blur raw octets into text merely because the storage type is `char *`.
 
 **Confidence:** Very high. Merged master API hardening authored and merged by John Thacker with the encoding and caller-responsibility contract documented in the public header. This is a narrower API-boundary complement to the general packet-derived string safety guidance in `dissector-conventions.md`.
+
+## Preserve protocol string values separately from display-label formatting
+
+Once a string field represents decoded packet data, its protocol-tree value is part of Wireshark's semantic and filtering model. Do not run that value through a display formatter merely to escape awkward characters; doing so changes what filters and downstream consumers observe.
+
+Merged MR !8990, authored and merged by João Valverde, strengthens the public `proto_tree_add_string()` documentation around exactly this distinction. The API accepts a custom string *value* derived from packet data. Display-oriented helpers such as `format_text()` are not an appropriate final step merely for presentation, because escaping whitespace or other special characters changes the field value, constrains later UI formatting, and makes display-filter behavior unintuitive.
+
+This complements the encoding-boundary rule above: raw octets still need the protocol's real character decoding or sanitization before they can honestly be exposed as text. The line is between **decoding bytes into the protocol's text value** and **formatting that semantic value as a UI label**.
+
+**Implementation rule:** decode according to the protocol's encoding contract, then store the resulting semantic string value. Leave display escaping and label formatting to presentation code unless the protocol itself defines those characters as part of the value.
+
+**Confidence:** Very high. Merged framework/API-documentation change by João Valverde that states the intended contract directly.

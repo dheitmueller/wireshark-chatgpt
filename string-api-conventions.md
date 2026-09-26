@@ -37,3 +37,15 @@ Merged master MR !20320, authored and merged by Martin Mathieson after a crash w
 **Review rule:** when fixing one overflow in a family of formatting helpers, audit sibling helpers and all callers for the same hidden-size assumption rather than applying a one-site bound check.
 
 **Confidence:** Extremely high. Merged crash fix plus direct Guy Harris review; the accepted change generalized the size contract across both affected floating-point formatting paths.
+
+## Do not hide generic UTF-8 string limits inside an octet-counted builder
+
+A generic string builder should not silently enforce a caller-independent maximum measured in raw octets when the object it builds is UTF-8 text. Such a ceiling complicates append paths and can cut a multibyte character at the boundary. If a caller needs a presentation or protocol limit, make that policy explicit at the caller or at a semantic truncation boundary.
+
+Merged MR !8964, authored and merged by João Valverde, removes the maximum-size parameter from `wmem_strbuf` and renames the sized constructor so its remaining purpose—initial sizing—is clear. Gerald Combs explained that the old maximum was intended to limit damage from runaway appending such as a gigantic item label, but accepted that the generic byte ceiling caused more problems than it solved. Callers can use `wmem_strbuf_truncate()` explicitly when a real limit is needed.
+
+**API rule:** separate initial-capacity/performance hints from semantic maximum length. Do not make a generic UTF-8 container enforce an implicit maximum by byte count unless the API also defines safe character-boundary behavior and a compelling shared policy.
+
+**Review rule:** when adding a resource guard to text construction, ask whether the limit belongs to the data structure or to one consumer. Prefer an explicit consumer-side limit when call sites have different semantics.
+
+**Confidence:** Very high. Merged core API simplification with the original resource-safety motivation discussed directly by Gerald Combs.

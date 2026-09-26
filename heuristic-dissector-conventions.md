@@ -89,3 +89,15 @@ Merged master MR !9991 fixes the SOME/IP UDP heuristic, which previously returne
 **Review rule:** include a negative/non-protocol packet when testing a heuristic. A positive capture proves the dissector can recognize its own traffic; it does not prove that unrelated traffic remains available to other heuristic candidates.
 
 **Confidence:** Very high. Merged master correctness fix with maintainer merge and explicit release-branch impact.
+
+## Recognize before mutating packet presentation, and validate against the reported protocol extent
+
+A heuristic rejection path should be observationally clean. If the packet has not yet been recognized, do not change columns or add protocol-tree items and then return "not mine"; put the structural recognition test first and build presentation state only after it succeeds.
+
+Merged master MR !8978, authored by John Thacker, fixes the NXP 802.15.4 sniffer on unregistered UDP port 49999. The recognizer checks its NUL-terminated ASCII identifier, channel range, frame-length range, and declared length before normal dissection. Guy Harris's review sharpened two details: the identifier is specifically ASCII, and the structural length comparison should use `tvb_reported_length_remaining()` rather than captured length so snapshot truncation is not mistaken for a different protocol. Merged !9009 and !9010 carry the accepted behavior to maintained branches.
+
+**Implementation rule:** structure ambiguous-port recognition as recognize first, then mutate columns/tree state, then dissect. Use reported-length semantics to validate what the packet claims its logical structure to be; use captured-length semantics to decide which bytes are actually available to read.
+
+**Review rule:** test both unrelated traffic on the same non-registered port and a sliced valid capture. The first checks false positives; the second checks that snaplen truncation is reported as truncation rather than silently becoming a heuristic miss.
+
+**Confidence:** Extremely high. Merged master fix by John Thacker, direct Guy Harris review, and two merged stable-branch follow-ups.

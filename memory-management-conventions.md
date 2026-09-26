@@ -51,3 +51,13 @@ Merged master MR !14178 provides the same lesson at string granularity. SRT row 
 **Review/testing rule:** exercise lifecycle edges: open the consumer before any capture, keep it open across capture close/reopen, and trigger redissection/reset. Debug builds are particularly useful because allocator-scope assertions can reveal lifetime mismatches that release builds only expose intermittently.
 
 **Confidence:** Very high. Two merged master fixes, one authored/merged by John Thacker and one with direct John Thacker review, both demonstrating the same consumer-lifetime invariant with concrete crashes.
+
+## Grow contiguous accumulated output without repeatedly copying the whole prefix
+
+Incremental decompression and similar append-heavy paths can become quadratic if every extension allocates a new buffer, copies all previously produced bytes, appends the new chunk, and frees the old buffer. When the representation is one contiguous allocation and ownership permits it, use a reallocation or growing-buffer primitive so the allocator can extend in place when possible.
+
+Merged MR !8992, authored by John Thacker, changes `tvb_uncompress()` from allocate-copy-free growth to `g_realloc()` plus copying only the newly produced chunk. The MR explicitly calls out pathological compression ratios around 1000:1, where repeatedly copying the accumulated prefix makes decompression cost grow roughly as O(N²) in the number of growth steps.
+
+**Implementation rule:** for a single contiguous accumulation buffer, use a growth primitive such as `g_realloc()` or an appropriate dynamic buffer instead of manually reallocating and copying the entire prefix on every append. Keep separate resource ceilings for hostile expansion; better growth complexity does not replace decompression-bomb limits.
+
+**Confidence:** Very high. Merged core TVBuff decompression optimization authored by John Thacker with the complexity failure mode stated explicitly.
