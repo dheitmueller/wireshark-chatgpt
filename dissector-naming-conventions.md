@@ -42,3 +42,16 @@ Merged master MR 8100, authored by Guy Harris, renames Exported-PDU PROTO_NAME t
 **Implementation rule:** choose names according to the consumer. Data that will be fed back into the dissector registry must carry the stable dissector identifier; protocol identity and human-readable labels should use the corresponding protocol-name or description APIs.
 
 **Confidence:** Extremely high. Merged master API/architecture correction authored by Guy Harris, with a release-4.0 backport in MR 8101.
+
+
+## Registered dissector names are globally unique registry keys
+
+Calling `register_dissector()` inserts the supplied name into Wireshark's global registered-dissector namespace; a locally sensible name is not safe if another entry point already owns it.
+
+Merged master MR !8043 converts many anonymous handles to named registrations. During review, Anders Broman caught a startup assertion from `register_dissector_handle()` because a proposed name was already present in the registry. The series was corrected before merge.
+
+**Implementation rule:** choose one globally unique canonical registered name for every callable entry point and audit collisions when converting anonymous handles to `register_dissector()`.
+
+**Validation rule:** after broad registration changes, exercise normal protocol registration at runtime, not only compilation. Startup paths such as `tshark -v` can expose duplicate registry keys that a compiler cannot.
+
+**Confidence:** High. Merged master migration with a concrete duplicate-name assertion found by Anders Broman; later naming work in this notebook reinforces the same registry contract.

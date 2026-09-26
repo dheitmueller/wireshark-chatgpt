@@ -32,3 +32,14 @@ Closed MR 8081 records the failed design exploration; Tomasz Mon identified the 
 **Implementation rule:** when a slot can re-enter the event loop or cause sender-owned UI state to be destroyed while the current signal stack still depends on it, use queued delivery to create an explicit asynchronous lifetime boundary. Do not treat `deleteLater()` as proof that deletion cannot happen during nested event processing.
 
 **Confidence:** Extremely high. The accepted master fix is preceded by detailed failure analysis and followed by a stable backport.
+
+
+## Nested event loops can invalidate deferred-deletion assumptions
+
+Merged master MR !8038, authored by John Thacker, fixes a Qt 6.3 ExportDissectionDialog lifetime failure by moving export work to the earlier `filesSelected` signal. Guy Harris questioned whether that signal ordering is guaranteed across Qt releases. Tomasz Moń identified Wireshark's nested `MainApplication::processEvents()` call as the mechanism that let a pending `DeferredDelete` run before the original handler returned, and described eliminating unnecessary nested event loops as the long-term fix. John agreed that the earlier signal is a practical workaround rather than a permanent ordering guarantee. Release-4.0 MR !8054 carries the same fix.
+
+**Architecture rule:** `deleteLater()` does not guarantee that an object survives until the current slot returns if that slot enters a nested event loop. Prefer designs that avoid explicit nested `processEvents()` or `exec()` loops; if re-entry is unavoidable, make ownership and scheduling boundaries explicit.
+
+**Review rule:** a timing fix that moves work to an earlier signal is only as strong as the API's documented signal/lifetime guarantees. Treat incidental ordering as a workaround, not an architectural invariant.
+
+**Confidence:** Extremely high. Merged John Thacker fix with direct Guy Harris review and Tomasz Moń root-cause analysis.

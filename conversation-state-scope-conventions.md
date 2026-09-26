@@ -30,3 +30,16 @@ The MR also documents a boundary of the implementation: SCTP counts sequence num
 **Review rule:** when moving state into a conversation, ask whether the conversation object actually distinguishes all multiplexed substreams the protocol treats independently. If not, record or add the missing discriminator rather than assuming the conversation abstraction is automatically sufficient.
 
 **Confidence:** Very high. Merged master correctness change authored by John Thacker with the scope rationale and SCTP limitation stated explicitly.
+
+
+## Reset transient conversation context at sibling-PDU boundaries
+
+A lower-level carrier can contain multiple independent sibling PDUs in one captured frame or byte stream. The transient “current conversation” context established by one sibling must not leak into the next sibling, while a true nested child still needs to inherit parent context.
+
+Merged master MR !8013, authored by John Thacker, fixes PPP raw-HDLC streams by resetting conversation elements between independent embedded frames. The companion merged MR !8018 tried a generic central save/restore around dissector calls, but its follow-up discussion records regressions; John explicitly recommended reverting that broad approach and handling multi-PDU boundaries where the carrier knows whether the next PDU is a sibling. Brian Sipos noted the same sibling-versus-contained distinction for other protocols that concatenate PDUs.
+
+**Architecture rule:** let the parent that owns the framing boundary reset transient conversation/port context before dispatching a new sibling PDU. Do not globally erase that context after every dissector call, because nested children legitimately depend on inherited context.
+
+**Review rule:** for a container that carries several PDUs in one frame, identify whether each child is nested inside the current semantic object or is a peer object beside it. Conversation bookkeeping and protocol hierarchy may require different treatment.
+
+**Confidence:** Very high. Merged John Thacker fix, with the rejected generic direction and its regression documented in the companion MR discussion.

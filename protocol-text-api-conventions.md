@@ -81,3 +81,14 @@ Merged master MR 8079, authored by John Thacker, fixes form-urlencoded parsing a
 **Implementation rule:** after percent decoding, unescaping, decompression, transcoding, or similar transforms, track source coordinates and transformed-buffer coordinates separately. Feed each API the length that belongs to the representation it actually consumes.
 
 **Confidence:** Very high. Merged correctness fix authored by John Thacker.
+
+
+## Decode transformed form text before storing it as a string field
+
+Percent decoding, unescaping, or a similar byte-level transform does not by itself establish that the result satisfies Wireshark's internal UTF-8 text contract.
+
+Merged master MR !8012, authored by John Thacker, changes `application/x-www-form-urlencoded` handling so percent-decoded keys and values are decoded/validated as UTF-8 before they are passed to `proto_tree_add_string()`. The MR explicitly notes that exposing unvalidated bytes as text could produce invalid JSON and XML exports. Display-oriented `format_text()` remains confined to appended presentation labels rather than becoming the semantic field value.
+
+**Implementation rule:** after a byte transform, perform the protocol-defined character decoding before exposing the result through an `FT_STRING` or another text-facing API. Keep display escaping separate from the semantic value and keep the original wire span separate from the transformed string's length.
+
+**Confidence:** Very high. Merged master text-boundary fix authored by John Thacker, directly corroborating the later semantic-value/display-label and transformed-coordinate rules in this file.
