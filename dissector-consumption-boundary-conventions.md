@@ -66,3 +66,7 @@ The same master change makes unknown native-type length and alignment recovery u
 **Recovery rule:** unsupported-element recovery inside a parser loop must either stop or make deliberate forward progress. Avoid sentinel values that can become invalid cursor arithmetic.
 
 **Confidence:** Very high. Merged master correctness fix by Gerald Combs with accepted backports to both maintained release lines.
+
+## Do not confuse a remaining length with an absolute parser offset
+
+Merged master MR !9082, authored by John Thacker, fixes a BPv6 loop where `tvb_reported_length_remaining()` was assigned to an absolute offset. A remaining byte count can be smaller than the current cursor, so the error path could move parsing backward and repeat indefinitely. The accepted code marks the extension terminal and returns the current absolute offset; release backports !9083 and !9084 carry the same correction. Keep offsets, consumed lengths, and remaining lengths distinct even when they share an integer type.

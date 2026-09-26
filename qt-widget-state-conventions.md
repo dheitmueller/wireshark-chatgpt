@@ -15,3 +15,7 @@ Merged master MRs !9455 and !9459, with release backports !9456, !9457, and !946
 **Implementation rule:** use a custom widget's supported semantic styling or property API rather than injecting markup that the widget treats as text. Escaping behavior is part of the widget contract.
 
 **Confidence:** Very high. Merged master fixes authored by John Thacker with stable-branch backports.
+
+## Match a control's affordance to the item's semantic role
+
+Merged master MR !9091 restores permanently non-checkable extcap multicheck rows to label-like presentation. Tomasz Moń explained that those rows are descriptive device information, not capture options. Guy Harris explicitly agreed that the rows are information about the interface rather than options. If an item can never be acted on, do not make it look like a disabled actionable control merely because it shares a tree with selectable items. Guy separately noted that discoverability may still justify reconsidering where the information belongs in the UI.

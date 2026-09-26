@@ -105,3 +105,7 @@ Several merged April 2023 MRs provide unusually direct Guy Harris evidence for t
 **Maintenance rule:** if a generated-output-only fix has already merged, follow it promptly with a source-side correction so the next regeneration cannot silently revert the behavior.
 
 **Confidence:** Extremely high. Multiple merged corrections, including three authored by Guy Harris in direct response to generated-output-only changes.
+
+## MR 9092 and 9094 corroboration
+
+Merged master MR !9092 changes `tools/ncp2222.py` and regenerates the NCP dissector include as part of the same parser-correctness update; release backports !9102 and !9103 preserve that relationship. Merged MR !9094 likewise changes the PKIX Qualified ASN.1 conformance input and regenerated C together. These independently reinforce the source-of-truth rule for generated dissectors.

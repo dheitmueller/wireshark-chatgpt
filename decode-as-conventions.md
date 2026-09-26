@@ -23,3 +23,7 @@ During review of MR !9658, John Thacker explicitly requested using `pinfo->match
 **Implementation rule:** when a transport-table dissector needs to know which endpoint corresponds to the registered/selected service, use the table match value supplied in `packet_info` rather than assuming the protocol's default port. Treat the conventional port as registration metadata, not as the authoritative identity of the dispatch that actually occurred.
 
 **Confidence:** Very high. Direct John Thacker review, followed by a merged successor implementation and continued upstream use of the requested pattern.
+
+## Preserve parent context through Decode As dispatch
+
+Merged master MR !9071 adds GRE payload Decode As support. In review, Alexis La Goutte asked how to preserve `gre_hdr_info`; John Thacker pointed to `dissector_try_payload_new()`, which accepts the parent data pointer, and the merged implementation uses it. Decode As should therefore be treated as another route into the same dissector call contract rather than a reason to drop required parent context. John also suggested checking whether an existing keyed table can expose Decode As directly before adding a parallel fallback table.

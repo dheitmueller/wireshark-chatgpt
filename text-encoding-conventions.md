@@ -79,3 +79,14 @@ Merged master MR !9132, authored and merged by João Valverde, fixes C15 display
 **Review rule:** distinguish a protocol maximum length from a temporary-buffer capacity. A magic display-buffer size should not silently become a protocol or presentation limit.
 
 **Confidence:** Very high. Merged master text-correctness fix authored and merged by João Valverde.
+
+## Keep source-byte progress separate from rendered diagnostic width
+
+Merged master MR !9108, authored by João Valverde, rewrites UTF-8 logging diagnostics around separate source-length, display, and underline state. A malformed source byte can expand into a multi-character hexadecimal escape, so the diagnostic marker width must follow the rendered form while source traversal advances by the bytes consumed.
+
+**Implementation rule:** keep input consumption and rendered-column production as separate quantities when displaying repaired or escaped text. Size carets and underlines from the rendered text, while parser progress remains tied to source bytes.
+
+Merged master MR !9076, authored by John Thacker, independently replaces a raw four-byte USB Video FourCC copy plus manual NUL termination with `tvb_format_text()`. Merged !9100 applies the same text-safety principle across several dissectors, including `tvb_get_string_enc(..., ENC_ASCII)` for NCSI firmware text. These changes reinforce the existing rule that packet bytes used as text should pass through Wireshark's text-aware extraction and formatting helpers.
+
+**Confidence:** Very high. Multiple merged master fixes, including one authored by John Thacker.
+

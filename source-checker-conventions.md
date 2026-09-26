@@ -95,3 +95,7 @@ Merged master MR !9234, authored and merged by Martin Mathieson, adds an optiona
 **Checker rule:** assign severity from semantic consequence: correctness/invariant violations may be errors; style/deduplication opportunities are warnings or notes. Before making a new check mandatory, inspect and triage its whole-tree baseline so CI starts from actionable signal rather than inherited noise.
 
 **Confidence:** High. Merged checker work with explicit review discussion about severity and CI rollout from Jaap Keuter and Martin Mathieson.
+
+## MR 9086 and 9072 corroboration
+
+Merged MR !9086 keeps an exact-width FT_BOOLEAN mask formatting check optional rather than enabling it in normal pipelines, after Jaap Keuter questioned whether leading-zero padding should be enforced. Merged MR !9072 shows the same checker catching a real USB-CCID field-width typo. This reinforces the existing rule to distinguish semantic correctness checks from advisory cleanup and formatting checks.
