@@ -13,3 +13,13 @@ Merged master MR !14261 adds a Travelping Diameter dictionary. Martin Mathieson 
 **Testing rule:** where practical, validate at least one installed/package layout rather than only an in-tree run. If the contributor cannot build a target platform, call that limitation out and use manifest review/CI to cover the platform-specific path.
 
 **Confidence:** Very high. Merged master change with a concrete maintainer review finding; the packaging omission was corrected before Anders Broman approved the MR.
+
+## RADIUS dictionary additions must update both the runtime index and explicit installers
+
+Merged MR !8369 adds a 5x9 RADIUS dictionary. Alexis La Goutte immediately called out that adding the dictionary file and including it from the master RADIUS dictionary was not sufficient for Windows packaging; the contributor then added the new file to both NSIS manifests. Alexis also asked whether the MSI/WiX path needed a corresponding update, prompting an explicit check of that packaging path rather than an assumption.
+
+**Submission rule:** when adding a packaged protocol dictionary or peer data file, update the runtime include/index and search every installer/package implementation for explicit manifests. Confirm which package systems gather the directory automatically and which enumerate files manually.
+
+**Review rule:** use a comparable existing peer file to discover all packaging touch points; do not infer cross-platform packaging behavior from the source-tree layout.
+
+**Confidence:** Very high. Merged master data-file addition with direct packaging review from Alexis La Goutte.
