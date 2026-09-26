@@ -44,3 +44,14 @@ Merged MR !8308, authored and merged by João Valverde, updates Debian symbol ma
 **Packaging/ABI rule:** whenever a public symbol is added, removed, renamed, or moved across shared libraries, audit the package symbol manifests for every affected library and record the actual exporting library and supported-version boundary.
 
 **Confidence:** Very high. Merged package/ABI corrections by João Valverde, with the library move and symbol-manifest consequences directly visible in the accepted changes.
+
+
+## New public constants/utility symbols need package-manifest entries too
+
+The package symbol file is not limited to major APIs. Adding an exported shared constant or utility helper still changes the shared-library symbol set and requires the corresponding Debian symbols manifest entry.
+
+Merged master MR !8208 adds the missing `tfs_not_restricted_restricted` entry after the symbol was introduced in !8206. Merged !8162 similarly adds the missing `wmem_tree_contains32` entry to libwsutil's symbols file.
+
+**Packaging/ABI rule:** whenever `WS_DLL_PUBLIC` data or functions are added, check the symbol manifest for the library that actually exports them; small constants/helpers are ABI entries just as functions are.
+
+**Confidence:** High. Two merged manifest follow-ups corroborating the broader symbol-metadata rule already recorded above.

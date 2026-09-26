@@ -153,3 +153,14 @@ Merged MR !8368, authored and merged by João Valverde, fixes RPC handling that 
 Merged !8402 (SMB) and !8379 (GTP), both authored by John Thacker, independently reinforce the same boundary by replacing raw/manual string extraction with encoding-aware TVBuff helpers.
 
 **Confidence:** Very high. Merged fixes from João Valverde and John Thacker.
+
+
+## Prefer protocol-aware structured-string decoders over in-place byte rewriting
+
+When a wire format encodes a textual name as length-prefixed labels or another structured representation, use the shared decoder for that wire format rather than extracting nominal ASCII and mutating length/delimiter bytes in a temporary string.
+
+Merged master MR !8199, authored by John Thacker, changes PFCP APN/FQDN handling to `ENC_APN_STR` instead of copying ASCII bytes and overwriting label-length positions with dots; the MR notes that the old approach could produce invalid UTF-8. Merged !8210, also by John, reinforces the field-specific side of the rule: SMB commands specified as OEM-only must not inherit a generic Unicode mode.
+
+**Implementation rule:** identify the exact field encoding and invoke its shared decoder. Do not infer a broader session encoding when the command/field has a stricter contract.
+
+**Confidence:** Extremely high. Two merged master changes authored by John Thacker.

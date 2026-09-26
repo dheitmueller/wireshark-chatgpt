@@ -101,3 +101,14 @@ Merged master MR !8978, authored by John Thacker, fixes the NXP 802.15.4 sniffer
 **Review rule:** test both unrelated traffic on the same non-registered port and a sliced valid capture. The first checks false positives; the second checks that snaplen truncation is reported as truncation rather than silently becoming a heuristic miss.
 
 **Confidence:** Extremely high. Merged master fix by John Thacker, direct Guy Harris review, and two merged stable-branch follow-ups.
+
+
+## Non-standard port bindings still require a clean negative recognition path
+
+A dissector associated with a port that is not uniquely assigned to the protocol must not treat the port number itself as sufficient proof. Perform a cheap, bounds-safe content check first, return without claiming on a mismatch, and only remember conversation ownership after positive recognition.
+
+Merged master MR !8165, authored by John Thacker, hardens the TP-Link Smart Home dissector this way: it validates the first decrypted JSON characters with explicit captured-length guards, rejects nonmatches, and for TCP records successful recognition in conversation state so subsequent desegmentation can proceed. This is early corroboration for the stronger later Guy Harris-reviewed registration guidance from !8356 already recorded elsewhere.
+
+**Implementation rule:** recognition must precede conversation claiming. The negative path must be safe on arbitrary traffic; conversation state is appropriate only after sufficient identifying evidence has succeeded.
+
+**Confidence:** Very high. Merged master fix authored by John Thacker; later high-authority review independently reinforces the same direction.

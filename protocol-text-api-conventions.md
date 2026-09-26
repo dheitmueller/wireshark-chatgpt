@@ -49,3 +49,14 @@ Closed !8283 is useful precursor evidence for the same direction but is intentio
 **Implementation rule:** decode and store the protocol's semantic string once. If presentation needs whitespace folding, escaping, or another label transformation, express that through field display policy or reuse the display string returned by the normal proto-tree API; do not feed the formatted label back as the field value.
 
 **Confidence:** Very high. Two merged master framework/API changes by João Valverde, with the semantic-value/display-label distinction stated directly in the MR rationale.
+
+
+## Keep raw byte consumers separate from text-facing field values
+
+Some protocols expose one field to two very different consumers: protocol logic may need the original octets, while protocol-tree/UI consumers require decoded text. Keep these representations separate when one contract would otherwise lose information or expose arbitrary bytes as text.
+
+Merged master MR !8204, authored by John Thacker, keeps raw HTTP header values available to subdissectors while storing a separately decoded ASCII-safe value in string fields. Immediate predecessor !8198 sanitized the tree value; !8204 makes the raw-vs-text split explicit.
+
+**API rule:** if an API promises semantic text, return decoded/validated text. If another consumer needs exact wire octets, expose those bytes separately rather than weakening the text contract.
+
+**Confidence:** Extremely high. Merged master refinement authored by John Thacker with the distinction stated directly in the MR rationale.

@@ -1,27 +1,23 @@
 # Wireshark Qt Signal-Connection Conventions
 
-This file records durable Qt signal/slot connection and disconnection conventions extracted from accepted upstream Wireshark changes. Current upstream source remains authoritative.
+This file records durable Qt signal/slot and action-wiring conventions extracted from accepted Wireshark changes. Current upstream source and Qt documentation remain authoritative.
 
-## Disconnect only the signal/slot relationship you own
+## Prefer explicit typed connections over connection-by-name conventions
 
-A broad Qt disconnect can remove framework or component-internal connections in addition to the application connection that motivated the cleanup. In particular, wildcard forms that disconnect every signal from an object can also remove `QObject::destroyed` connections used by Qt or dependent objects to invalidate pointers safely.
+Use explicit typed `connect()` calls for menu actions and other important UI wiring instead of relying on `on_action..._triggered` naming conventions or string-based signal/slot signatures. Explicit connections make the relationship visible at the call site and allow the compiler to validate signal/slot types.
 
-Merged MR !21128 fixes a crash/warning path by replacing `disconnect(object, nullptr, nullptr, nullptr)` with a disconnect naming the exact signal and slot that Wireshark intended to remove. The MR explicitly notes that the wildcard form also disconnected `destroyed`, and newer Qt behavior exposed the resulting stale relationship. An earlier release-4.4 backport attempt, !21126, was closed and is therefore not treated as accepted implementation precedent; !21128 is the accepted fix.
+Merged master MRs !8171, !8196, !8197, and !8209, largely authored by Gerald Combs, progressively migrate Edit/File/menu action wiring to this pattern. The changes also rename helper methods away from names that imply Qt auto-connection magic when they are ordinary methods.
 
-**Implementation rule:** retain enough connection identity to disconnect the specific signal/receiver/slot or connection handle that application code owns. Do not use wildcard disconnect as a general cleanup shortcut when the sender or receiver may participate in other application, framework, or lifetime-management connections.
+**Implementation rule:** for new or touched Qt action wiring, prefer `connect(sender, &Type::signal, receiver, ...)` (including a small lambda when needed) over connection-by-name or `SIGNAL()/SLOT()` strings.
 
-**Review implication:** when a Qt crash appears after object destruction or reconnection, inspect broad `disconnect()` calls as well as missing connections. A cleanup operation can be over-broad and silently remove the very destruction notification that makes another relationship safe.
+## Choose direct vs queued delivery based on event/object lifetime
 
-**Confidence:** Very high. Merged correctness fix with a concrete failure mechanism; the superseded sibling was explicitly down-weighted.
+A signal handler that can close/destroy the menu that emitted the action, enter a nested event loop, or otherwise invalidate objects still participating in the current dispatch may need queued delivery.
 
-## Re-audit AutoConnection semantics when event-loop or lifetime structure changes
+Merged master MR !8171 explicitly uses `Qt::QueuedConnection` for mark/ignore/time-reference/time-shift/preferences actions used in packet-list/detail context menus. The code comment states that queued connections prevent the context menus from being destroyed prematurely, and a reporter confirmed the associated crash was no longer reproducible.
 
-`Qt::AutoConnection` is not a fixed delivery guarantee. Refactoring a dialog from a nested `exec()` event loop to non-blocking lifetime management can turn a previously deferred-looking interaction into a synchronous direct call, changing reentrancy and destruction behavior even if the signal/slot declaration itself is untouched.
+**Implementation rule:** do not treat `Qt::QueuedConnection` as a style preference. Use it when handler side effects must be deferred until the current event/signal stack unwinds; otherwise prefer the normal typed connection behavior.
 
-Merged release MRs !15210 and !15211, authored and merged by John Thacker, carry the accepted Time Shift crash fix. After the nested dialog event loop was removed, the `timeShifted` connection became a direct call into `PacketList::applyTimeShift()`. Redissection could run while the `WA_DeleteOnClose` dialog was closed and destroyed; when control eventually returned, the dialog attempted to update widgets that no longer existed. The fix makes the connection explicitly `Qt::QueuedConnection`, breaking that synchronous call stack and allowing the emitting operation to complete without later touching a deleted dialog.
+**Review rule:** when changing menu/action wiring, review connection type together with object lifetime and nested event processing. A migration that changes connection syntax but silently changes delivery timing can reintroduce lifecycle bugs.
 
-**Implementation rule:** after changing modal/nested event loops, thread affinity, `DeleteOnClose`, or other object-lifetime structure, re-evaluate every nearby `AutoConnection` whose slot can perform long-running, reentrant, or event-processing work. If correctness requires deferred delivery, state that requirement explicitly with `Qt::QueuedConnection` instead of relying on the old event-loop shape to provide it accidentally.
-
-**Review implication:** for crash reports involving a dialog closed while redissection, retap, export, or another long operation is active, inspect both object ownership and signal delivery mode. A lifetime-safe design needs the connection type and the object's destruction policy to agree.
-
-**Confidence:** Very high. The accepted fix was authored by John Thacker and carried into both maintained release branches; the failure mechanism is explicitly documented in the commit/MR description.
+**Confidence:** Very high. Merged Gerald Combs changes with concrete crash reproduction/verification and repeated follow-up migration across menu families.
