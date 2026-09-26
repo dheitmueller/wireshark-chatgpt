@@ -171,3 +171,14 @@ Merged master MR !9554 fixes USBLL by clearing endpoint state when a valid SET A
 **Review rule:** for state keyed by addresses, ports, channels, endpoint IDs, or similar reusable identifiers, identify the protocol events that recycle or reset those identifiers and test that old reassembly/session state does not leak into the new lifecycle.
 
 **Confidence:** High. Merged master correctness fix with the state boundary and the intentional default-address exception explained directly in the MR.
+
+
+## Let authoritative terminal events end the lifetime of conversation state
+
+A reused endpoint tuple, and even a reused initial sequence value, does not prove that a later opener belongs to the same logical connection once the protocol has emitted an authoritative terminal event.
+
+Merged master MR 8102, authored by John Thacker, changes TCP so a SYN after RST or FIN starts a fresh conversation even if its sequence number equals the old conversation's base sequence. The same-sequence SYN remains a retransmission only when no terminal event ended the prior lifecycle.
+
+**Architecture rule:** identify protocol events that terminate or restart the semantic object represented by persistent state. At those boundaries, create/reset state even when ordinary lookup keys collide with the previous instance; use retransmission/duplicate logic only while the prior lifecycle is still valid.
+
+**Confidence:** Very high. Merged master TCP correctness fix authored by John Thacker with the lifecycle distinction explained explicitly.

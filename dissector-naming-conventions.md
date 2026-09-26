@@ -31,3 +31,14 @@ Merged master MR !16122, authored and merged by John Thacker, removes duplicate 
 **Implementation rule:** choose one canonical registered dissector name, normally following the prevailing lowercase identifier convention. Use protocol descriptions/short names for presentation rather than creating duplicate registered aliases solely to preserve capitalization.
 
 **Confidence:** Very high. Merged master cleanup authored and merged by John Thacker with the canonicalization rationale stated in the MR.
+
+
+## Distinguish protocol identity from callable dissector identity
+
+A protocol name identifies the protocol being dissected; a dissector name identifies a callable registration entry point. Those are not interchangeable because one protocol can legitimately expose multiple dissector entry points with different transport or framing contracts.
+
+Merged master MR 8100, authored by Guy Harris, renames Exported-PDU PROTO_NAME tags to DISSECTOR_NAME tags because the stored string is passed to dissector lookup. The same change switches TLS/DTLS user-facing encapsulated-protocol labels to a long protocol description while retaining dissector names for debugging and lookup.
+
+**Implementation rule:** choose names according to the consumer. Data that will be fed back into the dissector registry must carry the stable dissector identifier; protocol identity and human-readable labels should use the corresponding protocol-name or description APIs.
+
+**Confidence:** Extremely high. Merged master API/architecture correction authored by Guy Harris, with a release-4.0 backport in MR 8101.

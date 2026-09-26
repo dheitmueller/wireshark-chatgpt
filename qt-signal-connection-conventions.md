@@ -21,3 +21,14 @@ Merged master MR !8171 explicitly uses `Qt::QueuedConnection` for mark/ignore/ti
 **Review rule:** when changing menu/action wiring, review connection type together with object lifetime and nested event processing. A migration that changes connection syntax but silently changes delivery timing can reintroduce lifecycle bugs.
 
 **Confidence:** Very high. Merged Gerald Combs changes with concrete crash reproduction/verification and repeated follow-up migration across menu families.
+
+
+## Queue menu actions across nested event-loop lifetime hazards
+
+A deferred-delete API is not enough by itself when the action handler can enter a nested Qt event loop. `WA_DeleteOnClose` ultimately uses `deleteLater()`, but a nested `processEvents()` can process that pending deletion before the current QAction/QMenu dispatch stack returns.
+
+Closed MR 8081 records the failed design exploration; Tomasz Mon identified the nested-event-loop ordering problem and recommended the accepted MR 8088 solution: connect the affected actions using `Qt::QueuedConnection`. The queued handler runs after menu handling has unwound, avoiding use-after-destruction. MR 8109 carries the same fix to release-4.0.
+
+**Implementation rule:** when a slot can re-enter the event loop or cause sender-owned UI state to be destroyed while the current signal stack still depends on it, use queued delivery to create an explicit asynchronous lifetime boundary. Do not treat `deleteLater()` as proof that deletion cannot happen during nested event processing.
+
+**Confidence:** Extremely high. The accepted master fix is preceded by detailed failure analysis and followed by a stable backport.

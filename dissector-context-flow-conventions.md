@@ -119,3 +119,13 @@ Merged master MR !15355, authored and merged by Pascal Quantin, fixes NAS-5GS me
 **Review rule:** for recursive/container dissectors, test both the ordinary decoded case and a case where the same inner IE/type appears under an enclosing state that makes its bytes opaque. Verify that the opaque case remains data rather than being misinterpreted as cleartext protocol structure.
 
 **Confidence:** Extremely high. Merged master correctness fix by the protocol maintainer plus two stable backports.
+
+## Prefer transport-specific entry points to reconstructing transport from dissection history
+
+When the same protocol has different framing or syntax over byte-stream and packet transports, the child dissector should not infer the parent transport from the previous entry in `pinfo->layers` or other mutable packet-global state. The layers array records dissection history, not a guaranteed protocol stack; nested dissectors or multiple PDUs can make the immediately preceding element unrelated to the actual parent.
+
+Merged master MR 8100, authored by Guy Harris, explains this failure mode in detail and recommends separate transport-specific dissector entry points that invoke common implementation code with explicit transport context. The design also works for exported upper-PDU captures where the lower transport may be absent entirely.
+
+**Implementation rule:** make registration/call path carry transport semantics whenever the transport changes the child's wire contract. Use shared parsing code underneath explicit wrappers rather than recovering parentage from ambient dissection history.
+
+**Confidence:** Extremely high. Direct architectural guidance in a merged master change by Guy Harris, independently consistent with his CoAP entry-point refactor in MR 8118.

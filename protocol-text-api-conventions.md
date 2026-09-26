@@ -60,3 +60,24 @@ Merged master MR !8204, authored by John Thacker, keeps raw HTTP header values a
 **API rule:** if an API promises semantic text, return decoded/validated text. If another consumer needs exact wire octets, expose those bytes separately rather than weakening the text contract.
 
 **Confidence:** Extremely high. Merged master refinement authored by John Thacker with the distinction stated directly in the MR rationale.
+
+
+## Sanitize representation strings at the presentation boundary
+
+Protocol-tree representation and label APIs are presentation interfaces, not semantic field-value storage. If formatted text can incorporate arbitrary packet bytes, those APIs should ensure the final representation is printable valid UTF-8 before exposing it in Wireshark or tshark.
+
+Merged master MR 8077, authored by John Thacker, applies that rule to formatted protocol-tree representations plus `proto_item_append_text()` and `proto_item_prepend_text()`, while preserving truncation markers.
+
+**API rule:** presentation-only strings may be escaped/sanitized to satisfy display safety. Keep that contract distinct from the semantic string stored in an `FT_STRING` field, where display escaping must not rewrite filter-visible value semantics.
+
+**Confidence:** Very high. Merged framework change authored by John Thacker.
+
+## Keep transformed-buffer length separate from the source wire span
+
+Once text has been transformed, its byte length no longer necessarily matches the number of packet bytes that produced it. The source span remains useful for highlighting, but it is not a valid capacity/length argument for APIs operating on the transformed buffer.
+
+Merged master MR 8079, authored by John Thacker, fixes form-urlencoded parsing after percent decoding. The old code passed a wire-offset delta to `get_utf_8_string()`; the accepted code passes the decoded string's own length while retaining the original wire range for the protocol-tree item.
+
+**Implementation rule:** after percent decoding, unescaping, decompression, transcoding, or similar transforms, track source coordinates and transformed-buffer coordinates separately. Feed each API the length that belongs to the representation it actually consumes.
+
+**Confidence:** Very high. Merged correctness fix authored by John Thacker.

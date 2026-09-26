@@ -74,3 +74,14 @@ These are early concrete examples of the stronger semantic-boundary design later
 
 **Confidence:** High. Both MRs are merged master fixes for real Ethernet padding/FCS misclassification; later John Thacker framing work provides stronger architectural confirmation.
 
+
+
+## Compute checksums over the protocol-defined semantic PDU, not outer framing bytes
+
+A checksum algorithm operating on an inner protocol does not automatically include transport or stream-framing prefixes merely because those bytes are adjacent in the same TVBuff.
+
+Merged master MR 8103 fixes STUN FINGERPRINT verification over RFC 4571/TCP. The previous CRC began at TVBuff offset zero and therefore included the two-byte TCP stream framing length; the accepted implementation starts at the STUN-message offset and covers only the bytes the STUN specification defines as part of the fingerprint input.
+
+**Implementation rule:** derive checksum start and length from the protocol specification's semantic message boundary. Keep outer framing bytes out of the checksum unless the checksum definition explicitly includes them.
+
+**Confidence:** Very high. Merged master correctness fix with the outer-vs-inner framing distinction stated in the MR rationale.
