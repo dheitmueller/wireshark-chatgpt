@@ -1,3 +1,3 @@
-# Wireshark MR review record
+# Reviewed MR automation ledger: 8011-8060
 
-Corpus commit: `ddcaa22b51c68f594e425a23388c3a2086813054`
+See `reviewed-8011-8060-exact.md` in this directory for the exact reviewed set, corpus commit, outcome count, and frontier.
