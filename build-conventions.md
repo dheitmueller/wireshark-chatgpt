@@ -141,3 +141,16 @@ Merged master MR !20378, authored and merged by John Thacker, marks Wireshark pl
 **Implementation rule:** for diagnostic/instrumented builds, optimize teardown for actionable diagnostics rather than mechanically matching production unload behavior when the difference has no semantic effect on the tested workload. Keep such behavior narrowly conditional on the instrumentation that requires it.
 
 **Confidence:** Very high. Merged master sanitizer-support change authored and merged by John Thacker with before/after diagnostic evidence.
+
+
+## Keep deprecation diagnostics visible without making them indiscriminately fatal
+
+A deprecation warning can be useful even when the project cannot require every affected source file to be fixed in the same build. Internal APIs can be deprecated between branches, and external dependencies can introduce deprecations on their own release schedule. Treat those diagnostics as migration signals, not automatically as hard build failures under a global `-Werror` policy when the toolchain supports finer-grained control.
+
+Merged master MR !8463, authored by João Valverde, introduces Wireshark's deprecation annotation for internal APIs while explicitly disabling promotion of deprecated-declaration warnings to errors. The MR notes that a newly deprecated dependency API can appear independently of Wireshark's source timeline. The implementation also avoids pretending MSVC has an equivalent per-warning non-fatal deprecation mode where its warning-control model cannot provide the same contract.
+
+**Build rule:** enable deprecation diagnostics, but scope warning-as-error policy so deprecations do not make otherwise-supported dependency/toolchain combinations unbuildable merely because migration work has not landed yet. Keep other warning classes strict.
+
+**Portability rule:** do not paper over differences in compiler diagnostic capabilities with a macro that claims stronger behavior than the compiler can implement; make the supported contract explicit per compiler.
+
+**Confidence:** Very high. Merged master build/API policy change authored by João Valverde.

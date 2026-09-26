@@ -23,3 +23,13 @@ Merged master MR !19329, also authored by John Thacker, adds a persistent machin
 **Representation rule:** do not assume presentation-oriented strings are suitable serialization values. For JSON/EK or another machine-consumed grammar, use the representation mode defined for that grammar and keep field-type formatting semantics in the shared representation layer when possible. When a statistics feature legitimately supports both audiences, make the human-vs-machine choice explicit and apply it consistently across CLI and GUI surfaces that expose the same data.
 
 **Confidence:** Very high. Independent merged master changes by John Thacker, with direct architectural reinforcement from Guy Harris.
+
+## Parse grammar-defined integer literals with locale-independent routines
+
+Numeric text whose grammar is defined by Wireshark rather than by the user's locale should be parsed with locale-independent conversion routines. Ambient locale must not change whether a display-filter literal or other machine-defined integer token is accepted or how it is interpreted.
+
+Merged master MR !8466, authored by João Valverde, replaces `strtol()`/`strtoul()` use in integer ftype parsing with GLib's locale-independent integer conversion helpers while also consolidating signed/unsigned parsing and error handling.
+
+**Parsing rule:** for Wireshark-defined numeric grammars, use locale-independent conversion functions and explicit range/error checks. Reserve locale-sensitive parsing for user-facing input whose contract intentionally follows locale conventions.
+
+**Confidence:** Very high. Merged master ftype/parser cleanup authored by João Valverde.

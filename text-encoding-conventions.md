@@ -112,3 +112,18 @@ Merged master MR !8638, also authored by John Thacker, fixes SCTP's counted-and-
 **Review rule:** whenever one variable is used both as a TVBuff byte length and as a width/index into decoded text, check whether conversion can replace, escape, normalize, or expand input. If it can, those are different coordinate spaces and need different quantities.
 
 **Confidence:** Extremely high. Multiple merged master text-decoding fixes, with the two central examples authored and merged by John Thacker.
+
+
+## Repair packet text at the encoding boundary; do not confuse truncation repair with decoding
+
+A helper that repairs the tail of an already-valid UTF-8 prefix is not a general-purpose sanitizer for arbitrary packet bytes. Keep the protocol's source encoding and the operation being performed explicit: decode according to the wire encoding first; if a bounded copy later truncates a valid UTF-8 result, repair only the possibly partial terminal sequence.
+
+Merged master MR !8502, authored by John Thacker, adds `ws_utf8_truncate()` specifically for the case where a previously valid UTF-8 string has been copied through a bounded formatter and may have been cut in the middle of its final multibyte character. Its documented precondition is that the prefix is valid UTF-8 apart from a possible partial terminal sequence. Merged !8506 then uses that helper for bounded expert-info formatting instead of open-coding the repair.
+
+The surrounding merged text fixes establish the complementary decoding side of the rule. In !8503 (with stable backport !8507), John Thacker replaces SMB/DirectPlay code that manually kept only every other byte of UTF-16LE with the normal encoding-aware TVBuff API. In !8508, PER restricted strings are built as valid UTF-8 and out-of-domain characters become U+FFFD. In !8487, invalid UCS-4 scalar values and incomplete trailing code units are mapped to U+FFFD rather than emitted as invalid UTF-8. In !8478, the result of HTTP Basic-Auth Base64 decoding is treated as decoded bytes whose text validity still has to be established; the decoded bytes are also exposed as a data source so ambiguous/non-UTF-8 content remains inspectable.
+
+**Implementation rule:** distinguish (1) decoding packet bytes according to the protocol character set, (2) validating or replacing invalid code points while producing Wireshark text, and (3) repairing a bounded copy that truncated an otherwise-valid UTF-8 string. Do not use a tail-truncation helper as a substitute for decoding or validation.
+
+**API rule:** prefer encoding-aware TVBuff/text helpers over raw-pointer string access or manual byte picking. Merged !8463, authored by João Valverde, formalizes this by deprecating `tvb_get_const_stringz()` because it performs no character-set validation and points callers toward `tvb_get_stringz_enc()`, protocol-tree return-string APIs, or explicit bounded validation.
+
+**Confidence:** Extremely high. Multiple merged master fixes by John Thacker and João Valverde, including an explicit API deprecation and focused malformed-text fixes.

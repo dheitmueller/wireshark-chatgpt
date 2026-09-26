@@ -13,3 +13,15 @@ Merged master MR !14255 was authored and merged by Guy Harris and adds two expli
 **API rule:** when a public expert taxonomy is extended, carry the new category through all supported front ends and bindings that expose that taxonomy, including WSLua and developer documentation where applicable. Do not leave scripting/plugin APIs with a smaller or stale category set unless that limitation is intentional and documented.
 
 **Confidence:** Extremely high. The merged change was authored, iterated, approved, and merged by Guy Harris, and its descriptions explicitly define the intended semantic boundary between receive and interface indications.
+
+## Expert-info fields are presence markers, not Boolean-valued protocol fields
+
+Expert-info generated fields have `FT_NONE` semantics: they represent the presence of a diagnostic, not a stored true/false value. Code consuming those fields should therefore test whether an instance exists rather than attempting to extract a Boolean value from them.
+
+Merged master MR !8473, authored by Guy Harris, fixes the Transum plugin's handling of `tcp.analysis.retransmission` and `tcp.analysis.keep_alive`. Both are expert-info fields. The accepted implementation counts field instances and treats presence as the condition instead of reading them through a Boolean extractor. Stable backports !8474 and !8475 carry the same semantic fix to maintained branches.
+
+**Implementation rule:** when consuming an expert-info-generated field programmatically, inspect field presence/instance count. Do not infer a Boolean value from an `FT_NONE` expert field simply because its user-visible meaning sounds Boolean.
+
+**Review rule:** distinguish a protocol Boolean (`FT_BOOLEAN`) from a diagnostic marker whose only state is present or absent. This matters for plugins, taps, exporters, and any code that reads protocol-tree fields directly.
+
+**Confidence:** Extremely high. Merged master change authored by Guy Harris, with matching stable-branch backports.
