@@ -33,3 +33,18 @@ Merged MR !11274 changes root-level Wireshark implementation files so each `xxx.
 **Review rule:** when a common/umbrella header stops including something, do not restore the transitive dependency merely to make existing files compile. Fix each user to include the authoritative declaration header directly; this keeps dependencies explicit and makes future include cleanup safer.
 
 **Confidence:** High. The own-header-first technique was merged across the root translation units, and two adjacent merged fixes—including one approved by Guy Harris—show the exact class of hidden dependency it is intended to expose.
+
+## Low-level headers should not inherit umbrella-header dependencies
+
+A low-level header should include the exact language/library declarations needed by its public surface rather than pulling in a project umbrella header that happens to provide them transitively. This keeps layering visible and makes the header usable from smaller consumers.
+
+Merged master MR !8442, authored and merged by João Valverde, removes `#include <wireshark.h>` from the wmem string-buffer header and makes wmem's core header directly include the standard integer and Boolean headers it actually requires. The stated goal is to avoid a wmem header dependency on wsutil introduced only through the umbrella include.
+
+Adjacent merged MR !8443 reinforces the layering direction from the implementation side by moving protocol-independent hexdump/EBCDIC helpers from epan into wsutil so other lower/shared consumers do not need to depend upward on epan.
+
+**Header rule:** prefer direct, narrow includes for the types/macros present in a low-level interface. Do not use a broad umbrella include to hide missing dependencies or create an accidental upward library edge.
+
+**Layering rule:** place protocol-independent helpers in the lowest library that semantically owns them, then have higher layers adapt to that API rather than making lower layers import higher-level facilities.
+
+**Confidence:** Very high. Both are merged master refactors authored by João Valverde and directly target dependency/layering structure.
+

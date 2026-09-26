@@ -25,3 +25,12 @@ Merged master MR !8473, authored by Guy Harris, fixes the Transum plugin's handl
 **Review rule:** distinguish a protocol Boolean (`FT_BOOLEAN`) from a diagnostic marker whose only state is present or absent. This matters for plugins, taps, exporters, and any code that reads protocol-tree fields directly.
 
 **Confidence:** Extremely high. Merged master change authored by Guy Harris, with matching stable-branch backports.
+
+### Historical precursor: type checking exposed the misuse
+
+Merged master MR !8412, authored by Guy Harris, correctly updates TRANSUM's extractor for genuine `FT_BOOLEAN` values to use Wireshark's 64-bit Boolean storage and adds an assertion that the supplied field really is `FT_BOOLEAN`. Chuck Craft then reported that the new assertion fired for `tcp.analysis.retransmission`. Guy identified the deeper caller bug: the TCP analysis fields in question are expert-info fields, so they do not carry Boolean values at all. Already-reviewed !8473 is the authoritative final correction and switches TRANSUM to presence testing.
+
+**Review implication:** a new type assertion can reveal a pre-existing caller/API misuse rather than a problem with the assertion. When a stricter extractor fails, verify the registered field type and semantic contract before weakening the check.
+
+**Confidence:** Extremely high. The diagnostic and interpretation come directly from Guy Harris; the final behavior is confirmed by merged !8473 and its backports.
+

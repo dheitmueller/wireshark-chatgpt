@@ -173,3 +173,18 @@ Merged master MR !10445, authored and merged by John Thacker, moves `init_report
 Merged master MR !10453, authored by David Perry and merged by Anders Broman, is broad earlier evidence for the named-dissector rule above. It converts many ASN.1 dissectors from anonymous `create_dissector_handle()` handles to `register_dissector()` identities specifically so generic consumers such as `find_dissector()`, fuzzshark/rawshark, and Lua `Dissector.get()` can find them. The MR deliberately leaves truly private handles anonymous when they are only passed directly to another handler and have no standalone discovery contract.
 
 This reinforces the distinction already recorded from !12158/!12160: public/reusable registry identity belongs in `proto_register_*()`; anonymous handles remain appropriate for private wiring.
+
+## Early subsystems must own configuration available at their first-use phase
+
+Startup ordering is an API contract. A subsystem used before normal preferences are initialized cannot depend upward on that later preferences layer merely because the same option is eventually exposed in the GUI.
+
+Merged !8446, authored by João Valverde, makes the logging contract explicit: `ws_log_init()` must run before `ws_log_parse_args()`, the implementation asserts that precondition, and executables emit a noisy marker once logging initialization and log-argument parsing have completed. This makes accidental pre-initialization logging easier to diagnose.
+
+Merged master !8432, also authored by João, removes logging's dependency on the later preferences module for the Windows console-open setting. Logging reads an early Windows-native representation during its own initialization while the normal preference representation remains available for compatibility and user configuration. Review and subsequent testing exposed a registry-key naming mismatch that was corrected in already-reviewed !8482; the architecture is accepted, while that follow-up is the stronger evidence for the exact key implementation.
+
+**Architecture rule:** configuration needed during an early subsystem's first use must be obtainable at that subsystem's layer or below. Do not make early logging, crash reporting, or bootstrap code depend on application preference machinery that is initialized later.
+
+**Validation rule:** make startup-phase preconditions observable or assertable, and test migration paths in a clean environment. Stale local state can make a wrong key, path, or compatibility lookup appear to work.
+
+**Confidence:** Very high for the lifecycle rule. Both changes merged; João Valverde authored them, and the later !8482 correction usefully qualifies the initial platform-storage details.
+

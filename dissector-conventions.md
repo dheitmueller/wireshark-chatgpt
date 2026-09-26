@@ -100,3 +100,16 @@ Before implementing new functionality, locate several analogous dissectors in th
 ## Source of truth
 
 Review comments from upstream maintainers should be captured here only when they establish a reusable convention. One-off preferences belong in `review-patterns.md` until corroborated.
+
+## Include every syntax-defining protocol dimension in dispatch identity
+
+A numeric operation or service code is not necessarily globally unique within a protocol family. If the message format changes with an object class, profile, namespace, direction, or other context, dispatch must include that dimension rather than treating the opcode alone as the semantic identity.
+
+Merged master MR !8435 adds CIP object-specific services using a two-part (class, service) lookup. The change removes Reset from the generic service-format path because Reset's data format is object-specific, and it lets object-specific handlers override generic handling while retaining common request/response framing. The submission includes a focused capture covering the new behavior.
+
+**Implementation rule:** key subdissector/service dispatch by every protocol value that determines payload syntax. A convenient opcode-only table is wrong if identical numeric codes have different formats in different classes or namespaces.
+
+**Testing rule:** for dispatch-key changes, include samples that exercise at least two contexts sharing or overlapping the same operation namespace so the test proves the added discriminator matters.
+
+**Confidence:** High. Merged master protocol-architecture change with a focused sample capture.
+

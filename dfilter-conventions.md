@@ -148,3 +148,16 @@ Merged master MR !8660, authored and merged by João Valverde, adds the display-
 **Compiler rule:** any cache or reuse of field loads/references must distinguish raw and decoded access, just as it must distinguish layer or occurrence qualifiers. Two references to the same `hf_` identity are not equivalent when they request different value domains.
 
 **Confidence:** Very high. Merged master display-filter feature authored and merged by João Valverde with end-to-end parser/VM/test/documentation support.
+
+## Remove experimental syntax when it collides with established grammar
+
+A newly introduced notation is not worth preserving merely because it is expressive if it makes existing expressions lexically ambiguous. Language evolution should protect established operators and leave syntax space unclaimed until a concrete requirement justifies reserving it.
+
+Merged master MR !8444, authored and merged by João Valverde, removes the recently introduced angle-bracket generic-literal syntax after it made an ordinary relational expression such as `a < b or a > c` ambiguous. Rather than inventing another reserved delimiter immediately, the accepted change keeps the narrower colon syntax for byte arrays, documents the removal in the release notes and User's Guide, and adds a regression test for the relational-expression case. Stable backport !8431 preserves the correction.
+
+**Language-design rule:** if experimental syntax conflicts with established grammar, prefer removing or narrowing the experimental form over complicating the lexer around an avoidable ambiguity. Do not reserve a new punctuation form speculatively when current requirements are already met by less ambiguous syntax.
+
+**Testing rule:** parser fixes for ambiguity should include the concrete expression shape that was previously mis-tokenized, not only positive tests for the replacement syntax.
+
+**Confidence:** Very high. Merged master parser-language correction by João Valverde with a targeted regression test and stable backport.
+

@@ -127,3 +127,18 @@ The surrounding merged text fixes establish the complementary decoding side of t
 **API rule:** prefer encoding-aware TVBuff/text helpers over raw-pointer string access or manual byte picking. Merged !8463, authored by João Valverde, formalizes this by deprecating `tvb_get_const_stringz()` because it performs no character-set validation and points callers toward `tvb_get_stringz_enc()`, protocol-tree return-string APIs, or explicit bounded validation.
 
 **Confidence:** Extremely high. Multiple merged master fixes by John Thacker and João Valverde, including an explicit API deprecation and focused malformed-text fixes.
+
+## Keep wire octet length separate from decoded UTF-8 length
+
+A protocol string's on-wire octet count and the length of its internal UTF-8 representation are different coordinate systems. Conversion can expand characters or replace malformed input, so parser offsets must remain based on the wire representation while string operations use the converted representation.
+
+Merged master MR !8434, authored by John Thacker, fixes GIOP CDR strings by using the encoding-aware TVBuff API. Because the negotiated code-set service context is only exchanged when the client initially connects and was not yet retained as conversation state, the accepted code uses CORBA's specified ISO-8859-1 default rather than treating raw bytes as already-valid internal text. The function explicitly documents that its returned sequence length is a wire-octet count and is not necessarily the UTF-8 string length.
+
+Merged !8441, authored by João Valverde, provides complementary diagnostic behavior: `wslog` prints the known-valid UTF-8 prefix as Unicode and hex-escapes malformed trailing bytes instead of degrading the valid prefix to ASCII/hex. Its marker offset advances by UTF-8 characters rather than continuation bytes.
+
+**Implementation rule:** advance packet offsets and enforce protocol lengths in the wire encoding's units; allocate, truncate, and display the decoded string in the decoded representation's units. Do not reuse one length for both unless the encoding contract guarantees that equivalence.
+
+**Encoding rule:** if negotiated encoding state is unavailable but the protocol defines a mandatory default, use that default explicitly. Preserve valid decoded text when reporting malformed input and isolate the malformed bytes instead of throwing away or escaping the entire value.
+
+**Confidence:** Very high. Both are merged master fixes authored by core maintainers; !8434 is John Thacker-authored and cites the protocol's code-set default directly.
+
