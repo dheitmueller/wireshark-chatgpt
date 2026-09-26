@@ -61,3 +61,16 @@ Merged master MR !10301, authored by Guy Harris, changes NHRP so `dissect_nhrp_m
 **Implementation rule:** prefer an exact subset tvbuff at semantic parser boundaries when the enclosing format supplies a trustworthy length or offset. Do not force a child helper to rediscover where its object ends from unrelated bytes that the parent already knows belong elsewhere.
 
 **Confidence:** Extremely high. Merged master framing cleanup authored by Guy Harris.
+
+## Preserve embedded-frame geometry when invoking link-layer child dissectors
+
+A parent container can carry a complete embedded Ethernet frame whose semantic length is different from the outer capture's frame length. Link-layer child dissectors may consult packet-wide framing state when deciding padding and FCS ownership, so the parent must provide the embedded frame's geometry for the duration of the child call and restore the enclosing state afterward.
+
+Merged master MR !8455 fixes TECMP embedded Ethernet by temporarily setting `pinfo->fd->pkt_len` to the TECMP payload's known Ethernet length while invoking `eth_withfcs`, then restoring the original value. Merged master MR !8456 applies the same principle in MACsec: it removes the ICV from the child tvbuff, adjusts the effective packet length to exclude MACsec framing/ICV/FCS while Ethernet padding is classified, restores the original packet length, and displays the ICV separately.
+
+These are early concrete examples of the stronger semantic-boundary design later adopted in !13072, !13088, and !13089. They also show why merely slicing a tvbuff is sometimes insufficient when a child API still consults `packet_info`/frame metadata.
+
+**Implementation rule:** when a child dissector's framing logic depends on packet-wide length state, make that state describe the child PDU for the duration of the call, then restore the parent's state unconditionally. Prefer newer APIs that carry semantic boundaries explicitly when available; temporary packet-state substitution is evidence of a context requirement, not a reason to let the child infer from the outer capture.
+
+**Confidence:** High. Both MRs are merged master fixes for real Ethernet padding/FCS misclassification; later John Thacker framing work provides stronger architectural confirmation.
+
