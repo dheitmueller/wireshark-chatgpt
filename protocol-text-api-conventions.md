@@ -36,3 +36,16 @@ Merged master MR !8677, authored by João Valverde, removes UTF-8 sanitization f
 **Implementation rule:** keep encoding-neutral value storage neutral. Decode/validate where an API contract requires text, and keep presentation escaping out of the semantic value.
 
 **Confidence:** Very high. Merged framework change authored by João Valverde, reinforced by João's corrective review and the later merged IPP correction sequence.
+
+
+## Keep field semantics separate from display whitespace and escaping
+
+A string field's stored value is part of Wireshark's filtering and machine-consumption semantics. Presentation policy such as replacing tabs/newlines with spaces belongs in the field's display metadata or in an explicitly requested display string, not in the semantic value passed to `proto_tree_add_string()`.
+
+Merged master MR !8290, authored and merged by João Valverde, adds `BASE_STR_WSP` so `FT_STRING` fields can display whitespace as spaces without storing a whitespace-normalized replacement value. The MR explicitly identifies `proto_tree_add_string(..., tvb_format_text_wsp(...))` as problematic because the formatted representation becomes the field value and therefore changes display-filter behavior. Merged !8301 complements this by replacing duplicate formatting calls with `proto_tree_add_item_ret_display_string()`: the normal field-add path establishes the semantic value and the caller receives the exact display representation for use in a column or label.
+
+Closed !8283 is useful precursor evidence for the same direction but is intentionally down-weighted because it did not merge.
+
+**Implementation rule:** decode and store the protocol's semantic string once. If presentation needs whitespace folding, escaping, or another label transformation, express that through field display policy or reuse the display string returned by the normal proto-tree API; do not feed the formatted label back as the field value.
+
+**Confidence:** Very high. Two merged master framework/API changes by João Valverde, with the semantic-value/display-label distinction stated directly in the MR rationale.

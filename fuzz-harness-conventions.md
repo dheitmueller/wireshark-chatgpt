@@ -35,3 +35,14 @@ Merged master MR !13870 fixes an E2AP NULL-table-pointer crash found through fuz
 **Review rule:** distinguish reachability from detectability. The same bad state can be reached in an ordinary build without visibly crashing because allocator layout or runtime checks differ; use the fuzzing instrumentation as part of the regression context when that instrumentation is material to observing the defect.
 
 **Confidence:** Very high. Merged master fuzz fix with explicit reproduction guidance from Gerald Combs and independent ASAN confirmation from John Thacker.
+
+
+## Reset per-input harness selection state before deriving the next testcase
+
+Long-running fuzz driver loops can accidentally carry shell variables from one capture into the next. Variables that describe a selected packet range or whether a source file should be retained are testcase-local state and should be cleared before each new input is classified.
+
+Merged MR !8261, authored and merged by Gerald Combs on a maintained branch, explicitly resets the fuzz script's `KEEP` and `PACKET_RANGE` variables before calculating the current capture's packet count and choosing any random range.
+
+**Testing rule:** treat every loop iteration as a fresh testcase configuration. Reset all selection/range/retention variables before computing the next input's policy so a previous large or special-case capture cannot influence a later one.
+
+**Confidence:** High. Merged fuzz-driver correctness fix by Gerald Combs; stable-branch evidence, so it is used as corroborating harness guidance rather than a broad architecture rule.

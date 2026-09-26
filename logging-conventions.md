@@ -21,3 +21,15 @@ Merged master MR !20587, authored and merged by John Thacker, converts OID/MIB d
 **Implementation rule:** prefer the project logging subsystem over private debug knobs/output paths, and treat diagnostic argument construction as real runtime work. Keep cheap scalar arguments inline, but guard allocations, string assembly, or expensive calculations whose only consumer is an inactive debug/trace message.
 
 **Confidence:** Extremely high. Merged master cleanup authored and merged by John Thacker, with both the logging unification and avoided construction stated in the change.
+
+## Separate normal diagnostic severity from validation strictness with log domains
+
+A diagnostic can be too noisy to emit as a warning during ordinary packet analysis while still being valuable as a hard failure under fuzzing or targeted validation. Use a dedicated log domain so those two policies can be selected independently instead of globally raising the log level.
+
+Merged master MR !8284, authored by João Valverde, moves UTF-8 contract diagnostics into a dedicated `UTF-8` domain at debug level because malformed text was still sufficiently common that a global warning was excessive. Merged !8286 adds fatal-domain selection, and merged !8291 makes a configured fatal domain active even when normal log-level/domain filtering would otherwise suppress it. Later reviewed fuzz work builds directly on this capability by making UTF-8 contract violations fatal in fuzz runs.
+
+**Implementation rule:** give semantically important diagnostics a stable domain. Choose an operationally appropriate default severity, then let fuzz/CI/debug configurations promote selected domains to fatal when violating that contract should stop the run.
+
+**Review rule:** do not solve validation visibility by making a noisy diagnostic globally severe. Ask whether a dedicated domain plus targeted fatal policy provides stronger tests with less normal-runtime noise.
+
+**Confidence:** Very high. Three merged master logging changes by João Valverde establish the mechanism and intended policy.

@@ -21,3 +21,14 @@ The rewrite also treats an empty resolved name as a distinct formatting case: wh
 **Design rule:** if formatting behavior depends on whether a representation is empty, test the representation/property itself rather than enumerating one producer/type currently known to yield an empty value. This makes the formatter robust to additional address types and keeps layout logic aligned with user-visible semantics.
 
 **Confidence:** Extremely high. The merged master rewrite was authored, approved, and merged by Guy Harris and contains explicit comments documenting the upper-bound/NUL and formatting-capacity contracts.
+
+
+## Reserve the worst-case encoded expansion before consuming the next input unit
+
+For bounded escaping/encoding, the capacity proof must use the largest output representation that one input unit can produce, plus the terminating NUL. Checking only the ordinary one-byte case or checking after the expansion is written can still overrun the buffer.
+
+Merged master MR !8302, authored and merged by Gerald Combs after a Coverity overrun report, fixes XML escaping by deriving a flush limit from the fixed buffer size and the longest entity expansion. The code ensures enough room remains for the next escaped character and the NUL before it consumes that input byte, then flushes and resets the output offset when the limit is reached.
+
+**Implementation rule:** determine the maximum output bytes produced by one input unit, include fixed suffix/terminator requirements, and prove that capacity before performing the write. For fixed buffers, flush before the next expansion can cross the bound; for growable buffers, grow before writing.
+
+**Confidence:** Very high. Merged master memory-safety fix by Gerald Combs motivated by a concrete static-analysis overrun.

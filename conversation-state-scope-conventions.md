@@ -15,3 +15,18 @@ Merged MR !15491 fixes DCE/RPC header-signing state. `PFC_HDR_SIGNING` is negoti
 **Review rule:** for each new persistent flag or negotiated parameter, ask both “who negotiates this?” and “for how long does it apply?” Then verify that the state container and key match those answers rather than the location in the code where the value happens to be parsed.
 
 **Confidence:** Very high. Merged master correctness change with a protocol-specific ownership rationale, substantive John Thacker review, and John Thacker merge.
+
+
+## Sequence-analysis state must follow the transport scope defined by the protocol
+
+A protocol's sequence history should not be keyed only by a convenient application identifier when the specification says that sequence numbers are scoped by a transport session. Conversation state is appropriate when the transport conversation is the semantic owner, while results that belong to one packet should be attached to that packet rather than kept in a second global frame-number map.
+
+Merged master MR !8281, authored by John Thacker, fixes IPFIX/NetFlow sequence analysis. RFC 5101/7011 define sequence numbers per Observation Domain within a Transport Session, so the accepted change moves the observation-domain state into conversation proto-data. The frame-specific analysis result is stored with `p_add_proto_data()` and retrieved from the packet on redissection.
+
+The MR also documents a boundary of the implementation: SCTP counts sequence numbers separately per stream, while the conversation lookup used there identifies the SCTP association. That is an explicit example of a state key that is improved but still missing one multiplexing discriminator.
+
+**Implementation rule:** derive sequence-state keys from the specification's full scope: transport session plus every stream/channel/domain discriminator that independently carries sequence history. Keep persistent history at that scope and attach per-frame conclusions to the frame.
+
+**Review rule:** when moving state into a conversation, ask whether the conversation object actually distinguishes all multiplexed substreams the protocol treats independently. If not, record or add the missing discriminator rather than assuming the conversation abstraction is automatically sufficient.
+
+**Confidence:** Very high. Merged master correctness change authored by John Thacker with the scope rationale and SCTP limitation stated explicitly.

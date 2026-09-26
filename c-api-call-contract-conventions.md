@@ -135,3 +135,16 @@ Merged master MR !9596 introduces common Wiretap helpers for constructing Export
 **Review rule:** when refactoring raw pointer writes to buffer helpers, test both an initially empty buffer and an already populated buffer, plus the failure path where the producer does not fill all requested bytes.
 
 **Confidence:** High. The merged Wiretap refactor fixes a concrete overwrite contract and applies the same pattern consistently; later MSVC follow-up work concerned integer-width warnings rather than the append/length model itself.
+
+
+## Never substitute ordinary text for a printf-style format string
+
+A printf-family API's format parameter is a different semantic type from an ordinary string, even when both are represented as `const char *`. Passing lookup-derived or packet-derived text as the format string makes any percent directives part of the formatting language rather than plain text.
+
+Merged master MR !8266, authored and merged by Gerald Combs, fixes USB HID string construction by separating literal result strings from intentionally parameterized format templates. Known template cases are stored separately and invoked with the integer argument; ordinary result strings are duplicated through a fixed string format. Merged stable-branch backports !8269, !8270, and !8271 preserve the same repair.
+
+**Implementation rule:** treat format strings as control data. Only pass strings deliberately authored as format templates to printf-style parameters; pass arbitrary or lookup-derived text through a fixed literal string format.
+
+**Review rule:** printf-style project wrappers deserve scrutiny whenever the format argument comes from a variable rather than a literal or clearly designated template.
+
+**Confidence:** Very high. Merged master correctness hardening authored and merged by Gerald Combs, with accepted stable backports.

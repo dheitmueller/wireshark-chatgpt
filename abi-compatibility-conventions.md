@@ -33,3 +33,14 @@ Merged release-4.0 MR !13619 and release-4.2 MR !13620 correct Debian `libwireta
 **Review rule:** a public-API change is incomplete until downstream symbol/version manifests for maintained release branches agree with the real binary exports. Small naming differences such as suffixes are correctness issues because packaging tools consume the strings literally.
 
 **Confidence:** Very high. Two merged maintained-branch fixes correct concrete symbol-name mismatches in Debian's ABI metadata and were accepted by project maintainers.
+
+
+## When an exported API moves between libraries, move the package symbol metadata with it
+
+A source-level refactor that relocates a public function from one shared library to another changes which binary owns that exported symbol. Distribution symbol manifests must remove the symbol from the old library and add it to the new library with the correct first-version annotation; otherwise package ABI checks describe an interface that no longer matches the binaries.
+
+Merged MR !8308, authored and merged by João Valverde, updates Debian symbol manifests after the `format_text*` helpers moved from libwireshark to libwsutil. The change removes the symbols from the former library, adds them to the latter, and normalizes the introduction version for the newly exported wsutil entries. Merged !8277 separately repairs a missing symbol-manifest entry, while !8307 leaves a source comment reminding maintainers that adding shared `true_false_string` definitions requires corresponding declarations and symbol metadata.
+
+**Packaging/ABI rule:** whenever a public symbol is added, removed, renamed, or moved across shared libraries, audit the package symbol manifests for every affected library and record the actual exporting library and supported-version boundary.
+
+**Confidence:** Very high. Merged package/ABI corrections by João Valverde, with the library move and symbol-manifest consequences directly visible in the accepted changes.
