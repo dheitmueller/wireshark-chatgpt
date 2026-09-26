@@ -24,3 +24,12 @@ Merged master MR !9846, authored by Guy Harris, fixes Gryphon response dissectio
 
 **Confidence:** Extremely high. Merged master fix authored by Guy Harris with accepted backports to both maintained release branches.
 
+## Source extent and semantic string extent may intentionally differ
+
+A protocol item's packet-byte range answers which bytes constitute the encoded field for highlighting/provenance; the decoded string value answers what semantic text the field contains. Those extents do not always have to be identical.
+
+During review of merged master MR !8877, John Thacker explicitly distinguished two line-oriented cases. If the end-of-line octet is meant to be part of the string value, decode the range including it. If the protocol wants the EOL included in the highlighted field bytes but not in the semantic string, keep the decoded string length excluding the terminator and extend the protocol item's source range to the terminator.
+
+**Implementation rule:** decide separately whether delimiter/framing bytes belong to the field's encoded source extent and whether they belong to its semantic value. Do not change the stored string merely to obtain the desired byte highlighting, and do not shrink source provenance merely because presentation omits a delimiter.
+
+**Confidence:** Very high. Merged master change with explicit review clarification from John Thacker about both behaviors.

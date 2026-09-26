@@ -49,3 +49,13 @@ Merged MR !8964, authored and merged by João Valverde, removes the maximum-size
 **Review rule:** when adding a resource guard to text construction, ask whether the limit belongs to the data structure or to one consumer. Prefer an explicit consumer-side limit when call sites have different semantics.
 
 **Confidence:** Very high. Merged core API simplification with the original resource-safety motivation discussed directly by Gerald Combs.
+
+## Preserve absence semantics when replacing nullable strings with string-builder objects
+
+Replacing a fixed or raw string buffer with a dynamic string-builder object does not automatically eliminate the old “not available yet” state. Accessors can still be called before the builder has been created, and blindly dereferencing the new container changes a nullable API into a crash.
+
+Merged master MR !8863 replaces fixed X.509 DN/RDN buffers with `wmem_strbuf` so construction cannot truncate a multibyte UTF-8 character at an arbitrary byte ceiling. Immediate merged follow-up !8868 fixes `x509if_get_last_dn()` to return NULL when the buffer has not yet been created rather than calling `wmem_strbuf_get_str(NULL)`.
+
+**API rule:** when refactoring from a nullable pointer/value to an owning container, preserve the caller-visible absence contract explicitly unless the API is intentionally being changed everywhere. Audit accessors and cleanup/reset paths, not only append/build sites.
+
+**Confidence:** Very high. Two adjacent merged master fixes; the second is a direct correctness follow-up to the first.

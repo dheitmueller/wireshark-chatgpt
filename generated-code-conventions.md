@@ -109,3 +109,15 @@ Several merged April 2023 MRs provide unusually direct Guy Harris evidence for t
 ## MR 9092 and 9094 corroboration
 
 Merged master MR !9092 changes `tools/ncp2222.py` and regenerates the NCP dissector include as part of the same parser-correctness update; release backports !9102 and !9103 preserve that relationship. Merged MR !9094 likewise changes the PKIX Qualified ASN.1 conformance input and regenerated C together. These independently reinforce the source-of-truth rule for generated dissectors.
+
+## Keep Werror for project-owned code and scope generator warning exceptions narrowly
+
+Generated parser/scanner code can trigger compiler-version-specific warnings that Wireshark cannot directly fix without changing or upgrading the generator. That does not justify disabling warnings-as-errors for handwritten project code that shares the same target or source file.
+
+Merged master MR !8876 enables `-Werror` in the Clang CI path. Merged !8874 initially limits Werror source sets to nongenerated files where Flex output was noisy; !8875 and !8885 identify Lemon/Flex-specific warnings. Merged !8898 then provides generator-specific `DIAG_OFF_LEMON()/DIAG_ON_LEMON()` and Flex equivalents and arranges Lemon `%include`/`%code` boundaries so generated code sits inside the suppression region while handwritten code is checked normally.
+
+**Build rule:** keep the project's own source warning-clean under Werror. When generated code has unavoidable warnings, isolate the exception to the generator-owned region or generated source rather than weakening the whole target. Restore diagnostics immediately after the generated region.
+
+**Maintenance rule:** prefer named generator-specific diagnostic wrappers over scattered compiler pragmas so the supported warning exceptions remain centralized and auditable.
+
+**Confidence:** Very high. A sequence of merged master CI/build changes converges on narrow generator-specific suppression while expanding Werror coverage.

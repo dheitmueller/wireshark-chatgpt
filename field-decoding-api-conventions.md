@@ -81,3 +81,13 @@ During review of merged master MR !9223, Alexis La Goutte asked that calculated 
 **Review rule:** inspect add_uint/add_string/add_* calls whose value argument comes from a local calculation rather than the TVBuff. Decide whether the field is a decoded wire value or a synthesized semantic value and mark or present it accordingly.
 
 **Confidence:** Very high. Merged new-dissector review with the generated-field request made explicitly by Alexis La Goutte and applied across the calculated fields before merge.
+
+## Registered masks are part of machine-output field semantics
+
+A registered field mask is not merely protocol-tree presentation metadata. It defines the logical value seen by common field extraction and output paths. Manually extracting a bit field and then adding a pre-decoded integer can leave downstream machine-readable output inconsistent with the registered field's intended mask/shift semantics.
+
+Merged master MRs !8895, !8896, and !8897, all authored by John Thacker, convert S1AP, NGAP, and XNAP cell identities from manual `tvb_get_bits*()` plus `proto_tree_add_uint*()` to registered `BITMASK` metadata plus ordinary `proto_tree_add_item()`. Their descriptions explicitly note that the old path caused JSON/PDML to report the original packet-buffer integer rather than the correctly masked logical value.
+
+**Implementation rule:** when the wire representation is a masked subfield, encode that mask in the `hf_` registration and let the standard tree API perform the extraction. Review JSON/PDML and other machine-output semantics as part of field correctness, not only what the GUI tree happens to display.
+
+**Confidence:** Very high. Three adjacent merged master corrections by John Thacker across independently generated ASN.1 dissectors.

@@ -90,3 +90,12 @@ Merged master MR !9076, authored by John Thacker, independently replaces a raw f
 
 **Confidence:** Very high. Multiple merged master fixes, including one authored by John Thacker.
 
+## Document ambiguous deployed encodings and make the discriminator explicit
+
+When two applicable specifications or deployed ecosystems assign different text encodings to the same field, do not hide the ambiguity behind a comment that labels one branch “correct” and the other “broken.” State the competing contracts and make the heuristic used to distinguish them explicit, conservative, and reviewable.
+
+Merged master MR !8884 handles the Mobile IPv6 Service Selection Mobility Option. Review by João Valverde corrected the initial interpretation: RFC 5149 permits a UTF-8 identifier, while deployed 3GPP behavior encodes APN-style labels. John Thacker acknowledged the standards conflict and the final code documents both sources, using the leading octet as a heuristic to select `ENC_APN_STR` versus `ENC_UTF_8`.
+
+**Implementation rule:** when compatibility requires heuristic decoding, keep standards provenance in the code and separate “what the specification says” from “what captures in the field do.” Prefer a discriminator that fails conservatively and leaves unusual input inspectable rather than silently normalizing all traffic into one assumed encoding.
+
+**Confidence:** High. Merged master interoperability fix with substantive review correcting the standards interpretation before acceptance.

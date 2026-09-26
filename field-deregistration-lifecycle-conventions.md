@@ -41,3 +41,13 @@ Merged master MR !15750 makes newly assigned Lua `Proto.fields` and `Proto.exper
 **Review implication:** exercise repeated mutation/commit cycles, including adding fields after initial registration. Check both registration identity (`hf_id`/expert IDs) and backing-storage lifetime; a result that merely makes the newest field visible can still contain a latent use-after-free or duplicate registration.
 
 **Confidence:** Very high. Merged master WSLua lifecycle fix with explicit comments tying the replacement arrays to epan's deregistration lifetime rules, approved by John Thacker.
+
+## Bind dynamic field registration to the declaration-set lifecycle, not the capture-file lifecycle
+
+Dynamically registered fields defined by persistent configuration can outlive any one capture file from the user's point of view. Columns, coloring rules, and display filters may retain references to those fields across file close/open. Rebuilding the registration merely because the capture-file lifecycle restarted can therefore invalidate still-live references.
+
+Merged master MR !8901, authored by John Thacker, moves HTTP/2 UAT-defined `hf_` replacement out of protocol file init/cleanup and into the UAT post-update/reset callbacks. The implementation deregisters the old dynamic fields when the declaration set changes, keeps static header registrations separate, and hands the old registration backing array to the deferred deregistration-data mechanism. John also reported an ASAN build with no leak. The later !19260 API/lifetime documentation remains the stronger authority for when deregistered field memory is actually reclaimable; !8901 supplies earlier concrete lifecycle evidence.
+
+**Implementation rule:** tie registration replacement to the event that changes the field declarations. Do not treat opening or closing a capture as permission to tear down persistent dynamic field identities when UI/filter state can survive that transition.
+
+**Confidence:** Very high. Merged master fix authored by John Thacker; later notebook evidence strengthens the same lifecycle contract.
