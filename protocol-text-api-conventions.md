@@ -25,3 +25,14 @@ This complements the encoding-boundary rule above: raw octets still need the pro
 **Implementation rule:** decode according to the protocol's encoding contract, then store the resulting semantic string value. Leave display escaping and label formatting to presentation code unless the protocol itself defines those characters as part of the value.
 
 **Confidence:** Very high. Merged framework/API-documentation change by João Valverde that states the intended contract directly.
+
+
+## Keep generic string storage separate from the UTF-8 protocol-tree boundary
+
+Generic string value storage and protocol/UI text do not necessarily have the same encoding contract. Silently sanitizing the generic value layer can change legal literal values and display-filter semantics; validate UTF-8 at the API boundary that actually promises text instead.
+
+Merged master MR !8677, authored by João Valverde, removes UTF-8 sanitization from the generic ftype-string setters and performs the debug validity check when a value is inserted as a protocol-tree string. Its API documentation also states that packet-derived string values must not be escaped merely for display because doing so changes the semantic value seen by display filters. Merged !8711 is useful negative history rather than a positive exemplar: João objected after merge when IPP used its formatted label as the stored field value, and the later already-reviewed !8731/!8724 sequence supplies the accepted semantic-value/display-label correction.
+
+**Implementation rule:** keep encoding-neutral value storage neutral. Decode/validate where an API contract requires text, and keep presentation escaping out of the semantic value.
+
+**Confidence:** Very high. Merged framework change authored by João Valverde, reinforced by João's corrective review and the later merged IPP correction sequence.
