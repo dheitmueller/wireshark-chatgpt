@@ -6,7 +6,7 @@ Corpus repository: `dheitmueller/wireshark-corpus-mrs`
 
 Corpus commit: `ddcaa22b51c68f594e425a23388c3a2086813054`
 
-Exactly 50 previously unreviewed merge requests were reviewed in this run. The reviewed set was rebuilt from `reviewed-mrs.md`, the supplemental aggregate ledger at `reviewed-mrs-automation/reviewed-mrs-automation.md`, the applicable per-run ledgers under `reviewed-mrs-automation/`, and the immediately preceding exact ledger. No member of this batch was already recorded as reviewed. The preceding run mentioned !8460 only as a frontier probe and explicitly did not count it as reviewed.
+Exactly 50 previously unreviewed merge requests were reviewed in this run. The reviewed set was rebuilt from `reviewed-mrs.md`, the supplemental aggregate ledger at `reviewed-mrs-automation/reviewed-mrs-automation.md`, the applicable per-run ledgers under `reviewed-mrs-automation/`, and the immediately preceding exact ledger. No member of this batch was already recorded as reviewed. I enumerated all 404 entries in `reviewed-mrs-automation/`: 358 match the ordinary numeric-range ledger naming convention and none overlaps !8411–!8460; all 19 irregular/noncontiguous/gap/backfill/aggregate tracking files were fetched and checked individually and none contains a candidate as reviewed. The preceding run mentioned !8460 only as a frontier probe and explicitly did not count it as reviewed.
 
 ## Exact reviewed set
 
