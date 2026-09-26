@@ -51,3 +51,18 @@ Merged master MR !9752, authored and merged by John Thacker, fixes this in the s
 **Review rule:** trace offsets/iterators on every malformed-input exit, not only successful decode paths. If a failure is intended to be recoverable, verify that the next loop iteration cannot observe exactly the same state indefinitely.
 
 **Confidence:** Extremely high. Merged core-library robustness fix authored and merged by John Thacker, with the denial-of-service failure mode stated directly in the MR.
+
+
+## Validate packet-derived cursor arithmetic before advancing
+
+When a packet length is used to advance a parser cursor, validate that the new cursor is representable before calculating it. A later bounds check cannot repair a cursor value that has already wrapped.
+
+Merged master MR !9124, authored by Gerald Combs, applies this rule throughout RTPS parsing. The accepted implementation checks cursor advancement before the addition and reports malformed input through Wireshark's normal bounds path when the requested advance is not representable. Release-4.0 MR !9134 and release-3.6 MR !9135 carry the same correction.
+
+The same master change makes unknown native-type length and alignment recovery use a small positive progress value rather than a negative result, so iterative parsing continues with a defined forward-progress contract.
+
+**Implementation rule:** validate cursor-plus-length, count-times-element-size, and similar packet-derived arithmetic at the arithmetic boundary. Malformed values should enter the ordinary bounds/error path instead of producing a wrapped cursor.
+
+**Recovery rule:** unsupported-element recovery inside a parser loop must either stop or make deliberate forward progress. Avoid sentinel values that can become invalid cursor arithmetic.
+
+**Confidence:** Very high. Merged master correctness fix by Gerald Combs with accepted backports to both maintained release lines.

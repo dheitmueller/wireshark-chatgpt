@@ -66,3 +66,16 @@ Merged master MR !9226, authored by Guy Harris, expands the SRT string-decoding 
 **Implementation rule:** when byte order, bit extraction, or padding rules make the code intentionally non-obvious, place a specification-level equivalence explanation next to the transform. Distinguish padding from termination because the latter changes string length and malformed-input behavior.
 
 **Confidence:** Extremely high. Merged explanatory change authored by Guy Harris for an otherwise counterintuitive on-wire text representation.
+
+
+## Do not truncate composed UTF-8 with arbitrary fixed byte buffers
+
+A display string assembled from decoded text and formatted metadata should not be given an arbitrary C-buffer size unless the protocol itself imposes that byte limit. Byte-count truncation can split a multibyte UTF-8 sequence and turn otherwise valid text into invalid output.
+
+Merged master MR !9132, authored and merged by João Valverde, fixes C15 display strings by replacing fixed-size buffers and repeated bounded concatenation with dynamically sized Wireshark string-building APIs. The old limits were presentation implementation details rather than protocol limits and could truncate a UTF-8 string in the middle of a code point.
+
+**Implementation rule:** use dynamically sized string-building APIs for human-readable composed text. If the UI or protocol truly requires truncation, apply the semantic limit on a valid character boundary rather than by cutting an arbitrary number of UTF-8 bytes.
+
+**Review rule:** distinguish a protocol maximum length from a temporary-buffer capacity. A magic display-buffer size should not silently become a protocol or presentation limit.
+
+**Confidence:** Very high. Merged master text-correctness fix authored and merged by João Valverde.
