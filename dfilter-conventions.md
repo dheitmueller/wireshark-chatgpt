@@ -137,3 +137,14 @@ Merged master MR !12960 adds `$name(arg1, ...)` as an alternate spelling for the
 **Review rule:** evaluate new language syntax not only for parseability but also for the semantic expectations its shape creates. Test precedence-sensitive examples, especially negation and boolean operators, before deciding whether an apparently ergonomic syntax is truly an alias or a new language construct.
 
 **Confidence:** High. Merged master language feature by João Valverde with explicit maintainer discussion of textual-expansion semantics, precedence surprises, and backward compatibility.
+## Keep decoded field semantics and raw packet-byte access as distinct value domains
+
+A registered field normally denotes its decoded, typed semantic value. Decoding can legitimately normalize the original packet representation—for example, malformed text can become a replacement character—so the decoded value is not always a reversible representation of the source bytes. When users need to inspect the original encoding, expose that as an explicit raw-byte view instead of weakening or changing the ordinary field's type semantics.
+
+Merged master MR !8660, authored and merged by João Valverde, adds the display-filter `@field` form for exactly this purpose. A normal string field remains an `FT_STRING` value, while `@field` is compiled and evaluated as `FT_BYTES` taken from the field's packet-backed source range. The implementation carries raw-ness explicitly through syntax-tree nodes, VM operands, field loads, references, and register caching, and the change includes user documentation and regression tests.
+
+**Implementation rule:** treat raw packet representation as a separate semantic qualifier on a field reference. Do not make malformed-byte inspection depend on the decoded field value retaining information that its type is allowed to normalize or replace.
+
+**Compiler rule:** any cache or reuse of field loads/references must distinguish raw and decoded access, just as it must distinguish layer or occurrence qualifiers. Two references to the same `hf_` identity are not equivalent when they request different value domains.
+
+**Confidence:** Very high. Merged master display-filter feature authored and merged by João Valverde with end-to-end parser/VM/test/documentation support.

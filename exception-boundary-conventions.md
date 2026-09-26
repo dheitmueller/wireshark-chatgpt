@@ -35,3 +35,14 @@ Merged master MR !12321, authored by John Thacker and approved/merged by Anders 
 **Review rule:** when code updates a parent item only after a nested dissector call, ask what happens if TVB access throws, capture data is truncated, reassembly defers completion, or the nested path exits early. Distinguish mandatory state restoration from optional work that should occur only after successful child dissection.
 
 **Confidence:** Very high. Merged master correctness fix authored by John Thacker, with the exceptional/truncated/unreassembled cases explicitly described in the MR and accepted by Anders Broman.
+## Locals that survive a non-local jump must satisfy the C storage rules
+
+Wireshark's `TRY`/`CATCH` machinery is a non-local-jump boundary. Automatic local variables whose values are modified after the jump point and then observed after an exception cannot be treated like ordinary locals; the C `setjmp`/`longjmp` rules can leave non-`volatile` values indeterminate, and some supported compilers diagnose or reject code that assumes otherwise.
+
+Merged master MR !8622 moves the varint test's exception/result locals outside the `TRY` scope and marks the values that must survive the exception path `volatile`. The same MR was reviewed by João Valverde, who approved the portability fix. It also uses GLib's width-explicit integer-constant macro in the varint overflow check rather than depending on an implementation-sensitive literal expression.
+
+**Implementation rule:** when a value is assigned on one side of a Wireshark non-local-jump boundary and consumed after `CATCH`, audit it under the C `setjmp`/`longjmp` rules. Use `volatile` only for locals whose post-jump value must be preserved, and keep unrelated values under normal type/optimization semantics.
+
+**Review rule:** compiler-specific warnings around `TRY`/`CATCH` are not merely cosmetic. Trace which variables cross the exceptional control-flow edge and fix the storage contract rather than suppressing the diagnostic.
+
+**Confidence:** High. Merged master compiler-portability correction with maintainer approval; the rule follows directly from the exception mechanism and the accepted storage changes.

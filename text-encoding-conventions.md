@@ -99,3 +99,16 @@ Merged master MR !8884 handles the Mobile IPv6 Service Selection Mobility Option
 **Implementation rule:** when compatibility requires heuristic decoding, keep standards provenance in the code and separate “what the specification says” from “what captures in the field do.” Prefer a discriminator that fails conservatively and leaves unusual input inspectable rather than silently normalizing all traffic into one assumed encoding.
 
 **Confidence:** High. Merged master interoperability fix with substantive review correcting the standards interpretation before acceptance.
+## Keep wire-byte geometry separate from decoded-text geometry
+
+Transformations defined on the encoded octets belong in the byte domain, before character decoding. Conversely, once bytes have been decoded or sanitized into UTF-8, the original wire-byte count is no longer a safe character or output-byte bound because replacement and escaping can change the representation length.
+
+Merged master MR !8623, authored and merged by John Thacker, fixes World of Warcraft fields that store four ASCII octets in reverse order. The old code decoded to UTF-8 first and then called `g_strreverse()`; malformed ASCII can decode to the multibyte replacement character, so byte-wise reversal at that point corrupts UTF-8. The accepted code copies/reverses the four raw bytes first and only then converts them as ASCII.
+
+Merged master MR !8638, also authored by John Thacker, fixes SCTP's counted-and-NUL-terminated Host Name parameter. It registers the field as `FT_STRINGZ`, obtains the normal display string from the protocol-tree API, and stops passing the wire octet length as a `%.*s` width. John explicitly notes that replacement or escaping means the UTF-8 display representation need not have the same octet length as the packet field. Merged !8658 carries the resulting host-name handling to a maintained branch. Merged master !8634 independently reinforces the same boundary by using `ENC_APN_STR` for DNS-label-style GTP FQDNs rather than manually mutating bytes into a dotted string.
+
+**Implementation rule:** perform protocol-defined byte reordering, packing, or delimiter interpretation before decoding to Unicode. After decoding, treat the returned UTF-8 string according to the string API's own length/termination contract rather than reusing a source-wire byte count as a presentation bound.
+
+**Review rule:** whenever one variable is used both as a TVBuff byte length and as a width/index into decoded text, check whether conversion can replace, escape, normalize, or expand input. If it can, those are different coordinate spaces and need different quantities.
+
+**Confidence:** Extremely high. Multiple merged master text-decoding fixes, with the two central examples authored and merged by John Thacker.

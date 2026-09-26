@@ -13,3 +13,14 @@ Merged master MR !14452 adds Telnet packet summaries to the Info column. During 
 **Robustness rule:** if a dissector replaces a generic Info-column description with detail derived from packet parsing, establish the safe generic value first. Replace or append only after the corresponding parse succeeds so an exception or truncation does not leave the column empty or pointing at transient storage. Bound repeated summaries so malformed or unusually dense packets cannot make the column grow without useful limit.
 
 **Confidence:** Very high. Merged master change with direct John Thacker review explaining the ownership/copy semantics and the exception-path motivation; John subsequently approved the revised implementation.
+## Route packet-derived column text through the formatting/copying path
+
+Column APIs have a semantic safety distinction in addition to an ownership distinction. A non-copying setter is appropriate for trusted static labels, while text derived from packet data should normally pass through the column path that copies, validates, and formats it for display.
+
+Merged master MR !8616, authored and merged by João Valverde, hardens the column-string helpers so the add/append/prepend paths validate UTF-8 and escape unprintable input through the shared label-string machinery. The same change documents `col_set_str()` as neither formatting nor copying its input and explicitly recommends it for simple static strings such as protocol names, not untrusted or potentially unprintable text. This is early implementation provenance for the ownership guidance later reinforced by !14452.
+
+**Implementation rule:** use `col_set_str()` for constant, already-safe strings whose lifetime is guaranteed. For packet-derived, dynamically constructed, or otherwise untrusted text, use the copying/formatted column APIs so the normal display-sanitization path is applied.
+
+**Review rule:** when a dissector puts text into a packet-list column, review both lifetime and character-domain safety. A pointer can have sufficient lifetime and still be the wrong input for a raw/non-formatting setter.
+
+**Confidence:** Very high. Merged core column-API hardening by João Valverde; later merged review evidence independently reinforces the same API split.
