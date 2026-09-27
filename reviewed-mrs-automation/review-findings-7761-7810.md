@@ -16,3 +16,7 @@ All 50 MRs in this batch are merged.
 | !7803 | merged | Deep / corroboration | RDPUDP retained server address switches to file-scope wmem ownership. |
 | !7802 | merged | Discussion-focused | EVPN ADD-PATH uses a heuristic whose possible legal collision Uli Heilmeier identified; accepted protocol-specific compromise. |
 | !7801 | merged | Scanned | SMB Export Objects frees a removed free-chunk node. |
+| !7800 | merged | Deep | John Thacker adds an ExportObjectModel destructor that frees owned export entries. |
+| !7799 | merged | Deep / promoted | DLEP bounds each data item with a subset TVB, dispatches through an extensible table, localizes bounds failures, and preserves sibling synchronization. |
+| !7798 | merged | Deep / Guy | Guy Harris changes Ascend parser timestamp state from guint32 to time_t, matching mktime() and downstream use. |
+| !7797 | merged | Scanned | Adds an independent Logray patch-version variable. |
