@@ -59,3 +59,14 @@ The accepted implementation deep-copies the retained element list and nested add
 **Ownership rule:** conversation keys outlive the packet that established them. Any address/string storage retained by the key must be copied into a compatible long-lived scope.
 
 **Confidence:** Very high. Two adjacent merged conversation-core changes authored by Gerald Combs, with the second explicitly migrating older special-case identity onto the generalized model.
+
+## Similar conversation flags may differ in later lifecycle behavior
+
+Closed MR !6901, authored by Gerald Combs, proposed removing `NO_PORT2_FORCE` on the assumption that it was equivalent to `NO_PORT2`. The two flags selected the same no-port2 conversation table in `conversation_new()`, but they differed in `conversation_set_port2()`: `NO_PORT2_FORCE` deliberately prevented later specialization of the wildcarded port. Gerald closed the MR after tracing that difference.
+
+**API rule:** do not collapse conversation flags merely because they lead to the same lookup table or creation path. Audit subsequent mutation, specialization, template handling, and lookup semantics across the full conversation lifecycle.
+
+**Review rule:** when simplifying flag domains, search every consumer of the flag, especially setters and state-transition helpers. Equivalent construction is not proof of equivalent behavior.
+
+**Confidence:** Very high as negative evidence. The core API maintainer authored the simplification and then explicitly closed it after discovering the semantic distinction.
+

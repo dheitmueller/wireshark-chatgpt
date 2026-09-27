@@ -134,3 +134,12 @@ Merged MRs !7333, !7336, and !7337 form a useful early heuristic series from Joh
 **Implementation rule:** recognize first, then claim. Prefer strong content signatures and several independent protocol invariants over port assumptions. For stateful TCP protocols, once sufficient evidence establishes the protocol, attach the regular dissector to the conversation rather than repeatedly paying heuristic-dispatch cost.
 
 **Confidence:** Very high. Three merged master changes authored by John Thacker.
+
+## Private framing heuristics should require an explicit signature and be disabled by default
+
+Merged MR !6889 adds a UDP framing format for NAS-5GS intended for development/test transport. Its heuristic first verifies enough captured bytes exist for the complete `nas-5gs` signature plus payload, requires that exact signature, and registers the heuristic disabled by default.
+
+**Implementation rule:** when a protocol uses a nonstandard helper/framing transport rather than a standardized port assignment, require a strong framing signature before claiming the packet. If the transport is specialized or test-oriented rather than generally deployed, default-disabled heuristic registration is appropriate.
+
+**Confidence:** High. Merged master implementation by Pascal Quantin; independently corroborates later heuristic-recognition guidance in this file.
+

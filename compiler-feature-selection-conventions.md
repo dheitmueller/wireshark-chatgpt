@@ -35,3 +35,12 @@ Merged MR !6984, authored by John Thacker, addresses a GCC 12.1 `-Wstringop-over
 **Implementation rule:** after establishing that a compiler diagnostic is a false positive, keep the suppression local to the affected expression and use Wireshark's diagnostic-control helpers. Document the compiler/version and reason. Do not globally disable the warning or rewrite correct code into a less idiomatic form solely to satisfy one optimizer diagnostic.
 
 **Confidence:** Extremely high. Merged change with detailed review from John Thacker, João Valverde, and Guy Harris.
+
+## Do not keep a warning workaround that breaks a supported dependency version
+
+Merged MR !6870 reverts a qcustomplot change that initialized Qt container iterators with integer zero to quiet a Clang analyzer warning. Qt 6.3 no longer accepted that implicit conversion, so the warning workaround became a real compile failure. Roland Knall called out the tradeoff explicitly, and Alexis La Goutte accepted restoring the warning-producing but compilable form.
+
+**Portability rule:** a static-analysis workaround is subordinate to the actual source-level contract of supported compilers and dependency versions. Do not force an invalid sentinel or conversion merely to make one analyzer quiet; prefer a narrow suppression or another representation if a clean portable expression is unavailable.
+
+**Confidence:** High. Merged compatibility correction with explicit maintainer acknowledgement of the analyzer-warning tradeoff.
+

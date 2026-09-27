@@ -15,3 +15,14 @@ Merged master MR !11672, authored by Guy Harris, changes dumpcap to map link-lay
 **Review rule:** whenever code copies a link-layer type from libpcap or a platform capture API into pcap/pcapng metadata, verify which namespace the value belongs to and whether a conversion is required. Numeric equality on the developer's current OS is not sufficient evidence of portability.
 
 **Confidence:** Extremely high. Merged master change and stable backport authored by Guy Harris with an explicit historical and cross-platform rationale.
+
+## New portable LINKTYPE values should be externally assigned before Wireshark treats them as capture-file identifiers
+
+Merged MR !6884 adds the FiRa UWB Controller Interface dissector. Review held the change while the proposed capture link type was still being assigned by the tcpdump/libpcap registry; after the registry accepted LINKTYPE_FIRA_UCI as 299, the MR was updated and merged. Wireshark's internal `WTAP_ENCAP_FIRA_UCI` value is a separate internal enumeration value and does not need to numerically match the portable LINKTYPE.
+
+**Interoperability rule:** for a new pcap/pcapng link-layer type, use the externally assigned LINKTYPE value rather than a provisional private number. Keep the portable file-format namespace distinct from Wireshark's internal WTAP encapsulation namespace.
+
+**Submission rule:** a new capture encapsulation should arrive with a representative capture, the Wiretap mapping, user-visible documentation/release-note coverage, and the dissector registration itself.
+
+**Confidence:** Very high. Merged new-linktype implementation with explicit review discussion waiting for the external registry assignment and an attached sample capture.
+

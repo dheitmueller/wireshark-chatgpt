@@ -40,3 +40,14 @@ Merged MR !9123 provides useful corrective evidence about the opposite direction
 **Testing rule:** for multiplexed protocols, test more than one logical connection on one 5-tuple, connection migration/rebinding where supported, and child-dissector state such as TLS or Follow Stream. A design that works for one connection per tuple can still leak state when multiplexing occurs.
 
 **Confidence:** Extremely high. The accepted QUIC architecture was authored by John Thacker, merged by Gerald Combs, and exercised with both multiplexing and migration captures; the SNMP discussion independently clarifies the transport-dispatch side of the boundary.
+
+## Nested instances of the same protocol need instance-qualified state
+
+Merged MR !6894 extends EAP so tunneled EAP-TLS can itself contain another EAP/TLS instance. The previous logic effectively treated the presence of TLS anywhere in the frame as a reason to avoid normal EAP conversation/reassembly state. The accepted implementation instead qualifies conversation/proto-data state by the current protocol-layer depth, allowing outer and inner EAP instances in the same packet to keep independent duplicate-detection and reassembly state.
+
+**Architecture rule:** a protocol ID alone is not a unique state key when the same protocol can appear recursively or at multiple nesting depths in one frame. Per-packet proto-data, reassembly cookies, and conversation state must distinguish the logical protocol instance, not just the protocol type.
+
+**Review rule:** for tunneling and recursive encapsulation, test at least two nested instances of the same dissector and verify that duplicate detection, reassembly, and child-dissector state do not bleed across layers.
+
+**Confidence:** High. Merged master change with an attached tunneled EAP-TLS capture and explicit layer-depth state separation.
+

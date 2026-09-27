@@ -44,3 +44,14 @@ Merged MR 10493 made broad typed-item checker driven corrections, but Lars Volke
 **Review rule:** after checker-driven metadata changes, verify the protocol semantics and all affected call sites, and run representative behavior tests where practical.
 
 **Confidence:** High. This is a concrete regression report attached to a merged checker-cleanup MR and directly corroborates the stronger MR 10605 rule above.
+
+## The typed-item checker has long been intended as pre-submit feedback, not a substitute for semantic review
+
+Merged MR !6871 expanded the CI invocation of `check_typed_item_calls.py` with the then-current `--consecutive --label --mask` checks while deliberately leaving findings warning-only. The same MR's review also clarifies that fixing an MR title does not change the commit message inspected by commit checks; the contributor had to amend and push the commit itself.
+
+**Workflow rule:** run the typed-item checker locally over the proposed commits, but treat its output as structural/API feedback that still requires protocol-semantic review. When CI complains about commit metadata, modify the actual commit object rather than only the GitLab MR title.
+
+**Historical note:** !6871 records the checker flags used in 2022. Use the repository's current checker command for present-day submissions; later notebook entries record additional options such as `--check-bitmask-fields`.
+
+**Confidence:** High. Merged CI/tooling change with direct review from Alexis La Goutte.
+

@@ -13,3 +13,14 @@ Merged MR !13002, authored by João Valverde, reverts an attempted Clang Analyze
 **Review rule:** when a warning fix changes control-flow shape, ask what diagnostics the previous shape enabled. A `default`, assertion, cast, or initialization may suppress useful future warnings even if it makes the current report disappear.
 
 **Confidence:** High. The accepted merged correction explicitly restores the compiler's ability to diagnose unhandled enum values, reinforced by merged Clang Analyzer cleanup work in adjacent MRs.
+
+## Preserve parser state changes hidden inside "unused" expressions
+
+Merged MR !6909 was a Clang Analyzer cleanup across several dissectors and the display-filter VM. Guy Harris caught that removing two apparently unused assignments in the Catapult DCT2000 parser also removed the `offset++` side effects embedded in those expressions, which changed where subsequent fields were parsed. Alexis La Goutte amended the patch to preserve the cursor advancement, and Martin Mathieson confirmed the corrected result.
+
+**Implementation rule:** an analyzer report that a computed value is unused does not imply that the whole expression is semantically dead. Audit increments, helper calls, bounds checks, and other side effects before deleting the statement. In dissectors, cursor movement is parser state even when the fetched value itself is irrelevant.
+
+**Review rule:** for warning-driven cleanup, compare control flow and parser state before and after the change, not just variable liveness. A warning can identify a dead result while the statement that produced it still carries required behavior.
+
+**Confidence:** Extremely high. Merged correction with direct Guy Harris review of the semantic regression and confirmation from the original code author.
+

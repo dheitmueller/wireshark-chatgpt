@@ -85,3 +85,12 @@ Merged master MR !10584 restructures BGP labeled IPv6 VPN NLRI output. The previ
 **Review rule:** for a proposed formatted or composite tree item, ask what a `tshark -T fields` user could extract. Do not create fields for purely decorative text, but do not bury useful protocol values in labels that cannot be filtered or exported independently.
 
 **Confidence:** High. Merged master usability/API improvement with the TShark extraction motivation stated by the contributor and the before/after structure reviewed by Alexis La Goutte.
+
+## Create a protocol dissector's top-level tree item from the registered protocol
+
+Merged MR !6893, authored by Guy Harris, changes the USBLL dissector from an anonymous formatted subtree labeled "USB Packet" to a tree item created with the registered `proto_usbll` protocol, then attaches the protocol subtree to that item.
+
+**Implementation rule:** the top-level item for a protocol should normally be the registered protocol item itself. Use an `ett_*` subtree beneath that protocol item rather than substituting an anonymous formatted subtree as the protocol root.
+
+**Confidence:** Extremely high. Small, merged core-dissector cleanup authored by Guy Harris.
+

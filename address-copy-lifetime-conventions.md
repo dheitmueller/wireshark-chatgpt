@@ -21,3 +21,12 @@ Merged master MR !9921, authored and merged by John Thacker, provides an earlier
 **Implementation rule:** do not deep-copy address storage merely to construct an ephemeral lookup key, and do not shallow-copy when the destination will outlive the source. The copy mode is determined by the destination lifetime and ownership contract, not by the field type alone.
 
 **Confidence:** Extremely high. Merged master memory-leak fix authored and merged by John Thacker; independently corroborates the later !13551 RDP example.
+
+## Temporary packet_info overrides should borrow address storage when they do not own it
+
+Merged MR !6864 fixes a leak introduced when EAP copied `packet_info` to a stack-local temporary and then used `copy_address()` to replace its source/destination addresses. Because that temporary `packet_info` was not an owning long-lived object with a matching free path, the deep address copies leaked. The accepted fix uses `copy_address_shallow()` for the borrowed constant addresses.
+
+**Implementation rule:** a stack-local or otherwise ephemeral `packet_info` clone that only borrows an address for the duration of a dissector call should use shallow address copies when the source storage already outlives the temporary. Deep copy is appropriate only when the destination becomes an owner with a defined lifetime and cleanup path.
+
+**Confidence:** Very high. Merged memory-lifetime fix acknowledged by Gerald Combs; directly corroborates the retained-versus-ephemeral address-copy rule already documented here.
+
