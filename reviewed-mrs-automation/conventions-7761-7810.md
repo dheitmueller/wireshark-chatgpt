@@ -8,3 +8,9 @@ Guy Harris's merged !7798/!7794/!7795/!7796/!7792/!7789 series keeps timestamps 
 
 **Rule:** validate width and signedness at the serialization boundary instead of narrowing internal timestamp state early.
 
+## Child resource inheritance
+
+Merged master !7763 and release-4.0 backport !7785 replace broad Windows handle inheritance with an explicit set of handles intended for the child.
+
+**Rule:** make inherited resources an explicit launch contract. Unrelated inherited duplicates can extend object and pipe lifetimes.
+
