@@ -8,7 +8,6 @@ Merged master MR !7915, authored by Guy Harris, fixes MS Proxy state that stored
 
 Release-4.0 MR !7916 carries the same fix.
 
-
 ## Central predicates should define semantic type families
 
 Merged master MR !7213 adds `FT_UINT_STRING` to `IS_FT_STRING()` and removes repeated one-off exceptions from fvalue string accessors.
@@ -16,3 +15,11 @@ Merged master MR !7213 adds `FT_UINT_STRING` to `IS_FT_STRING()` and removes rep
 **Type-system rule:** when a field type participates in a semantic family, encode that membership in the central family predicate and let generic APIs depend on it. Scattered `type == ...` exceptions make the type model inconsistent and easy to miss.
 
 **Confidence:** High. Merged core ftypes change by João Valverde.
+
+## Prefer semantically typed fvalue accessors over generic pointer extraction
+
+Merged master MR !7201, authored by João Valverde, replaces generic pointer-style ftype getter entries and caller casts with typed accessors for strings, bytes, and other value domains.
+
+**API rule:** when the field type determines a concrete semantic representation, expose that type in the accessor signature. Typed getters improve const-correctness, document the contract, and let the compiler catch mismatched value-domain use.
+
+**Confidence:** Very high. Merged core ftypes API refactor by João Valverde.

@@ -27,3 +27,11 @@ During review of MR !9658, John Thacker explicitly requested using `pinfo->match
 ## Preserve parent context through Decode As dispatch
 
 Merged master MR !9071 adds GRE payload Decode As support. In review, Alexis La Goutte asked how to preserve `gre_hdr_info`; John Thacker pointed to `dissector_try_payload_new()`, which accepts the parent data pointer, and the merged implementation uses it. Decode As should therefore be treated as another route into the same dissector call contract rather than a reason to drop required parent context. John also suggested checking whether an existing keyed table can expose Decode As directly before adding a parallel fallback table.
+
+## Keep Decode As reset, explicit Data, and no-binding semantics distinct
+
+Merged master MR !7180, authored by John Thacker, registers the data dissector as an explicit Decode As choice for every Decode-As-capable table. The discussion distinguishes restoring the original/default binding, explicitly choosing Data, and leaving no explicit binding so ordinary fallback or heuristic dispatch can still occur.
+
+**Rule:** do not collapse these states. Explicit Data is a positive dispatch choice; reset restores the original table registration; no binding can still participate in fallback behavior.
+
+**Confidence:** Very high. Merged master implementation with direct John Thacker design discussion.
