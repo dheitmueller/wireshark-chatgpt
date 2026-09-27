@@ -59,3 +59,13 @@ Merged master MR !13243, authored and merged by John Thacker, changes 802.11 dec
 **Testing rule:** cover representative distinct rejection classes and verify that each produces the intended actionable reason, not only that parsing returns failure.
 
 **Confidence:** Very high. Merged master API/diagnostic improvement authored and merged by John Thacker, with the need for richer parser errors stated in the preceding related change.
+
+## Propagate helper failures and use the component's established status convention
+
+Merged master MR !7832 adds error handling when a TLS helper initialization can fail. During review, Pascal Quantin directed the implementation to return failure from the helper so the parent operation can react, to free allocations along the error path, and to follow the surrounding convention of integer status values with 0 for success and -1 for failure rather than inventing a different convention.
+
+**Implementation rule:** when a nested operation can fail, propagate the result to the layer that owns the surrounding control flow or diagnostic decision. Unwind resources before returning, and do not treat output as initialized on a failed path.
+
+**API rule:** match the established success/failure representation used by neighboring functions unless there is a compelling reason to change the API contract.
+
+**Confidence:** High. Merged master correctness change shaped by substantive Pascal Quantin review.

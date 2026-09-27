@@ -69,3 +69,20 @@ Closed MR !9299 targeted the OPC UA DiagnosticInfo fix at a release branch; Alex
 **Review rule:** keep each backport mechanically close to the accepted master fix and avoid mixing unrelated branch history or multiple release targets into one submission.
 
 **Confidence:** High. Direct maintainer guidance from Alexis La Goutte, corroborated by a merged master-fix/backport sequence.
+
+
+## Do not expand a focused MR to repair a broad pre-existing issue found during review
+
+Merged master MR !7819 adds missing GSUP IEs. During review, Pascal Quantin noticed that one-byte fields could use stronger length validation, then recognized that the same issue applied to many existing IEs. Pascal and the contributor agreed that the broad cleanup should be handled separately rather than enlarging this focused feature MR.
+
+**Submission rule:** when review discovers a broader pre-existing defect that is not necessary for the proposed change to be correct, record it for a separate follow-up rather than forcing unrelated subsystem cleanup into the current MR.
+
+**Confidence:** High. Direct Pascal Quantin review guidance in a merged master MR.
+
+## A stable backport must be dependency-closed
+
+Merged release-4.0 MR !7824 depended on related cipher-suite changes !7825 and !7826 and on dependency support already introduced on the release branch. Pascal Quantin explicitly called out the prerequisite MRs while reviewing the backport.
+
+**Backport rule:** review a cherry-pick as part of its dependency graph, not as an isolated commit. Before accepting a stable-branch backport, verify that all prerequisite code and required dependency capabilities are already present or are included in an ordered, reviewable backport series.
+
+**Confidence:** High. Explicit prerequisite review in a merged stable-branch MR.
