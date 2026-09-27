@@ -44,3 +44,12 @@ Merged master MR 10389, authored and merged by Guy Harris, gives an explicit exa
 
 **Confidence:** Extremely high. Merged Guy Harris master change plus two accepted stable backports.
 
+
+
+## Framing chunks should not create artificial protocol-layer depth
+
+Merged master MR !7252, authored by John Thacker, and stable backport !7257 change HTTP chunked-transfer handling so individual chunks are represented as `FT_BYTES` fields instead of invoking the generic data dissector once per chunk. Repeated dispatch created a protocol layer for every chunk and could exceed `PINFO_LAYER_MAX_RECURSION_DEPTH`.
+
+**Dissector rule:** framing units that only delimit a larger semantic entity should normally be represented as framing fields/subtrees. Invoke the payload/content dissector after the framing has been removed and the semantic entity body is available.
+
+**Confidence:** Very high. Merged master change plus accepted stable backport.

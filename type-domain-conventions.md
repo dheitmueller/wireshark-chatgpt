@@ -7,3 +7,12 @@ Merged master MR !7915, authored by Guy Harris, fixes MS Proxy state that stored
 **Rule:** when two enums or identifier spaces represent different concepts, keep the declared type and constants from the domain the API expects. Do not type-pun or cast between domains solely because current integer values happen to coincide.
 
 Release-4.0 MR !7916 carries the same fix.
+
+
+## Central predicates should define semantic type families
+
+Merged master MR !7213 adds `FT_UINT_STRING` to `IS_FT_STRING()` and removes repeated one-off exceptions from fvalue string accessors.
+
+**Type-system rule:** when a field type participates in a semantic family, encode that membership in the central family predicate and let generic APIs depend on it. Scattered `type == ...` exceptions make the type model inconsistent and easy to miss.
+
+**Confidence:** High. Merged core ftypes change by João Valverde.

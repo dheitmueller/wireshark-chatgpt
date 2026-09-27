@@ -31,3 +31,13 @@ Merged master MR !23392 changes Wireshark's developer-environment setup to confi
 **Implementation rule:** when project tooling configures hooks, helper paths, worktrees, or other repository-owned resources, prefer paths relative to a stable repository/configuration anchor whenever the consumer supports them. Use absolute paths only when the external interface genuinely requires them or when the target is intentionally outside the movable workspace.
 
 **Confidence:** Very high. Merged master developer-tooling fix approved and merged by John Thacker.
+
+## Make project-generator text encoding explicit
+
+Merged !7248 makes WSLua generators and the AUTHORS generator explicitly use UTF-8 for file and subprocess text I/O. The surrounding Perl-to-Python migration series (!7238, !7240, !7256, !7259) also reviews small newline/whitespace differences instead of treating them as invisible implementation details.
+
+**Implementation rule:** repository generators should open text inputs/outputs with explicit UTF-8 and specify text decoding for subprocess streams rather than inheriting the host locale.
+
+**Migration rule:** when replacing a generator language or implementation, compare generated semantics and call out intentional textual differences; successful execution alone does not establish output equivalence.
+
+**Confidence:** High. Multiple merged project-tooling changes led by Gerald Combs and Moshe Kaplan.

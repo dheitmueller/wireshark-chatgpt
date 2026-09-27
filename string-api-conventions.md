@@ -59,3 +59,12 @@ Merged master MR !8863 replaces fixed X.509 DN/RDN buffers with `wmem_strbuf` so
 **API rule:** when refactoring from a nullable pointer/value to an owning container, preserve the caller-visible absence contract explicitly unless the API is intentionally being changed everywhere. Audit accessors and cleanup/reset paths, not only append/build sites.
 
 **Confidence:** Very high. Two adjacent merged master fixes; the second is a direct correctness follow-up to the first.
+
+
+## Embedded NUL requires length-bearing APIs end to end
+
+Merged master MR !7212, authored by João Valverde, adds display-filter literal strings containing embedded NUL bytes. The accepted change carries explicit lengths through `wmem_strbuf`, fvalue accessors, escaping helpers, and regex construction instead of falling back to NUL-terminated C-string semantics.
+
+**API rule:** if NUL is legal data, every transformation path must retain an explicit length. Length-aware storage alone is insufficient if escaping, comparison, regex construction, or conversion later calls an API that stops at the first NUL.
+
+**Confidence:** Very high. Merged core string/display-filter API change by João Valverde.

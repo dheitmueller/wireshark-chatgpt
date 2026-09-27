@@ -13,3 +13,14 @@ Merged master MR !14689, authored by John Thacker and approved/merged by Anders 
 **Review rule:** test address-column changes in encapsulated/tunneled captures as well as top-level link-layer captures, and verify generated filters in addition to displayed text. A fix that only changes `col_*()` output may appear correct in the simple case while remaining semantically wrong underneath another encapsulation.
 
 **Confidence:** Very high. Merged master architecture fix authored by John Thacker and approved/merged by Anders Broman, with the tunneling overwrite and filter-generation failure explicitly documented in the MR. MR !14694 immediately follows with an AID string-size/filtering correction and independently reinforces that custom address presentation must honor the address API's formatting contract.
+
+
+## Generic numeric addresses use host-order semantic values
+
+Merged !7228 made `AT_NUMERIC` width-aware, but review exposed an endian contract problem. Pascal Quantin flagged integer-format portability; Brian Sipos and João Valverde argued that the generic address type should not impose little-endian storage. Merged follow-up !7235 converts openSAFETY values at the protocol boundary and defines `AT_NUMERIC` values in host byte order.
+
+**API rule:** convert protocol/network byte order before constructing a generic numeric address. Keep the generic address representation host-semantic rather than encoding a wire-endian policy into the address API.
+
+**Width rule:** preserve the full numeric width through sorting and formatting. Review of !7228 also caught a Qt `QString::toInt()` path that could not represent the full 64-bit domain.
+
+**Confidence:** Very high. Two merged master changes with direct Pascal Quantin, João Valverde, Brian Sipos, and Roland Knall review.

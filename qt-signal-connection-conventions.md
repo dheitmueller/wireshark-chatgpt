@@ -43,3 +43,12 @@ Merged master MR !8038, authored by John Thacker, fixes a Qt 6.3 ExportDissectio
 **Review rule:** a timing fix that moves work to an earlier signal is only as strong as the API's documented signal/lifetime guarantees. Treat incidental ordering as a workaround, not an architectural invariant.
 
 **Confidence:** Extremely high. Merged John Thacker fix with direct Guy Harris review and Tomasz Moń root-cause analysis.
+
+
+## Typed connections catch signature mistakes during ordinary cleanup
+
+Merged master MR !7224, authored by Gerald Combs, fixes an incorrect QComboBox signal assumption and removes a duplicate connection while converting touched RTP Player wiring from string-based `SIGNAL()/SLOT()` connections to typed member-pointer connections.
+
+**Implementation rule:** when touching Qt signal wiring, prefer typed `connect(sender, &Type::signal, receiver, &Type::slot)` forms. The compiler can then reject mismatched signal/slot signatures that old string-based connections may hide.
+
+**Confidence:** Very high. Merged master change authored by Gerald Combs.

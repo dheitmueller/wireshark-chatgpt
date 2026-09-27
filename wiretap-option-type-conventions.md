@@ -27,3 +27,11 @@ Merged master MR !13494, authored and merged by Guy Harris, adds pcapng `if_tsof
 **Testing rule:** construct a capture where the stored packet timestamp and metadata adjustment are individually nontrivial, and verify the resulting absolute timestamp against an independent expected value. Include negative values for signed offsets so an accidental unsigned path cannot pass unnoticed.
 
 **Confidence:** Extremely high. Merged master implementation and validation artifact from Guy Harris, backed by the pcapng type/semantics discussion and the signed option API added immediately beforehand.
+
+## Consume typed Wiretap options without reparsing their former byte representation
+
+Merged master MR !7239, authored by Guy Harris, fixes a crash after pcapng packet-verdict options were promoted from an opaque byte string to the typed `packet_verdict_opt_t` representation. The frame dissector had continued to interpret the option as its old `GBytes` form.
+
+**Architecture rule:** once Wiretap has normalized capture-format bytes into a semantic typed option, EPAN and other consumers should use that typed representation. Do not duplicate format parsing or retain assumptions about an obsolete storage representation above the Wiretap boundary.
+
+**Confidence:** Extremely high. Merged master fix authored by Guy Harris.
