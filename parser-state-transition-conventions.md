@@ -15,3 +15,13 @@ Merged master MR !13063 fixes this in the Thrift dissector. The `dissect_thrift_
 **Review rule:** for parser option/state structures passed through several helper layers, list which fields each helper may read and mutate. Check all success paths, including compact/alternate encodings and nested-container paths, for consistent advancement; a helper family with one missing update can create false expert warnings far from the omission.
 
 **Confidence:** Very high. Merged master correctness fix with an explicit worked failure example in the MR description, maintainer approval by Pascal Quantin, successful pipeline, and a merged stable-branch backport.
+
+## Reset prior-epoch derived state before accumulating the first message of a new epoch
+
+Merged master MR !6813 fixes TLS/DTLS RSA decryption with Extended Master Secret across renegotiation. The previous code reset the old decryption/session state only later while dissecting the Hello, so the second ClientHello could be omitted from the new handshake hash because the old master-secret state was still present when the hash logic ran. The accepted fix moves `ssl_reset_session()` to the handshake boundary before the Hello is added to the new hash and clears prior handshake data when beginning a new client epoch.
+
+**Implementation rule:** when a protocol message starts a new session, handshake, key epoch, or other state epoch, invalidate the prior epoch's derived flags, secrets, hashes, and caches before any logic for the boundary message consults or updates those derived values. Reset-after-update can let stale state suppress or contaminate the first event of the new epoch.
+
+**Testing rule:** exercise at least one transition with retained state such as renegotiation, rekey, or restart, and verify that the boundary message contributes exactly once to the new derived state.
+
+**Confidence:** Very high. Merged master correctness fix from Peter Wu with positive review from John Thacker, Ivan Nardi, and Alexis La Goutte, followed by confirmation from the original reporter before backporting.

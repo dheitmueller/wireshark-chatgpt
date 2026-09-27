@@ -23,3 +23,15 @@ Merged master MR !9120 fixes TrafficDialog CSV, YAML, and JSON copying by iterat
 **Implementation rule:** choose the data model from the user-facing operation's semantics. View-oriented copy/export should honor filtering, ordering, and visibility represented by the proxy/view model. Access the raw source model only for an operation explicitly defined to export all underlying data.
 
 **Confidence:** Very high. Merged master correctness fix with a direct mismatch between filtered display and copied output.
+
+## Sorting semantics should follow the representation the user is actually viewing
+
+Merged master MR !6859, authored by Guy Harris, changes the Conversations and Endpoints address-column comparators so name-resolved views sort by the resolved display text; when name resolution is off they retain raw address ordering. Guy's MR rationale is explicit that displaying resolved names while sorting by the underlying addresses gives unexpected results and makes names harder to locate.
+
+Merged master MR !6855 independently changes packet-list sorting to sort only the current `visible_rows_` rather than the complete physical-row collection before reconstructing the filtered view. The submitter reported that filtered sorting of a roughly 512 MB capture dropped from multiple minutes to under a second.
+
+**Implementation rule:** for a view-level sort, define ordering over the active presentation model and representation. Honor filtering and visibility, and when a display mode substitutes a resolved textual identity for the raw value, compare the semantic value the user actually sees unless the UI explicitly promises raw-key ordering.
+
+**Performance rule:** do not pay whole-capture sorting cost when only the filtered visible set participates in the view.
+
+**Confidence:** Extremely high for resolved-name ordering because !6859 was authored by Guy Harris; high for visible-row scoping from merged !6855 with concrete large-capture performance evidence.
