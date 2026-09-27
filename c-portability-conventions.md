@@ -69,3 +69,12 @@ Merged master MR !9238, authored by John Thacker, optimizes Wireshark's unaligne
 **Review rule:** for _MSC_VER, __GNUC__, and similar tests, ask which compatibility compilers also define the macro. Compiler Explorer or equivalent generated-code evidence is useful for performance-motivated specialization, but correctness must remain defined independently of the optimization.
 
 **Confidence:** Extremely high. Merged portability/performance work authored by John Thacker with extensive architecture/compiler review from Guy Harris.
+
+
+## Use standard bool for one-bit boolean bitfields
+
+Merged master MR !7583, authored by John Thacker, shows that `gboolean` is unsuitable for one-bit boolean bitfields. Because it is a typedef of a signed integer type, integer promotion can produce -1 for a set one-bit field rather than the ordinary TRUE value.
+
+**Implementation rule:** use `bool`/_Bool for boolean bitfields. Do not rely on typedef'd signed integers to preserve 0/1 semantics when narrowed to one bit.
+
+**Confidence:** Very high. Merged master portability fix authored by John Thacker.
