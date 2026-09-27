@@ -33,3 +33,11 @@ Merged master MR !11337, also authored and merged by John Thacker, establishes t
 **Review rule:** when widening a plugin callback API, check creation, decode/use, query, and teardown paths together. A typed wrapper context is useful only if every callback receives the same semantic context and private-state ownership remains unambiguous.
 
 **Confidence:** Very high. The codec-interface redesign and the opaque-SDP-parameter handoff are merged master changes authored and merged by John Thacker, with !11410 immediately demonstrating the downstream use of the forwarded metadata.
+
+## Foreign event-loop bridges may move blocking waits without moving callback execution
+
+Integrating two event loops does not require executing callbacks on the thread that performs the blocking poll. Merged MR !7499 runs the blocking GLib poll in a worker thread, signals readiness back to Qt, and performs `g_main_context_dispatch()` on the Qt/main thread. This preserves existing callback thread assumptions while avoiding a blocked UI. The setup path also detects when Qt is already driving GLib and avoids installing a second bridge.
+
+**Implementation rule:** separate readiness waiting from semantic callback ownership. Offload the blocking wait if necessary, but dispatch callbacks in the thread/context their consumers expect. Detect and avoid duplicate loop integration.
+
+**Confidence:** High. Merged master UI/event-loop architecture change by Tomasz Moń.

@@ -25,3 +25,13 @@ Merged master MR !12881, authored by John Thacker and merged by Anders Broman, f
 **Review rule:** for UAT-backed derived state, test at least initial load, edit/accept, save, and subsequent use. A callback arrangement that works immediately after editing can still be wrong after the save/copy lifecycle reconstructs `user_data`.
 
 **Confidence:** Very high. The lifecycle distinction and failure mode are stated directly in a merged master fix authored by John Thacker, and it sharpens the copy/save rule established by !12967.
+
+## Store UAT values in the semantic type exposed by the schema
+
+A UAT field that is intrinsically numeric should normally use numeric storage and the matching UAT field callback instead of storing text and adding manual parse, copy, validation, and free logic.
+
+In merged MR !7468, DNS server ports were initially represented as strings. Jaap Keuter explicitly asked why they were not using `UAT_DEC_CB_DEF`. Merged follow-up !7471 implements that review: TCP and UDP ports become integer fields with decimal UAT callbacks, removing the string ownership and conversion helpers.
+
+**Implementation rule:** choose UAT storage/callback types from the configuration value's semantic domain. Use strings for textual data, not merely because the editor ultimately displays text.
+
+**Confidence:** Very high. Direct Jaap Keuter review followed by a merged corrective MR.

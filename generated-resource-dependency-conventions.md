@@ -21,3 +21,11 @@ Merged master MR !24378, authored and merged by John Thacker, applies the CMake-
 **Implementation rule:** model generated artifacts as one producer with explicit downstream dependencies. If several targets consume the same generated source/resource, they should converge on the producer target rather than each independently declaring the output. Apply the same reasoning to generated directories where multiple commands could otherwise claim the same filesystem output.
 
 **Confidence:** Very high. Merged master build-system repair authored and merged by John Thacker and explicitly based on CMake's documented parallel-build contract.
+
+## Generated files consumed by another target need an explicit build-graph dependency
+
+Include paths do not guarantee that generated headers or sources exist before a parallel consumer starts compiling. Merged MR !7491 creates a `register_wslua` custom target for generated WSLua registration files and explicitly makes lrexlib depend on that target, replacing reliance on incidental directory/build ordering.
+
+**Implementation rule:** when target B consumes generated output from step/target A, express A -> B in CMake's dependency graph. Do not depend on file location, include directories, or serialized local builds to provide ordering.
+
+**Confidence:** High. Merged master build-system correction authored by Gerald Combs.

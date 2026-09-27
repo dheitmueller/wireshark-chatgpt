@@ -105,3 +105,11 @@ Merged !22054 also updated the Wireshark Developer's Guide around the triangular
 **Submission rule:** develop an MR on a dedicated topic branch and keep its commits focused and reviewable. Prefer one coherent MR for a small related series; split work when changes are independently reviewable or have genuinely distinct purposes, not simply because every edit can be isolated mechanically. For stable-branch cherry-picks, explicitly target the intended release branch.
 
 **Confidence:** High. Direct Jaap Keuter and Michael Mann review guidance, supported by a merged Developer's Guide workflow update; the branch-specific example in !22090 itself was closed rather than merged.
+
+## Do not rebase a live MR merely to keep it cosmetically current
+
+Repeated rebases create new commit identities and review churn without improving the proposed change when the branch already merges cleanly. During merged MR !7473, João Valverde explicitly told the contributor that manual rebasing was unnecessary unless there was a merge conflict. The same MR was later squashed at reviewer request before merge.
+
+**Submission rule:** keep a reviewable topic branch stable while review is in progress. Rebase when a real merge conflict or maintainer-requested history repair requires it, not simply because upstream advanced. Perform requested squash/history cleanup deliberately near merge rather than continuously rewriting review history.
+
+**Confidence:** High. Direct João Valverde maintainer guidance on a merged contribution.

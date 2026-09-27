@@ -93,3 +93,13 @@ Merged master MR !13845, authored by Gerald Combs, adds recursion checks to `asn
 **Review rule:** inspect how a proposed recursion counter maps onto call-stack growth, especially for mutually recursive types. A numerically large maximum does not help if the counter systematically undercounts each traversal.
 
 **Confidence:** Very high. Merged master generator hardening authored by Gerald Combs, with the cycle-size accounting refinement directly driven by Evan Huus's review and incorporated into the accepted generated output.
+
+## Shared decompressors must bound untrusted advertised output before allocation
+
+Decompression APIs often expose the eventual uncompressed size before producing bytes. That value is still attacker-controlled packet input and must not become an unchecked allocation request merely because a library successfully parsed it.
+
+During review of merged MR !7494, which introduced reusable Snappy TVB helpers, dariusd0 pointed out that existing Mongo and CQL paths already capped decompressed sizes to prevent malformed or malicious packets from requesting excessive memory, and recommended equivalent protection in the shared helper or via a caller-supplied limit. John Thacker separately supported centralizing Snappy raw-buffer access in the TVB layer rather than duplicating it in dissectors.
+
+**Implementation rule:** shared decompression helpers should enforce or accept a defensible output-size budget before allocating the advertised result. Centralization is an opportunity to make the resource policy consistent across dissectors.
+
+**Confidence:** High for the resource rule. The concern is explicit substantive review on a merged shared-helper MR; later notebook evidence independently establishes decompression-output ceilings as Wireshark policy.

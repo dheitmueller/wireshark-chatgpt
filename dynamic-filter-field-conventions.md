@@ -11,3 +11,11 @@ The discussion also treats historical `_ws.col.*` spellings as script-visible co
 **Compatibility rule:** established filter names are user/script API. Renames need deliberate compatibility handling or migration documentation rather than being treated as presentation-only changes.
 
 **Confidence:** Very high. Merged master implementation with sustained reviewer discussion about identity, availability, semantics, and compatibility.
+
+## Generated hidden fields can expose computed metadata without cluttering the tree
+
+A value can be semantically useful for filtering or custom columns even when it is computed from configuration/state rather than represented by a literal packet field. Merged MR !7466 adds the configured Signal-PDU name as an `FT_STRING` item, marks it generated, and hides it from the normal tree so `signal_pdu.name` remains available to filters/columns without duplicating visible presentation.
+
+**Implementation rule:** use a generated field for useful computed metadata that has no direct byte representation. If the value is primarily an automation/filter hook and would duplicate existing presentation, a hidden generated item can preserve a clean tree while still exposing the stable field API.
+
+**Confidence:** High. Merged master dissector implementation.

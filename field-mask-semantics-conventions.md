@@ -15,3 +15,13 @@ Merged master MR !11053, authored by Martin Mathieson, adds checking for all-set
 **Testing rule:** run `tools/check_typed_item_calls.py` with `--check-bitmask-fields` before submission so suspicious masks are caught mechanically rather than relying only on manual review.
 
 **Confidence:** Very high. Merged master checker/cleanup work from Martin Mathieson, consistent with the later checker refinement in !11698.
+
+## Runtime-configurable bit partitions should use bit coordinates, not mutable static masks
+
+A header field registration mask is a static description of a fixed wire layout. If preferences redefine how a fixed-width field is partitioned at runtime, validate that partition as one invariant and decode by bit offset/length rather than pretending each preference is an independent static mask.
+
+Merged MR !7503 makes the O-RAN eAxC ID a configurable four-part 16-bit field. Martin Mathieson requested expert information when the configured widths do not add up to 16 and suggested the bit-oriented tree API. The accepted code verifies all component widths and their 16-bit total, reports an expert error for an inconsistent configuration, and uses `proto_tree_add_bits_ret_val()` for the runtime layout.
+
+**Implementation rule:** for preference-defined bit layouts, validate the complete width budget before decoding and use bit-offset APIs whose coordinates can vary at runtime. Do not mutate registration-time masks to represent dynamic layouts.
+
+**Confidence:** Very high. Merged master dissector change with direct Martin Mathieson review incorporated.

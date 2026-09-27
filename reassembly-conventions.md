@@ -107,3 +107,13 @@ Merged master MR !11184 improves the documentation around `reassemble_streaming_
 **API/documentation rule:** helpers that wrap desegmentation should document how sentinel values propagate and what their return values mean, so callers do not accidentally treat a control value as an ordinary byte count.
 
 **Confidence:** High. Merged master reassembly API/documentation change that clarifies the intended sentinel semantics used by common streaming reassembly.
+
+## Reassembly regressions need a matrix of arrival pathologies and redissection modes
+
+A stateful reassembly change should not be validated with only one orderly fragmented message. Merged MR !7479, authored by John Thacker, built a QUIC regression capture from real examples covering fragmentation in one packet and across packets, out-of-order delivery, retries/retransmissions, overlaps, duplicate data, and a retry where an original packet is missing. The test runs in ordinary and two-pass (`-2`) dissection and also checks warning-level expert output.
+
+The same review records an important layering boundary: QUIC is responsible for buffering out-of-order CRYPTO bytes, while the TLS handshake dissector may separately reassemble the in-order handshake data it receives. Two levels of fragment presentation can therefore reflect correct protocol ownership rather than a defect.
+
+**Testing rule:** exercise ordering, overlap, retry/duplicate, missing-fragment, and redissection behavior for nontrivial reassembly changes. Where layers have distinct reassembly responsibilities, test the semantic result rather than forcing a cosmetically flat fragment tree.
+
+**Confidence:** Very high. Merged master work by John Thacker with extensive real-capture review and committed regression tests.

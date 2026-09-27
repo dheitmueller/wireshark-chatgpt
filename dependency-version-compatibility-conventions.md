@@ -25,3 +25,13 @@ Merged master MR !14616 moves Windows builds to Lua 5.3. During review, John Tha
 **Review/testing rule:** dependency-upgrade MRs should run or reason about shared tests under both the newly selected version and the oldest still-supported version. Pay special attention to parser-level syntax changes: a runtime cannot execute a compatibility branch if it cannot parse the file in the first place.
 
 **Confidence:** High. Merged dependency transition authored by Anders Broman with a concrete cross-version syntax problem caught by John Thacker during review and corrected before merge.
+
+## Adopting a newer dependency API requires updating the declared support baseline
+
+Code must not call an external API that is newer than the project's declared minimum dependency version without deliberately changing that minimum or providing a compatibility path.
+
+In merged MR !7468, review caught that `ares_set_servers_ports()` was introduced after Wireshark's then-declared c-ares minimum. The discussion chose to raise the development-branch baseline rather than emulate the API for obsolete distributions, and merged MR !7482 updates the minimum to c-ares 1.14.0 and documents the broader support-version changes. Maintained stable branches continued carrying their older baseline.
+
+**Implementation rule:** when a feature needs an external API newer than the current minimum, synchronize source use, CMake/version checks, CI platform images, and release documentation. Treat a stable branch's older dependency contract separately from master when appropriate.
+
+**Confidence:** High. Merged feature plus merged support-baseline update, with the version mismatch identified explicitly during review.

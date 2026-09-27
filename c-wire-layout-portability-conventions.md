@@ -45,3 +45,11 @@ Merged MR !20997, authored and merged by Guy Harris, renames the `pint.h` load/s
 **Implementation rule:** prefer the shared endian-aware byte helpers for fixed-width wire loads/stores, and make helper/API names encode the value domain they actually implement. Express byte order as big-endian/little-endian (or the applicable protocol order), not relative to the host's native order.
 
 **Confidence:** Extremely high. Two merged master changes authored and merged by Guy Harris, including a tree-wide API rename whose sole purpose was making the unsigned contract explicit.
+
+## Derive wire block sizes from the protocol, not `sizeof` a packed C struct
+
+When a native struct is used only as a convenient description of an on-wire record, do not make the protocol length depend on compiler packing rules. Merged MR !7470 initially added compiler-specific packing to make a Locamation sample struct occupy the required bytes on Windows. Stig Bjørlykke pointed out that the struct was only being used to obtain the total block size and stated that Wireshark should not depend on struct pack sizes. Merged follow-up !7472 removes the struct dependency and uses the protocol-defined 34-byte sample-set size directly.
+
+**Implementation rule:** if fields are decoded individually from a TVB, represent fixed wire sizes with protocol constants or explicit offsets. Do not introduce packed native structs merely to make `sizeof` equal the wire length.
+
+**Confidence:** Very high. Direct Stig Bjørlykke review followed immediately by the merged design he recommended.
