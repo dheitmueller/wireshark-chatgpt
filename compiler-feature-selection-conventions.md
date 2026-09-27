@@ -26,3 +26,12 @@ Merged master MR !10329 adds an explicit Wireshark GCC-version identity helper t
 **Review rule:** when changing compiler feature tests, check alternate vendors and compatibility modes explicitly, including LLVM-based replacements for older vendor compilers.
 
 **Confidence:** Very high. Merged portability work with direct John Thacker review correcting concrete compiler-identification edge cases.
+
+
+## Suppress understood compiler false positives narrowly with project diagnostic helpers
+
+Merged MR !6984, authored by John Thacker, addresses a GCC 12.1 `-Wstringop-overread` false positive in Qt byte-array/string conversion paths. João Valverde specifically directed the change toward Wireshark's `DIAG_OFF` / `DIAG_ON` helpers rather than raw ad-hoc pragmas; Guy Harris then traced the relevant Qt overload and null/length behavior in detail, supporting the conclusion that the warning was spurious for these paths. The merged implementation surrounds only the affected expressions, version-gates the workaround, and documents why it exists.
+
+**Implementation rule:** after establishing that a compiler diagnostic is a false positive, keep the suppression local to the affected expression and use Wireshark's diagnostic-control helpers. Document the compiler/version and reason. Do not globally disable the warning or rewrite correct code into a less idiomatic form solely to satisfy one optimizer diagnostic.
+
+**Confidence:** Extremely high. Merged change with detailed review from John Thacker, João Valverde, and Guy Harris.

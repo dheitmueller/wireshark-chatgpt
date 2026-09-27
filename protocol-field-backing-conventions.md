@@ -13,3 +13,14 @@ Merged MR !25263, authored by John Thacker and merged by Anders Broman, fixes `F
 **Invariant rule:** assertions around field length and backing-buffer extent are useful only after every construction path establishes the same invariant. Fix the backing-data model first, then enable the invariant check rather than suppressing an assertion that exposes inconsistent object state.
 
 **Confidence:** Very high. Merged master parser/API correctness fix authored by John Thacker and accepted by Anders Broman, with the API-length semantics stated directly in the MR description and implementation.
+
+
+## Store logical field extent separately from a larger backing tvbuff
+
+Merged core MR !6993, authored by João Valverde, fixes negative slicing of `FT_PROTOCOL` values. A protocol field may be backed by a tvbuff that extends through later layers, so using the tvbuff's captured length as the protocol value's end made expressions such as negative slices operate on bytes outside the logical protocol item. The accepted change stores the field's semantic length in the protocol fvalue and updates it when `proto_item_set_len()` / `finfo_set_len()` finalizes the item later.
+
+**Implementation rule:** when a field/value represents a subrange of a larger backing object, carry the logical range extent with the value. Do not infer semantic length from backing-buffer capacity merely because the buffer starts at the right place.
+
+The later !25263 rule above refines the complementary backing-tvb requirement: preserve enough backing data to support legal later growth while separately recording the logical length that current consumers must honor.
+
+**Confidence:** Very high. Merged core display-filter/value fix authored by João Valverde, with an explicit regression test for negative protocol-field slicing.

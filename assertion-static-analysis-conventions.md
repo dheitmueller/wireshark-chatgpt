@@ -93,3 +93,12 @@ Merged master MR !10332, authored and merged by João Valverde, changes the `ws_
 **Testing rule:** do not use default log severity as a surrogate assertion when the API intentionally recovers. Separate semantic category/domain from fatality so fuzzing can continue past recoverable contract violations while targeted debugging can still promote them.
 
 **Confidence:** Very high. Merged core utility change with the fuzzer interaction and debugging intent documented directly in the MR.
+
+
+## Corroboration: protocol errors are not assertion failures
+
+Merged MR !6981 provides unusually explicit maintainer wording for the existing assertion rule. During BPv7/CBOR review, Jaap Keuter stated that `DISSECTOR_ASSERT` is **not** a protocol error-reporting method. The accepted code makes malformed CBOR traversal return failure and lets callers stop or report the invalid structure, while tests retain assertions for test/programmer invariants.
+
+**Rule:** if packet contents can make a condition false, handle it as input. Reserve dissector assertions for implementation invariants.
+
+**Confidence:** Very high. Direct Jaap Keuter review on a merged dissector/parser change, consistent with later merged hardening already recorded above.

@@ -46,3 +46,16 @@ Merged MR !7089 also normalizes null address arguments to `AT_NONE` at the `find
 **Rule:** normalize nullable inputs once at a documented API boundary and let internal code rely on that invariant.
 
 **Confidence:** Very high. Merged conversation-core work with direct Stig Bjørlykke review and multiple merged caller corrections.
+
+
+## Use typed element lists when conversation identity is not an address/port tuple
+
+Merged core MR !6979, authored by Gerald Combs, adds `conversation_new_full()` and `find_conversation_full()` for identities described by arbitrary typed element lists. Supported elements include addresses, strings, unsigned integers, and unsigned 64-bit integers, with an endpoint-type terminator. Falco Bridge immediately uses this to describe protocol-specific identity without pretending it is a transport tuple.
+
+The accepted implementation deep-copies the retained element list and nested address/string values into file-scope storage before inserting the key into persistent conversation maps. Merged !7001 then migrates the existing by-ID conversation helpers onto the same element-list machinery, expands their identifiers to 64 bits, and removes tuple-option arguments that those ID-only callers never used.
+
+**Identity rule:** choose conversation keys from the stable semantic identifiers the protocol actually uses. When address/port tuples are not the identity, use the typed conversation-element mechanism rather than manufacturing fake endpoints.
+
+**Ownership rule:** conversation keys outlive the packet that established them. Any address/string storage retained by the key must be copied into a compatible long-lived scope.
+
+**Confidence:** Very high. Two adjacent merged conversation-core changes authored by Gerald Combs, with the second explicitly migrating older special-case identity onto the generalized model.
