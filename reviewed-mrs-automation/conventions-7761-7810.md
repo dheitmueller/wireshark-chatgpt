@@ -20,3 +20,7 @@ Merged !7799 gives each DLEP data item a subset TVB limited to the parent-declar
 
 **Rule:** extension points for independently length-delimited children should receive a structurally bounded TVB, with the parent retaining control of the outer record boundary.
 
+
+## NTP signed fields
+
+!7781 confirms that NTP poll and precision use signed 8-bit semantics.
