@@ -27,3 +27,14 @@ Merged MR !11382 fixes WSLua `TvbRange:string()` after `tvb_get_string_enc()` co
 **Caveat:** use a length-discovery method compatible with the output representation. `strlen()` is appropriate only when that representation is guaranteed to be NUL-terminated and not to contain significant embedded NUL bytes; binary or length-bearing text results should preserve an explicit produced length instead.
 
 **Confidence:** High. Merged correctness fix approved and merged by Anders Broman; the concrete failure is a source-length/output-length domain mismatch, while the exact way to obtain the output length remains dependent on the conversion API's contract.
+
+
+## Append offsets must use bytes materialized, not would-have-written length
+
+Merged master MR !7330, with release-3.6 backport !7357, fixes `protoo_strlcpy()`. The underlying `g_strlcpy()` returns source length, but this wrapper's callers use the return value as the number of bytes placed in the destination and as a later append offset. On truncation, returning `dest_size` could therefore advance one byte beyond the writable buffer; the accepted logic returns zero for zero capacity and otherwise at most `dest_size - 1`.
+
+Merged master MR !7331, with backport !7356, complements that fix by making several fixed-width address renderers honor their caller-supplied `buf_len` before performing raw writes.
+
+**Implementation rule:** keep source/logical length, required capacity, destination capacity, and bytes actually written as separate domains. Any value later used for destination pointer arithmetic must represent bytes actually materialized. Fixed-format output is not permission to ignore the destination capacity argument.
+
+**Confidence:** Very high. Merged master fixes by John Thacker with maintained-branch backports.

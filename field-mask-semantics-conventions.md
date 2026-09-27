@@ -25,3 +25,12 @@ Merged MR !7503 makes the O-RAN eAxC ID a configurable four-part 16-bit field. M
 **Implementation rule:** for preference-defined bit layouts, validate the complete width budget before decoding and use bit-offset APIs whose coordinates can vary at runtime. Do not mutate registration-time masks to represent dynamic layouts.
 
 **Confidence:** Very high. Merged master dissector change with direct Martin Mathieson review incorporated.
+
+
+## Register one logical control word as one correctly-endian container with semantic masks
+
+Guy Harris's merged master MR !7315, with release-3.6 and release-3.4 backports !7316 and !7317, corrects IEC 104 control-field handling by treating the four wire octets as one little-endian 32-bit value. The registered fields use masks for the actual semantic subfields; I frames and S/U frames have different type masks because their type encodings differ. `proto_tree_add_item_ret_uint()` then supplies Tx/Rx/U-type values from the same registered interpretation used for display.
+
+**Field-definition rule:** when the wire format specifies one multi-octet control word split into bitfields, register the actual containing integer with the correct endianness and masks rather than independently reconstructing byte fragments. Where program logic also needs the value, prefer add-and-return field APIs so programmatic and displayed interpretations cannot drift apart.
+
+**Confidence:** Extremely high. Master implementation and two stable backports authored by Guy Harris.

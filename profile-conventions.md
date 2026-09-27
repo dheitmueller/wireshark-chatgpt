@@ -21,3 +21,11 @@ Merged MR !23210 explicitly moved profile bookkeeping into `ProfileModel`, with 
 **Implementation rule:** when a settings dialog represents a transaction over persistent objects, keep pending mutations in the model, validate the combined final state, and commit at the acceptance boundary. Avoid letting widget callbacks independently mutate persistent storage in ways that make Cancel or multi-step validation unreliable.
 
 **Confidence:** High. Explicit design of a merged refactor, subjected to unusually extensive reviewer-driven scenario testing.
+
+## Keep CLI and GUI semantics aligned for the same profile operation
+
+Merged MR !7359 makes command-line profile selection behave like the GUI when a requested profile exists only in the global profile area: create the personal profile directory, copy the global profile into it, and then select the resulting personal profile. The same behavior is applied consistently to Wireshark's command-line handling, tshark, and tfshark.
+
+**Implementation rule:** when multiple frontends expose the same profile concept, share the same semantic operation rather than letting GUI and CLI behavior diverge accidentally. Frontend-specific error handling may differ, but the resulting profile state should match.
+
+**Confidence:** Very high. Merged master behavior-alignment change authored by John Thacker.

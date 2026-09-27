@@ -21,3 +21,13 @@ Merged master MR !21530 moves an EAX working structure from function-static stor
 **Implementation rule:** choose storage from the state lifetime: stack/local storage for per-call scratch, packet/file/conversation/instance-private storage for state with that corresponding lifetime, and mutable static/global storage only when process-wide sharing is intentional and its concurrency semantics are explicit. Do not use `static` merely to avoid allocation or a large stack object when it accidentally couples otherwise independent calls or parser instances.
 
 **Confidence:** Very high. Two independent merged master changes explicitly motivated by eliminating unintended shared mutable state and concurrency conflicts.
+
+## Avoid nested Qt event loops when asynchronous UI is sufficient
+
+Merged MR !7329 replaces widespread `QMenu::exec()` use with `QMenu::popup()`. Tomasz Moń clarified in review that `exec()` creates a nested `QEventLoop` in the same GUI thread; it does not create a worker thread. That nested loop can deliver callbacks while the original call stack is still active, creating re-entry states that are difficult for surrounding code to reason about.
+
+Roland Knall's review exposed the corresponding lifetime constraint: a menu that used to live synchronously on the stack cannot simply become asynchronous without a new ownership plan. The accepted implementation moves ephemeral menus to explicitly owned objects and uses delete-on-close where needed.
+
+**Implementation rule:** prefer the ordinary application event loop over nested event loops when blocking semantics are unnecessary. When converting synchronous UI work to asynchronous behavior, redesign object ownership/lifetime at the same time.
+
+**Confidence:** Very high. Merged broad Qt change with direct Tomasz Moń and Roland Knall design discussion.

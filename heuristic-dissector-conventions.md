@@ -125,3 +125,12 @@ Merged master MR !7648, authored by John Thacker, strengthens ESP NULL autodetec
 This is consistent with later ESP and other heuristic work already recorded in this file: compatibility can justify controlled relaxation, but weak recognition should not become the default silently.
 
 **Confidence:** Very high. Merged master heuristic correctness change authored by John Thacker.
+
+
+## After positive TCP recognition, bind the conversation to the normal dissector
+
+Merged MRs !7333, !7336, and !7337 form a useful early heuristic series from John Thacker. Diameter-over-TCP recognition is disabled by default, checks protocol structure before claiming traffic, and after a positive match binds the conversation to the regular Diameter TCP dissector so subsequent packets use ordinary PDU desegmentation. The recognizer is then strengthened with the independent invariant that Diameter message lengths are 32-bit aligned. Apache Tribes recognition similarly relies on the fixed ASCII `TRIBES-B` delimiter rather than an unregistered port number.
+
+**Implementation rule:** recognize first, then claim. Prefer strong content signatures and several independent protocol invariants over port assumptions. For stateful TCP protocols, once sufficient evidence establishes the protocol, attach the regular dissector to the conversation rather than repeatedly paying heuristic-dispatch cost.
+
+**Confidence:** Very high. Three merged master changes authored by John Thacker.
