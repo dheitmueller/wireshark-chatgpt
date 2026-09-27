@@ -86,3 +86,18 @@ Merged release-4.0 MR !7824 depended on related cipher-suite changes !7825 and !
 **Backport rule:** review a cherry-pick as part of its dependency graph, not as an isolated commit. Before accepting a stable-branch backport, verify that all prerequisite code and required dependency capabilities are already present or are included in an ordered, reviewable backport series.
 
 **Confidence:** High. Explicit prerequisite review in a merged stable-branch MR.
+
+
+## Keep generated build artifacts out of submissions and use a maintainer-editable topic branch
+
+Closed MR !7659 is not an implementation exemplar, but its maintainer review gives clear submission guidance. Guy Harris identified configuration/build-generated files that do not belong in the repository and asked that they be removed. Pascal Quantin separately noted that upstream CI already built with the claimed toolchain and requested a much smaller, relevant patch rather than environment output and unrelated edits. Guy also advised that a dissector intended to ship with Wireshark should generally be submitted as a built-in dissector rather than as an external-style plugin.
+
+Closed/superseded MR !7623 provides a second workflow lesson. Gerald Combs required the contributor to enable **Allow commits from members who can merge** so maintainers could rebase or make minor fixes. The contributor could not enable that setting while the work lived on the protected `master` branch, so they recreated it on a topic branch and resubmitted as merged MR !7629.
+
+**Submission rule:** review the diff for generated CMake/build outputs, local configuration products, copied generated files, and unrelated environment artifacts before posting. Submit the smallest source change that explains and fixes the upstream problem.
+
+**Branch rule:** develop contribution MRs on a topic branch that permits maintainer collaboration/rebase rather than the fork's protected default branch.
+
+**Dissector rule:** when the intent is to add protocol support to upstream Wireshark, prefer the normal built-in dissector structure unless there is a specific project reason to keep it as a plugin.
+
+**Confidence:** High for process guidance because it comes directly from Guy Harris, Pascal Quantin, and Gerald Combs. The underlying !7659 implementation is down-weighted because the MR was closed.

@@ -182,3 +182,16 @@ Merged master MR 8102, authored by John Thacker, changes TCP so a SYN after RST 
 **Architecture rule:** identify protocol events that terminate or restart the semantic object represented by persistent state. At those boundaries, create/reset state even when ordinary lookup keys collide with the previous instance; use retransmission/duplicate logic only while the prior lifecycle is still valid.
 
 **Confidence:** Very high. Merged master TCP correctness fix authored by John Thacker with the lifecycle distinction explained explicitly.
+
+
+## Preserve protocol phase state until the message that consumes it has been decoded
+
+Merged master MRs !7621 and !7612 fix related MySQL authentication state-machine errors. The first LOGIN-like packet that requests TLS is effectively a STARTTLS transition; after TLS negotiation there is another LOGIN that still must be decoded as login/authentication traffic. Separately, state established by an AuthSwitchRequest was being overwritten before AuthSwitchResponse parsing consulted it.
+
+**State-machine rule:** a state transition should occur at the semantic protocol boundary it represents, not merely because a superficially similar packet was seen. If the next message's grammar depends on the current phase, do not overwrite that phase before the message has consumed it.
+
+**Layer-transition rule:** when a protocol upgrades or inserts a transport/security layer, explicitly model which application phase survives across the transition and which message begins the new phase. Do not assume the outer-layer change itself completes the application transaction.
+
+**Testing rule:** captures for state bugs should include the complete transition sequence, not only the packet that is misdecoded, because the defect often lies in an earlier state mutation.
+
+**Confidence:** High. Two merged master fixes in the same state machine, with a supplied capture for the AuthSwitchResponse case and explicit rationale for the TLS/login phase.

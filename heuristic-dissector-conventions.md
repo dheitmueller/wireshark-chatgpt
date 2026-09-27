@@ -112,3 +112,16 @@ Merged master MR !8165, authored by John Thacker, hardens the TP-Link Smart Home
 **Implementation rule:** recognition must precede conversation claiming. The negative path must be safe on arbitrary traffic; conversation state is appropriate only after sufficient identifying evidence has succeeded.
 
 **Confidence:** Very high. Merged master fix authored by John Thacker; later high-authority review independently reinforces the same direction.
+
+
+## Build heuristic confidence from several independent protocol checks
+
+Merged master MR !7648, authored by John Thacker, strengthens ESP NULL autodetection by combining several independent tests instead of relying on one weak signal: plausible ICV lengths, valid padding length, valid padding bytes, and acceptance by the candidate inner dissector. Any failed check rejects the heuristic match.
+
+**Heuristic rule:** where no single magic value is decisive, combine cheap structural invariants that fail for unrelated traffic for different reasons. Treat a downstream dissector's rejection as negative evidence rather than forcing the candidate interpretation through.
+
+**Review rule:** when expanding a heuristic, enumerate the independent checks that constrain false positives and identify which malformed or unrelated inputs each check excludes. Prefer a layered plausibility test to a broad single-range check.
+
+This is consistent with later ESP and other heuristic work already recorded in this file: compatibility can justify controlled relaxation, but weak recognition should not become the default silently.
+
+**Confidence:** Very high. Merged master heuristic correctness change authored by John Thacker.

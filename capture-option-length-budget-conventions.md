@@ -25,3 +25,15 @@ Merged master MR !15263, authored and merged by John Thacker, fixes several pcap
 **Review rule:** when changing a capture writer's size arithmetic, trace all three uses together: the individual option header length, the aggregate block length, and bytes physically written including alignment. A change is incomplete if those paths can compute the same logical option from different formulas.
 
 **Confidence:** Extremely high. Two merged master fixes authored by John Thacker, with Guy Harris directly challenging the padding ownership and the accepted follow-up generalizing the design across option sizers.
+
+## Validate format limits at user-facing ingress and again at the serialization boundary
+
+Merged master MR !7614, authored by Guy Harris, checks pcapng's 65535-byte comment-option limit in Wireshark and `editcap` before accepting the user's comment. Rejecting the value there lets the application explain immediately why the requested comment cannot be saved. Guy's MR description also explicitly says libwiretap should perform its own check so callers that bypass those frontends cannot create an invalid option.
+
+The same description notes that 65535 is a pcapng option limit and that another capture format could in principle allow a larger comment.
+
+**Layering rule:** enforce a hard serialized-format limit at the earliest user-facing boundary that can produce an actionable error, but also enforce the invariant in the core writer/library that ultimately owns the representation.
+
+**Scope rule:** bind the limit to the file format or serialized object that defines it. Do not turn a pcapng-specific encoding bound into an unconditional application-wide cap unless all supported representations share that bound.
+
+**Confidence:** Extremely high. Merged master fix authored by Guy Harris with release-3.6 and release-3.4 backports !7616 and !7620.

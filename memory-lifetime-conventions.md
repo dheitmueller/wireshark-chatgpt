@@ -168,3 +168,14 @@ Merged master MR !10723, authored and merged by John Thacker, fixes reassembly-t
 
 **Confidence:** Very high. Merged reassembly lifetime fix authored and merged by John Thacker for a concrete use-after-free hazard.
 
+
+
+## Interpret static-analysis leak reports using Wireshark allocator lifetime semantics
+
+Merged MR !7626 added HTTP/2 fake-header override handling. Coverity reported apparent leaks for values returned from `get_fake_header_value()`. Pascal Quantin explained during review that those strings are allocated from `pinfo->pool`; packet-scope wmem ownership releases them automatically, so there is no real leak and an explicit free would misunderstand the ownership model.
+
+**Review rule:** treat static-analysis findings as hypotheses that must be reconciled with Wireshark's allocator scopes. Before adding a free for an apparent leak, identify the allocation scope and the owner responsible for releasing that scope.
+
+**Implementation rule:** do not introduce manual frees for storage whose lifetime is already owned by a wmem scope.
+
+**Confidence:** High. Merged change with explicit Pascal Quantin review explaining packet-scope ownership.

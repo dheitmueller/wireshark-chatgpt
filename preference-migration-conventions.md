@@ -22,3 +22,16 @@ Merged master MR !7812 modernizes TCP experimental-option terminology and rename
 This is a concrete early example of the broader migration obligation described above: replacing or renaming a preference is a compatibility change, not merely a source-code naming cleanup.
 
 **Confidence:** High. Merged master implementation with an explicit compatibility mapping and regression-oriented capture coverage in the same change.
+
+
+## Match automatic/Decode As preference storage to the dispatch table's real cardinality
+
+Merged master MRs !7611 and !7637, authored by John Thacker, establish that Decode As-backed port preferences should use a range even when the default consists of a single port. Decode As can bind a dissector to several values simultaneously; a scalar preference can represent only the last value and cannot faithfully round-trip the full binding set. With a range representation, an empty value also has a natural meaning: clear the set.
+
+Merged master MR !7658 extends the compatibility side of the same migration. When an old explicit preference already has the same name as the automatic table preference, the explicit registration can be removed without losing the persisted key. When the old preference name differs, the accepted change adds an old-name-to-new-table mapping in `deprecated_port_prefs` so existing profiles continue to work. Because that migration helper owns the legacy key, the old preference does not also need to be registered as an obsolete preference.
+
+**Representation rule:** choose preference storage that can represent every state the associated UI/Decode As mechanism can create. Do not back a multi-value dispatch configuration with a scalar merely because the default is one value.
+
+**Migration rule:** when converting explicit port preferences to automatic table preferences, preserve old persisted names. Same-name conversions can rely on the retained key; differently named preferences need an explicit migration alias.
+
+**Confidence:** Very high. Three merged master changes authored by John Thacker, with the cardinality and compatibility rationale stated directly.

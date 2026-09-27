@@ -78,3 +78,14 @@ Merged master MR !10732, authored and merged by John Thacker, changes Decode As 
 
 **Confidence:** Very high. Merged master behavior/API change authored and merged by John Thacker, with the semantic distinctions documented explicitly.
 
+
+
+## Never use a valid protocol value as the implicit unknown state
+
+Merged master MR !7660 fixes UMTS RLC cipher-state tracking for UEA0. Algorithm value 0 is a real value meaning no ciphering, but the previous zero-initialized representation also implicitly treated zero as not learned yet. The accepted change moves the algorithm fields to signed storage and initializes them to -1, leaving 0 available for its protocol-defined meaning.
+
+**Representation rule:** if every value in the protocol field's natural unsigned domain is meaningful, represent unknown or uninitialized state out of band or with a storage type that has a distinct sentinel. Do not rely on zero-initialization when zero is a legitimate protocol state.
+
+**Review rule:** whenever a state object is zero-initialized, audit enum and ID fields whose zero value has protocol semantics. Ask whether the code needs three states: unknown, zero-value, and nonzero-value.
+
+**Confidence:** High. Merged master correctness change whose implementation and comments state directly that zero is valid and therefore cannot be the unknown marker.
