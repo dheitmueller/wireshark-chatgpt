@@ -67,3 +67,17 @@ Merged master MR !12000, authored by John Thacker and merged by Anders Broman, c
 **Testing rule:** verify both the normalized consumer path and reconstructability of excluded framing. For RTP-like data, test padded and unpadded packets, payload export, and a decoding/analysis consumer so an apparently harmless length change cannot silently alter media bytes.
 
 **Confidence:** Very high. Merged master correctness change authored by John Thacker with concrete regressions in payload export and codec input described in the MR.
+
+## Publish useful tap metadata even when later optional parsing fails
+
+Merged master MR !7567, authored by John Thacker, establishes TCP tap delivery once the fixed header contains enough useful metadata. A cleanup handler queues the tap record if later TCP-option parsing throws; normal completion uses the same cleanup path, preserving exactly-once delivery.
+
+**Rule:** when a tap contract is satisfied by data parsed before a later optional or failure-prone region, do not let a later exception silently suppress that valid tap record. Arrange one publication path that works for both normal completion and exception cleanup.
+
+## Carry protocol-known direction instead of re-inferring it downstream
+
+Merged master MR !7587, also authored by John Thacker, adds explicit QUIC server/client direction to Follow Stream tap data. Inferring direction from the first packet of an individual stream or from current addresses fails for stream ordering and connection migration.
+
+**Rule:** if the dissector already knows a semantic role that consumers need, include it in the tap record rather than making consumers reconstruct it from transport presentation details.
+
+**Confidence:** Very high. Both are merged master changes authored by John Thacker.

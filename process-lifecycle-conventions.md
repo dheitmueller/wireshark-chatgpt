@@ -11,3 +11,12 @@ Merged MR !23171 fixes sharkd's per-client fork model by draining already-exited
 **Implementation rule:** every fork-based server path must have an explicit child-reaping strategy. For event-loop or request-driven parents, use a non-blocking reap path (or an equivalent SIGCHLD/event integration) that drains all completed children without waiting on children that are still running. Treat child cleanup as part of the resource lifecycle, not as optional housekeeping.
 
 **Confidence:** High. Merged master correctness/resource fix, approved and merged by Anders Broman, for a concrete sharkd failure mode where unreaped children eventually prevented new forks.
+
+
+## Centralize shared capture-pipe event handling
+
+Merged master MR !7584, authored by Tomasz Moń, moves capture synchronization-pipe handling from separate Qt and CLI implementations into common capture code because both frontends already run a GLib main loop.
+
+**Rule:** shared event-loop plumbing belongs in common capture/process code rather than duplicated frontend state.
+
+**Confidence:** High. Merged master architecture change.

@@ -37,3 +37,12 @@ Merged master MR !13198, authored and merged by John Thacker, fixes several HTTP
 **Review rule:** highlight bugs often indicate mixed coordinate systems even when decoded values are correct. Inspect additions and subtractions of opcode, record, or parent offsets around tree-item calls and confirm that both the start and the computed end/length share one origin.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with multiple QPACK highlight offsets repaired by removing an inappropriate nested-origin subtraction.
+
+
+## Once a payload tvbuff exists, use it consistently
+
+Merged master MR !7601, authored by John Thacker, fixes X.25 payload detection that still read bytes from the parent tvbuff at an old local offset even though `next_tvb` had already been established as the payload. Those views can differ after reassembly.
+
+**Implementation rule:** after constructing or selecting a child tvbuff that defines the semantic payload, perform payload-relative probing and downstream parsing on that tvbuff. Do not assume `parent_tvb + remembered_offset` remains equivalent across reassembly or transformation boundaries.
+
+**Confidence:** Very high. Merged master correctness fix authored by John Thacker.

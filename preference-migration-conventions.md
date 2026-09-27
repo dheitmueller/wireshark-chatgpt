@@ -35,3 +35,16 @@ Merged master MR !7658 extends the compatibility side of the same migration. Whe
 **Migration rule:** when converting explicit port preferences to automatic table preferences, preserve old persisted names. Same-name conversions can rely on the retained key; differently named preferences need an explicit migration alias.
 
 **Confidence:** Very high. Three merged master changes authored by John Thacker, with the cardinality and compatibility rationale stated directly.
+
+
+## Keep protocol identifier domains distinct during migration
+
+Merged master MR !7580, authored by John Thacker, fixes legacy port-preference migration that used one string for two different lookups. `prefs_find_module()` expects the protocol filter/module name, while dissector-table lookup uses the protocol short name. The two often look similar but are not the same identifier contract.
+
+**Migration rule:** when compatibility code bridges subsystems, use the identifier type each API actually expects. Do not rely on matching capitalization or historical naming accidents between filter names, module titles, short names, and dissector names.
+
+Merged master MR !7581, also authored by John Thacker, converts many RTP payload-type preferences to automatic dissector-table preferences. The accepted change removes duplicated range state and repeated preference callbacks while retaining obsolete preference recognition.
+
+**Architecture rule:** when a core registration table already owns the binding and preference machinery, prefer that single source of truth over parallel dissector-local preference state.
+
+**Confidence:** Very high. Both are merged master changes authored by John Thacker.
