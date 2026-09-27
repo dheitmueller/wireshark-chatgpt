@@ -24,3 +24,7 @@ Merged !7799 gives each DLEP data item a subset TVB limited to the parent-declar
 ## NTP signed fields
 
 !7781 confirms that NTP poll and precision use signed 8-bit semantics.
+
+## Wiretap packet-hash option
+
+!7769 adds a compound packet-hash option and supplies matching copy, cleanup, block-copy, size, parse, and write handling.
