@@ -2,7 +2,7 @@
 
 Corpus commit: `ddcaa22b51c68f594e425a23388c3a2086813054`
 
-All 50 MRs in this batch are merged.
+All 50 MRs in this batch are merged. The table below records the highest-information findings; the exact 50-MR set is in the run ledger.
 
 | MR | Outcome | Depth | Finding |
 |---|---|---|---|
