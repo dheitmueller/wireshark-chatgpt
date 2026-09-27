@@ -70,3 +70,18 @@ Reviewer Jaap Keuter additionally challenged the initial UDX heuristic as too we
 ## Future curation
 
 Add exact upstream-recommended fuzz commands and test-suite integration patterns after correlating them with current Wireshark source and maintainer review feedback.
+
+
+## Build maintained default-off targets in CI
+
+Merged MR !7077 explicitly enables `tfshark` in the Code Checks + Clang Warnings job even though the executable is disabled in the default CMake configuration. João Valverde's rationale is that in-tree code should be continuously tested or removed rather than allowed to remain broken because normal builds never compile it.
+
+**CI rule:** every maintained non-default executable or substantial optional build target should be enabled by at least one regular CI configuration.
+
+## Validate indexed subtree capacity and registration
+
+Merged MR !7099 later received substantive post-merge review from Stig Bjørlykke. He found an indexed `ett_*` array with 16 entries used from a loop capable of 64 indices, and also found that the array was not registered in `proto_register_subtree_array()`. He requested a sample capture; the out-of-bounds issue was later fixed in !13341.
+
+**Structural-check rule:** for indexed subtree identifiers, verify both maximum runtime index against array capacity and registration of every identifier before use. Representative captures for newly added repeated structures should exercise those indexed paths.
+
+**Confidence:** Very high for the CI rule and high for the subtree rule. The latter is strong negative evidence from Stig's post-merge review rather than an endorsement of the original implementation.

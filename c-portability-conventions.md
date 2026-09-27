@@ -78,3 +78,16 @@ Merged master MR !7583, authored by John Thacker, shows that `gboolean` is unsui
 **Implementation rule:** use `bool`/_Bool for boolean bitfields. Do not rely on typedef'd signed integers to preserve 0/1 semantics when narrowed to one bit.
 
 **Confidence:** Very high. Merged master portability fix authored by John Thacker.
+
+
+## Prefer GLib's documented conversion macros
+
+Merged MR !7081 changes NVMe storage of a `guint32` in a GLib pointer-valued container to use `GUINT_TO_POINTER()` and `GPOINTER_TO_UINT()` instead of direct casts.
+
+**Rule:** use the GLib conversion helpers when carrying supported integer values through `gpointer` APIs. They express the intended portable conversion contract more clearly than ad-hoc casts.
+
+Merged MR !7070 separately illustrates the C integer-promotion rule: arithmetic on `guint8` objects is normally performed after promotion to `int`.
+
+**Rule:** inspect the promoted arithmetic type when reasoning about calculations on narrow integer objects.
+
+**Confidence:** High. Both are merged portability/correctness changes.

@@ -19,3 +19,12 @@ A value can be semantically useful for filtering or custom columns even when it 
 **Implementation rule:** use a generated field for useful computed metadata that has no direct byte representation. If the value is primarily an automation/filter hook and would duplicate existing presentation, a hidden generated item can preserve a clean tree while still exposing the stable field API.
 
 **Confidence:** High. Merged master dissector implementation.
+
+
+## Keep dynamic registration proportional to configured features
+
+Merged MR !7085 fixes a large Signal-PDU profile reload slowdown caused by registering aggregation fields for every configured signal even when aggregation was not enabled. The accepted design always registers the base/raw fields and registers each aggregation field family only when configuration requires it.
+
+**Rule:** dynamic field registration should reflect actual runtime configuration. Avoid creating large optional field families that cannot be populated, and benchmark configuration reload paths at realistic scale.
+
+**Confidence:** Very high. Merged performance fix with measured large-configuration impact.

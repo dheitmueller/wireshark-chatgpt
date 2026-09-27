@@ -35,3 +35,14 @@ In merged MR !7468, DNS server ports were initially represented as strings. Jaap
 **Implementation rule:** choose UAT storage/callback types from the configuration value's semantic domain. Use strings for textual data, not merely because the editor ultimately displays text.
 
 **Confidence:** Very high. Direct Jaap Keuter review followed by a merged corrective MR.
+
+
+## Free UAT-derived state according to its full ownership graph
+
+Merged MR !7088 fixes SOME/IP configuration cleanup by replacing generic outer-object destruction with type-specific destructors that also release nested arrays and other owned allocations. Its record free callbacks clear released string pointers. Merged !7079 independently extends the Signal-PDU UAT free callback to release every owned string and clear the corresponding fields.
+
+**Implementation rule:** a UAT or derived-cache destructor must mirror the actual ownership graph. If a hash value owns child arrays or strings, free those children before the outer value rather than relying on a generic shallow destructor. When a record object survives a cleanup callback, leave released owned pointers in a defined safe state.
+
+**Review rule:** when adding fields to a UAT record or derived cache object, update copy, free, and reset lifecycle code at the same time and audit every ownership-bearing member.
+
+**Confidence:** High. Two merged configuration-memory fixes, with detailed review on the SOME/IP cleanup.

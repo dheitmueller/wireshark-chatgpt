@@ -33,3 +33,16 @@ Merged master MR !7530, authored by John Thacker, changes QUIC Follow Stream fil
 **Rule:** When dissection has already resolved a protocol's canonical connection identity, read-only UI/filter consumers should retrieve that stored identity rather than recomputing it from transport coordinates.
 
 **Confidence:** Very high. Merged master correctness fix authored by John Thacker.
+
+
+## Keep search wildcards separate from creation-side omitted endpoints
+
+Merged core MR !7064 separates conversation option domains that were previously easy to misuse. `find_conversation()` uses `NO_ADDR_B` and `NO_PORT_B` for wildcard query arguments, while `conversation_new()` uses `NO_ADDR2` and `NO_PORT2` for missing parts of the stored second endpoint. The core API adds assertions for the distinction. Stig Bjørlykke noted that existing callers also needed checking, and merged follow-ups !7100, !7101, !7103, !7104, !7105, and !7106 repair real callers.
+
+**Rule:** lookup options and creation options are separate semantic domains even though both use integer flags. Audit callers whenever the core flag contract changes.
+
+Merged MR !7089 also normalizes null address arguments to `AT_NONE` at the `find_conversation()` boundary. Merged !7108 removes a downstream null check that became impossible after that normalization.
+
+**Rule:** normalize nullable inputs once at a documented API boundary and let internal code rely on that invariant.
+
+**Confidence:** Very high. Merged conversation-core work with direct Stig Bjørlykke review and multiple merged caller corrections.
