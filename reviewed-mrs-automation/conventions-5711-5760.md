@@ -1,2 +1,2 @@
 # Conventions 5711-5760
-See MRs 5760, 5757, 5741, 5740, 5726, 5724.
+5757: field type follows wire encoding.
