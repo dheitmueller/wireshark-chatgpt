@@ -103,3 +103,14 @@ During review of merged MR !7494, which introduced reusable Snappy TVB helpers, 
 **Implementation rule:** shared decompression helpers should enforce or accept a defensible output-size budget before allocating the advertised result. Centralization is an opportunity to make the resource policy consistent across dissectors.
 
 **Confidence:** High for the resource rule. The concern is explicit substantive review on a merged shared-helper MR; later notebook evidence independently establishes decompression-output ceilings as Wireshark policy.
+
+## Prefer protocol-derived expansion ceilings to arbitrary memory limits
+
+When a protocol or its canonical implementation defines a meaningful maximum expansion size, use that as the resource ceiling instead of an unexplained convenience number.
+
+Guy Harris's merged release-3.4 MR !5656 changes Kafka decompression from an arbitrary 50 MB maximum to 2^22 bytes, explicitly citing Kafka's Java `KafkaLZ4BlockOutputStream` maximum as the rationale.
+
+**Implementation rule:** when bounding decompression or another expansion operation, look first for a protocol, specification, or canonical implementation maximum and document the source of the bound.
+
+**Confidence:** Very high. Merged maintained-branch fix authored by Guy Harris with the source of the limit stated directly.
+

@@ -33,3 +33,16 @@ Merged master MR !20434, authored and merged by Guy Harris, deliberately passes 
 **Implementation rule:** separate speculative parsing from committed side effects. If one parsing helper serves both phases, make the ownership/context argument explicitly optional and gate persistent mutations on it, or split probing from committed parsing when that is clearer. Document intentional sentinel/NULL context where it protects a subtle lifecycle boundary.
 
 **Confidence:** Extremely high. The convention comes directly from a merged master change authored and merged by Guy Harris whose sole purpose was documenting this intentional probe/commit distinction.
+
+## Keep open-time recognition bounded even when committed parsing accepts large legal records
+
+A reader may need to support long records or scan until a true record terminator once it owns the file. That does not imply that format detection should scan an unbounded candidate file while Wiretap is still deciding whether the opener applies.
+
+Merged master MR !5635 rewrites the RFC 7468 reader to support multiple encoded structures and logical lines assembled across fixed-size chunks, with checked aggregate length before appending to the record buffer. At open time, however, it deliberately searches only an initial 2048-byte chunk for the first pre-encapsulation boundary, then rewinds before committed reading.
+
+**Implementation rule:** separate the legal input domain of the real reader from the work budget of speculative recognition. Keep probing bounded and cheap; after ownership is established, parse complete legal records with independent structural/resource checks.
+
+**Review rule:** when relaxing a reader's record-size or line-size assumptions, audit the opener separately. Do not accidentally turn “support arbitrarily long legal records” into “scan an arbitrary unrelated file to decide whether it might be ours.”
+
+**Confidence:** High. Merged master Wiretap change with the bounded-recognition rationale documented directly in the implementation description.
+

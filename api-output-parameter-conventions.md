@@ -32,3 +32,14 @@ Merged master MR !5912, authored by Gerald Combs, tightens `dissect_kafka_string
 **Implementation rule:** for an optional output pointer whose contract promises a usable value, establish the failure/default value before the first operation that can return normally with an error indication. This is preferable to assigning the fallback independently in selected error branches, which makes future early returns easy to miss.
 
 **Confidence:** Very high. Merged master correctness change authored by Gerald Combs and explicitly documented as guaranteeing a valid output string.
+
+## Error termination does not waive optional output-parameter guarantees
+
+Parser hardening can change where a helper exits without changing what its advertised output pointers mean. If callers may inspect optional outputs after the helper returns, malformed-input exits must leave those outputs deterministic even when the primary return value tells the caller to stop.
+
+Guy Harris's merged release-3.4 MR !5655 normalizes Kafka helper returns to offsets callers can actually consume and initializes optional offset/length outputs on error paths. The later bad-varint hardening removed some of those assignments while changing the primary return to captured length. Merged master follow-up !5643 restores zeroing of the outputs, with release-3.6 !5644 and Guy Harris's release-3.4 !5658 carrying the same correction.
+
+**Implementation rule:** when changing a primary return/error path, re-audit every output parameter independently. A terminal cursor or malformed-input indication does not make an output pointer safe to leave stale.
+
+**Confidence:** Extremely high. Merged master correction and stable backports, including direct Guy Harris evidence.
+

@@ -33,3 +33,16 @@ Merged master MR !8284, authored by João Valverde, moves UTF-8 contract diagnos
 **Review rule:** do not solve validation visibility by making a noisy diagnostic globally severe. Ask whether a dedicated domain plus targeted fatal policy provides stronger tests with less normal-runtime noise.
 
 **Confidence:** Very high. Three merged master logging changes by João Valverde establish the mechanism and intended policy.
+
+## Command-line tools should use the shared logging subsystem instead of private debug counters
+
+A tool-specific debug flag creates its own severity scale, help text, output routing, and interaction with quiet mode. When the project has a common logging framework, map diagnostics onto that framework rather than maintaining a parallel interface.
+
+Merged master MR !5642, authored by John Thacker, removes text2pcap's repeatable `-d` option and maps its former levels to the standard DEBUG and NOISY levels. The tool exposes the common logging usage, its tests and release notes are updated, and `-q` is narrowed to suppressing normal option/packet-count summaries rather than forcibly changing the diagnostic log level.
+
+**CLI rule:** distinguish ordinary program output suppression from diagnostic severity/filtering. A “quiet” switch for summaries is not automatically a replacement for the logging subsystem's level/domain controls.
+
+**Migration rule:** when retiring a user-visible private debug option, document the equivalent shared logging levels and update tests/help in the same change.
+
+**Confidence:** Extremely high. Merged master change authored by John Thacker.
+

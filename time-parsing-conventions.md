@@ -40,3 +40,14 @@ Timezone arithmetic is vulnerable to tests that repeat the implementation's conc
 **Testing rule:** build timezone tests around independently known equivalent instants, not expected values produced by the same sign-manipulation logic under test. Include positive and negative offsets, non-whole-hour offsets, zero/Z, and multiple accepted syntactic forms so a symmetric misconception cannot make both code and tests agree incorrectly.
 
 **Confidence:** Very high. Merged master correction authored by John Thacker plus an accepted stable backport; the MR explicitly states that the tests themselves had the direction backwards.
+
+## A regression test can preserve the same conceptual error as the implementation
+
+Merged master MR !5612 expanded ISO-8601 parsing to accept `+HH:MM`, `+HHMM`, and `+HH` forms and added tests for those forms. The test expectations used the same reversed offset-sign convention as the parser. John Thacker's later merged master MR !5668 corrected both the implementation and those tests, with !5669 carrying the stable fix.
+
+This is the concrete historical precursor to the rule above about independently known UTC instants: adding more syntax cases does not validate the sign convention if every expected timestamp is computed from the same mistaken transformation.
+
+**Testing rule:** for timezone arithmetic, write equivalence tests such as “local wall time with +01:00 equals this independently known UTC instant.” Include both positive and negative offsets so a sign inversion cannot satisfy a symmetric test set.
+
+**Confidence:** Very high. Both the original test-adding change and the later John Thacker correction were merged; the correction explicitly changes the mistaken expectations.
+

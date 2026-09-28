@@ -32,3 +32,16 @@ Merged release-branch MRs !6116 and !6117 show that ASN.1 PER NULL values can va
 The earlier ZigBee ZCL change corrected by Guy Harris in !6162 was merged master !6135, with stable counterparts !6136 and !6137. Those changes used the progress comparison backwards and therefore rejected normal forward movement. Treat !6135-!6137 as negative regression evidence and !6162 as the authoritative correction.
 
 **Testing rule:** every no-progress guard needs both a malformed/stationary case and an ordinary positive-progress case.
+
+## A malformed variable-length integer must not return a stationary cursor
+
+A decoder failure whose encoded-length result is zero is not equivalent to a successfully decoded zero-width semantic item. If an enclosing parser treats a helper's returned offset as its next cursor, returning the same offset on malformed input can create an infinite loop.
+
+Merged master MR !5626 hardens Kafka so `tvb_get_varint()` failure reports expert information and returns the captured-length cursor instead of the unchanged input offset. Merged release-3.6 !5629 preserves the same behavior. Guy Harris's merged release-3.4 MR !5657 is especially strong corroboration: it applies the same termination rule across Kafka's varint-backed helpers while still returning `offset + len` when a valid encoding consumed bytes but its decoded value was semantically invalid.
+
+**Implementation rule:** distinguish a legal zero-width grammar construct from a decoder failure that reports “consumed zero bytes.” When failure would otherwise leave an enclosing cursor stationary, terminate or propagate an explicit failure that the caller must handle; do not fabricate a maximum encoded length merely to force progress.
+
+**Review rule:** audit every caller of a helper whose failure sentinel can also be interpreted as a length or cursor delta. The helper and the enclosing loop must agree on whether the sentinel means “no bytes consumed,” “stop,” or a valid zero-width item.
+
+**Confidence:** Extremely high. Merged master behavior plus maintained-branch backports, including a Guy Harris-authored backport.
+
