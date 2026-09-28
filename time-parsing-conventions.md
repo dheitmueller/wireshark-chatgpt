@@ -31,3 +31,12 @@ Merged master MR !11947 adds deterministic support for a `UTC` suffix in display
 **Testing rule:** include at least one deliberately unsupported/ambiguous spelling in negative tests so later refactors do not accidentally turn host-specific libc behavior into accepted display-filter syntax.
 
 **Confidence:** Very high. !11947 and !11951 are merged master parser changes; the portability/ambiguity rationale comes from substantive Guy Harris discussion on !11947.
+
+
+## Validate timezone offset signs with independently known UTC instants
+
+Timezone arithmetic is vulnerable to tests that repeat the implementation's conceptual error. Merged master MR 5668, authored by John Thacker, corrects explicit ISO 8601 offsets: a local time with a positive offset is converted to UTC by subtracting that offset, while a negative offset is added. The existing Lua and wsutil tests had encoded the same reversed-sign assumption, so the accepted fix changes both implementation and test vectors. Merged release-3.6 backport 5669 preserves the correction.
+
+**Testing rule:** build timezone tests around independently known equivalent instants, not expected values produced by the same sign-manipulation logic under test. Include positive and negative offsets, non-whole-hour offsets, zero/Z, and multiple accepted syntactic forms so a symmetric misconception cannot make both code and tests agree incorrectly.
+
+**Confidence:** Very high. Merged master correction authored by John Thacker plus an accepted stable backport; the MR explicitly states that the tests themselves had the direction backwards.
