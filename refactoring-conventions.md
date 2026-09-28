@@ -15,3 +15,15 @@ The same MR also models an important scope boundary: the author noticed question
 **Review rule:** treat differences between near-duplicate paths as suspicious until shown intentional. When reviewing a fix in one copy, search for sibling paths that perform the same operation and determine whether the fix should instead be made in shared code.
 
 **Confidence:** Extremely high. Merged master refactor with direct, substantive Guy Harris review endorsing deduplication as correctness work rather than cosmetic cleanup.
+
+## Separate mechanism changes from presentation-policy changes
+
+Closed proof-of-concept MR !6225 proposed both a new structured representation for compile/runtime features and a new presentation of the About/version text. João Valverde endorsed building a feature list first but asked for the mechanism to land separately, warned against introducing a VCSVERSION dependency that would relink libwireshark for every Git commit, and requested a cleaner/squashed successor because the proof-of-concept history had become difficult to review.
+
+Merged master successor !6240 follows that direction: it introduces the structured feature-list mechanism while working hard to preserve the existing output format. During review João again stated that mechanism and formatting policy should be kept in separate commits.
+
+**Refactoring rule:** when replacing an internal representation that also enables a visible formatting or policy change, land the representation/mechanism with behavior held as constant as practical. Make the policy change separately so reviewers can distinguish architectural correctness, rebuild/dependency effects, and user-visible compatibility.
+
+**Build-impact rule:** refactors that move shared code must also consider dependency fanout. Avoid adding volatile generated-version inputs to a widely linked library when doing so would force unnecessary relinks on every source-control revision.
+
+**Confidence:** Very high for the accepted direction. !6225 is closed and used only as design-history evidence; !6240 is the merged successor implementing the separated mechanism.

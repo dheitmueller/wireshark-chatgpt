@@ -13,3 +13,13 @@ Merged master MR !6415, authored by Gerald Combs, fixes the `proto_tree_add_item
 **Review rule:** when adding an output parameter or factoring a common early-return helper, audit all exits—not just the main success path—for deterministic output state.
 
 **Confidence:** Very high. Merged master core API correctness change.
+
+## Initialize string output buffers before any normal early return
+
+Merged master MR !6223, authored by Gerald Combs, fixes proto_item_fill_label after static analysis found a path where a caller could later treat the destination as a C string even though no terminator had been written. The accepted implementation first handles a NULL destination explicitly, then writes label_str[0] = '\0' before checking whether field information is available and returning early.
+
+**Implementation rule:** for an API that fills a caller-provided C-string buffer, establish the neutral valid result (an empty terminated string) before any normal branch that may return without producing content. Handle a NULL destination as a separate contract violation or supported special case rather than conflating it with an empty result.
+
+This is the string-buffer form of the broader output-parameter rule already documented above: every normal return path must leave advertised outputs deterministic.
+
+**Confidence:** Extremely high. Merged core API correction authored by Gerald Combs and motivated by a concrete static-analysis finding.

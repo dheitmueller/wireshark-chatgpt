@@ -55,3 +55,15 @@ Merged master MR !15806 adds RTPS pre-shared-key decryption. Decrypted secure co
 **Review rule:** a suppression is not evidence of correctness. Review the semantic bound independently—for recursion, prove depth/progress or enforce a guard; for aliasing, lifetime, or arithmetic warnings, establish the corresponding invariant—then ensure the suppression covers no more code than necessary.
 
 **Confidence:** Very high. Merged master feature with an explicit safety argument from the contributor and direct Gerald Combs guidance on the accepted localized clang-tidy suppression.
+
+## Keep file-selection semantics consistent across sibling checker tools
+
+Merged master MR !6260, authored by Martin Mathieson, changes five project checker scripts so the file selector can be supplied repeatedly. Each selected file is normalized through the checker's ordinary dissector-path rules and a nonexistent requested file is rejected explicitly instead of being silently skipped.
+
+**Tooling rule:** checker scripts that serve the same pre-submit workflow should expose compatible scope-selection semantics. A repeated per-file selector should behave as a true list, validate every member deterministically, and fail clearly when the caller names an input that cannot be checked.
+
+Merged master MR !6230, also authored by Martin Mathieson, improves the spelling checker by recognizing the reusable lexical class "number followed by a known unit" instead of carrying a growing dictionary of individual forms such as particular bit rates or widths.
+
+**Checker-design rule:** when a recurring family of accepted tokens has a dependable grammar, encode that grammar/pattern rather than expanding an exception dictionary with every concrete instance. Keep the recognizer narrow enough that it does not hide ordinary misspellings.
+
+**Confidence:** Very high. Both are merged master tooling changes by a long-standing maintainer; !6260 applies the same behavior across a family of checker scripts.

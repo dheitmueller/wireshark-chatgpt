@@ -19,3 +19,21 @@ Merged master MR !8782 fixes Skinny display labels whose protocol domain is ASCI
 **Display rule:** text that reaches columns, protocol-tree strings, JSON-like output, or other UTF-8-facing interfaces must first pass through the appropriate encoding conversion or validation path. Preserve malformed input inspectability through replacement/diagnostic behavior rather than emitting invalid UI strings.
 
 **Confidence:** Extremely high. Multiple merged master encoding fixes, most authored by John Thacker, all converging on explicit wire-encoding semantics.
+
+## Preserve raw bytes when the protocol does not guarantee a character set
+
+Merged master MR !6244, authored by John Thacker, changes 802.11 SSID handling after documenting that the standard can leave the SSID octet encoding unspecified unless separate Extended Capabilities state establishes UTF-8. The accepted path preserves the SSID as raw bytes for decryption state and registers the tree field as FT_BYTES with UTF-8-printable presentation rather than forcing the bytes through an ASCII or UTF-8 validation contract that the packet does not necessarily satisfy.
+
+The MR also records why the full discriminator is nontrivial: the relevant capability may appear later in the same frame, be absent, or be known only from prior request/conversation state. Presentation therefore remains intentionally weaker than claiming a known charset.
+
+**Implementation rule:** distinguish "bytes that are often readable as text" from "a protocol string with a specified encoding." When the charset is genuinely unspecified, preserve the byte value as the semantic field and choose a best-effort display policy; upgrade to a typed string only when protocol context supplies a trustworthy encoding contract.
+
+**Confidence:** Extremely high. Merged master encoding change authored by John Thacker with the standards ambiguity and state-ordering limitation documented in detail.
+
+## Do not add byte-order semantics to plain string encodings
+
+Merged master MR !6220, authored by João Valverde, removes redundant ENC_NA combinations from ASCII string-item calls across the tree and changes the associated fixer/checker behavior. The MR states the underlying reason directly: FT_STRING and FT_STRINGZ values have character encodings but do not have integer endianness.
+
+**Implementation rule:** encoding flags should describe semantics the field type actually has. For ordinary string fields, specify the character encoding required by the wire format; do not combine it with a no-endianness flag merely because numeric fields use an endian position in the same API argument.
+
+**Confidence:** Very high. Merged tree-wide cleanup and tooling correction authored by João Valverde.

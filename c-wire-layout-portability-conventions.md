@@ -53,3 +53,13 @@ When a native struct is used only as a convenient description of an on-wire reco
 **Implementation rule:** if fields are decoded individually from a TVB, represent fixed wire sizes with protocol constants or explicit offsets. Do not introduce packed native structs merely to make `sizeof` equal the wire length.
 
 **Confidence:** Very high. Direct Stig Bjørlykke review followed immediately by the merged design he recommended.
+
+## Bounds-check and qualify pseudo-headers before endian repair
+
+Merged master MR !6257, authored by Guy Harris, adds CAN-ID byte swapping for Linux SLL2 captures. Before touching the CAN pseudo-header it computes the usable packet size as the smaller of captured and reported lengths, verifies the SLL2 header is present, and confirms that the protocol field identifies CAN or CAN-FD. Stable backports !6258 and !6259 carry the same behavior to maintained branches.
+
+The code temporarily forms a pointer to a CAN header structure, but Guy documents the critical constraint: the structure fields are never dereferenced as typed objects. The pointer is used only to obtain member addresses/offsets, and the actual swap is byte-at-a-time, so no stronger alignment guarantee is assumed.
+
+**Implementation rule:** capture-file post-processing must establish both byte availability and the semantic pseudo-header subtype before applying byte-order fixups. Treat arbitrary capture payload storage as potentially unaligned. If a native structure is used only as an offset description, do not perform alignment-sensitive typed loads through it; use byte helpers or copy into aligned storage for actual value access.
+
+**Confidence:** Extremely high. Merged master implementation authored by Guy Harris with two merged maintained-branch backports and an explicit alignment-safety rationale in the code.

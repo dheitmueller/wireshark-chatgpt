@@ -13,3 +13,13 @@ Merged master MR !14204, authored by John Thacker, fixes Export Packet Bytes as 
 **Review/testing rule:** include adversarial payload endings and delimiters: trailing backslash, comment markers, quotes, control characters, and data at exact line-wrap boundaries. Compile or parse the generated artifact with the supported toolchains when practical; visual inspection of the exported text is insufficient.
 
 **Confidence:** Very high. Merged master correctness fix authored by John Thacker with the C preprocessing failure mode and rejected whitespace workaround documented directly in the MR.
+
+## A routine data refresh must not commit syntactically broken generated source
+
+Merged master MR !6256 is an automated weekly data refresh authored by Gerald Combs. That refresh initially picked up ASTERIX data containing quotation marks that the conversion script failed to escape, producing invalid C string literals and a build failure. Gerald manually reverted the generated packet-asterix.c portion from the refresh, and the generator-side escaping problem was fixed separately in !6262.
+
+**Generation rule:** external registry/specification text must be escaped for the target source language before it is emitted. Treat the generator as responsible for lexical correctness; do not hand-edit the derivative as the permanent fix.
+
+**Refresh rule:** an automated or periodic data update still has to pass source generation/build validation. If one generated artifact becomes syntactically invalid, omit or revert that artifact from the otherwise-valid refresh until the source-of-truth/generator path is fixed, rather than landing uncompilable generated code.
+
+**Confidence:** Extremely high. The broken artifact was caught in a merged Gerald Combs maintenance workflow, explicitly removed from that refresh, and traced to the conversion script; the generator correction was handled in a separate merged MR.

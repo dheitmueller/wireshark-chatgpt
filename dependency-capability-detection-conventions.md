@@ -25,3 +25,13 @@ Merged MR !16165 initially made MSVC `/Qspectre` unconditional on the assumption
 **Review rule:** when broadening a compiler flag from probed/conditional to unconditional, verify installation prerequisites as well as compiler-version documentation. A feature present in the compiler product can still be absent from a particular installed toolchain.
 
 **Confidence:** Very high. The initial merged assumption was explicitly corrected by the maintainer and superseded by a merged revert that documents the missing prerequisite.
+
+## Query capabilities directly; do not parse a human-readable capability summary
+
+During merged master MR !6240, compile/runtime feature reporting was converted from direct string concatenation to a structured feature list. In review, David Perry pointed out an existing path that decided whether Npcap was present by examining text produced by a routine that itself already knew that fact. João Valverde explicitly agreed that the code should use a direct semantic test rather than parse presentation text, preferably as a separate focused change. The later merged capability helper work follows that direction.
+
+**Implementation rule:** if program behavior depends on whether a dependency/runtime capability is present, expose and call a predicate or structured query for that capability. Human-readable version/About text is an output format, not a machine-facing detection API; parsing it creates accidental coupling to wording and formatting.
+
+**Review rule:** when refactoring diagnostic/version output, search for callers that parse the old text. Either migrate them to a semantic capability API in the same series or record the follow-up explicitly; do not preserve string parsing as the long-term contract.
+
+**Confidence:** Very high. Direct João Valverde review on a merged master architecture change, aligned with the structured feature-reporting design.
