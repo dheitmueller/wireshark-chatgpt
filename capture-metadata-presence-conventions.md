@@ -27,3 +27,13 @@ Merged master MR !14367, authored and merged by Guy Harris, fixes SocketCAN CAN 
 **Review rule:** test truncation at boundaries inside the pseudo-header, not only packets that contain either zero metadata or the complete header. Include cuts immediately before and inside multi-byte fields, and exercise the opposite-endian path when byte swapping is involved.
 
 **Confidence:** Extremely high. The master fix and its stable backport were authored and merged by Guy Harris, and the MR explicitly identifies both per-field availability and independence from C structure layout as the intended design.
+
+## Populate optional record metadata in both sequential and random-access reads
+
+Merged master MR !6792, authored by Guy Harris, adds a section number to `wtap_rec` with `WTAP_HAS_SECTION_NUMBER`. The numeric member has a default value, but the presence flag is set only when the reader actually knows the section. The pcapng implementation sets the metadata in both sequential and seek reads. Frame dissection tests the presence flag before exposing the field and converts the internal 0-based index to a 1-based display value.
+
+**Implementation rule:** optional capture-record metadata needs a validity/presence contract independent of storage initialization. Populate it consistently through sequential and random-access read paths so interpretation does not depend on how the record was reached.
+
+**Presentation rule:** keep intentional internal-versus-display numbering conversion at the presentation boundary.
+
+**Confidence:** Extremely high. Merged master Wiretap/frame change authored by Guy Harris.
