@@ -1,0 +1,2 @@
+# Tracking reconciliation 5961-6010
+Before selection, the notebook had 407 ordinary exact-range ledgers; the lowest ordinary range starts at 6011. I also checked all 19 nonstandard tracking files in reviewed-mrs-automation/ (aggregate, gap/backfill/noncontiguous/exact-list and temporary tracker) plus reviewed-mrs.md. None contains any candidate from 5961 through 6010. The historical 17571-17620 ledger was revalidated as 50 unique MR numbers with no omissions. Selection therefore used the exact previously-reviewed set rather than assuming an adjacent numeric range.
