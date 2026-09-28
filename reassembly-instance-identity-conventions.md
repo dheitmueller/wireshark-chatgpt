@@ -23,3 +23,13 @@ Merged release-4.0 MR !11114, authored and merged by John Thacker, fixes TCP out
 **Testing rule:** for a stateful reassembly change involving reordering, retained fragment state, or derived sequence boundaries, include a representative out-of-order capture and exercise both the normal first pass and second-pass/redissection path. Treat a stable-branch backport as corroboration when the master MR is available separately.
 
 **Confidence:** High for the testing pattern, with primary architectural weight deferred to the not-yet-reviewed master MR !11063.
+
+## Final-fragment identity can require frame number, layer number, and protocol-local completion state
+
+Merged master MR !6330, authored by John Thacker, changes TCP desegmentation so the reassembled frame number and the recorded protocol-layer number must both match before the current occurrence is treated as the final segment. A physical frame can contain multiple instances of TCP at different encapsulation layers, so frame number alone is not a unique occurrence key.
+
+Merged master MR !6331, also authored by John Thacker, shows that even frame+layer can be insufficient for some higher-level reassembly. With multiple MPEG-TS packets in one frame, the last fragment of one TSP and the first fragment of the next can share both values. The accepted code therefore also requires the protocol's own `fragment_last` condition before calling subdissectors.
+
+**Implementation rule:** use the complete semantic identity of the reassembly occurrence before dispatching the completed payload. Start with frame and layer where appropriate, but add protocol-local instance/completion state when multiple logical boundaries can still collide.
+
+**Confidence:** Extremely high. Two merged master reassembly fixes authored by John Thacker.

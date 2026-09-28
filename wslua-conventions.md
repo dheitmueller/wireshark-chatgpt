@@ -24,3 +24,13 @@ Merged MR !8362, authored and merged by João Valverde, moves WSLua constant gen
 **Namespace rule:** C's flat macro/enum namespace is not a reason to pollute Lua's global namespace; keep related constants in structured Lua tables.
 
 **Confidence:** Very high. Merged master architectural cleanup authored and merged by João Valverde.
+
+## Generic add-and-return APIs should return consistent typed values and offsets
+
+Merged master MR !6343 extends `TreeItem:add_packet_field` so supported field types consistently return the child item, the decoded typed value, and the next offset. The implementation reuses the corresponding `proto_tree_add_item_ret_*` primitives where available, adds missing typed helpers in core code, documents the return tuple, and adds Lua tests that compare the returned values with direct `TvbRange` decoding.
+
+Roland Knall explicitly raised compatibility concerns about changing an established scripting method, and the discussion considered the change in the context of the upcoming major release.
+
+**API rule:** generic scripting bindings should make return behavior consistent across supported field types, document all returned values, and test them against the native decoding primitive. Changes to established binding behavior are compatibility-sensitive even when they make the API more regular.
+
+**Confidence:** High. Merged master API expansion with substantive maintainer review and dedicated tests.
