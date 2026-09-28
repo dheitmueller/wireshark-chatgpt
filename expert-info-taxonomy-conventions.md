@@ -34,3 +34,12 @@ Merged master MR !8412, authored by Guy Harris, correctly updates TRANSUM's extr
 
 **Confidence:** Extremely high. The diagnostic and interpretation come directly from Guy Harris; the final behavior is confirmed by merged !8473 and its backports.
 
+
+
+## Treat missing reassembly as a reassembly condition, not malformed protocol data
+
+Merged master MR !6623, authored and merged by John Thacker, reports `FragmentBoundsError` with a `PI_REASSEMBLE` / `PI_NOTE` expert item suggesting that reassembly preferences may need to be enabled. Companion merged MR !6621 marks a partial TCP PDU TVB as fragmented when desegmentation is disabled or unavailable, so bounds handling reaches the unreassembled-fragment path instead of a malformed-packet error.
+
+**Diagnostic rule:** incomplete data caused by disabled or unavailable reassembly belongs in reassembly-oriented diagnostics. Reserve malformed/error categories for structurally invalid input or genuine dissector/reassembly failures.
+
+**Confidence:** Very high. Both merged core changes were authored by John Thacker and intentionally pair TVB fragment semantics with the expert-info taxonomy.

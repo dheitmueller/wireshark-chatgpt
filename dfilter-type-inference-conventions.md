@@ -13,3 +13,14 @@ Merged master MR !12643 (`dfilter: Improve constant values type inferrence`) cha
 **Testing rule:** exercise equivalent comparisons in both operand orders, including constant expressions rather than only bare literals, and verify that invalid cross-type comparisons still produce normal user-facing diagnostics.
 
 **Confidence:** Very high. Merged master display-filter compiler correctness change with a concrete previously rejected operand ordering.
+
+
+## Use the expected type before falling back to field-name resolution
+
+Merged master MR !6631, authored by João Valverde, fixes an ambiguity where an unparsed RHS token such as `fc` could be captured as a registered protocol/field even when the LHS already established a bytes domain. Semantic checking now first tries conversion as the expected typed literal (and value-string value where applicable), and only falls back to registered-field resolution if that conversion does not produce a value. The regression suite separately checks the explicit field spelling `.fc`.
+
+**Type-inference rule:** when an operation supplies a semantic type for an ambiguous token, try that typed interpretation before consulting the global field namespace. Do not let an unrelated registered abbreviation override a literal that is valid in the expected type domain.
+
+**Testing rule:** cover both the context-typed literal and an explicit field/protocol spelling.
+
+**Confidence:** Very high. Merged master display-filter compiler fix by João Valverde with targeted regression tests.

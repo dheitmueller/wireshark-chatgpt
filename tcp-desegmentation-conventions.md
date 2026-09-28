@@ -56,3 +56,14 @@ Merged master MR !12106, authored and merged by John Thacker, fixes RTP payload 
 ## Relationship to general heuristic guidance
 
 These rules complement `dissector-conventions.md`: heuristic probes must be safe on arbitrary traffic and may decline nonmatches, but once a stateful TCP dissector has committed to desegmentation it must not subsequently behave as though the same packet were merely an unclaimed heuristic candidate.
+
+
+## Mark intentionally incomplete PDU TVBs as fragmented
+
+Merged master MR !6621, authored by John Thacker, handles a TCP PDU that extends beyond the subset TVB when protocol desegmentation is disabled or `pinfo->can_desegment` is false. The accepted code calls `tvb_set_fragment()` on the partial subset so a later bounds access throws `FragmentBoundsError` instead of entering malformed-packet handling. Companion !6623 reports that exception as a low-severity reassembly note.
+
+**Implementation rule:** when incomplete input is an expected consequence of reassembly policy rather than malformed framing, preserve that provenance on the TVB so downstream bounds handling can classify it correctly.
+
+**Review rule:** test both enabled and disabled desegmentation for PDUs spanning TCP segments and verify that the disabled path is reported as unreassembled, not malformed.
+
+**Confidence:** Very high. Merged TCP/core behavior authored by John Thacker.

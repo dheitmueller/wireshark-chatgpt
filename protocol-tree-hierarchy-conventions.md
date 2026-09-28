@@ -109,3 +109,14 @@ Merged !6746, also authored by John Thacker, documents an important limitation o
 Optimization rule: do not assume that an optimization which makes two logical items share one node preserves mutable item identity. Any path that later depends on independent parentage, length, representation, or structural statistics needs a real distinguishable item or a different API contract.
 
 Confidence: Very high. Both merged core/tree-analysis changes were authored by John Thacker and describe the failure modes directly.
+
+
+## Count containing frames and protocol PDUs separately
+
+Merged master MR !6650, authored by John Thacker after direct review from Jaap Keuter, separates Protocol Hierarchy's frame count from its protocol-instance count. A node now remembers the last frame counted so "Packets" means frames containing that hierarchy, while a separate "PDUs" counter increments for every occurrence. The UI, sorting, and User's Guide are updated together. John also notes that protocol-tree shape can make repeated sibling PDUs and nested same-protocol encapsulation difficult to distinguish.
+
+**Statistics rule:** if one frame can contain multiple instances of a protocol, track frame presence and PDU/instance count as distinct metrics instead of overloading one counter.
+
+**Architecture rule:** do not assume rendered tree nesting always provides enough identity to distinguish repeated sibling instances from recursive encapsulation.
+
+**Confidence:** Very high. Merged master statistics correction by John Thacker with Jaap Keuter review and synchronized UI/documentation changes.

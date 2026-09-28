@@ -113,3 +113,12 @@ Repeated rebases create new commit identities and review churn without improving
 **Submission rule:** keep a reviewable topic branch stable while review is in progress. Rebase when a real merge conflict or maintainer-requested history repair requires it, not simply because upstream advanced. Perform requested squash/history cleanup deliberately near merge rather than continuously rewriting review history.
 
 **Confidence:** High. Direct João Valverde maintainer guidance on a merged contribution.
+
+
+## Prefer one squashed commit per merge request unless distinct commits add semantic value
+
+During merged master MR !6642, Gerald Combs states the project preference directly: merge requests are normally squashed into one commit unless it makes sense to preserve distinct commits.
+
+**Submission rule:** expect a focused MR to land as one squashed commit. Preserve multiple commits when they communicate genuinely distinct, reviewable structure, not merely because fixups and review iterations existed during development.
+
+**Confidence:** Very high. Direct project-maintainer guidance from Gerald Combs on a merged MR.

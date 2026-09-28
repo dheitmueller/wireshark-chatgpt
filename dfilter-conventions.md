@@ -186,3 +186,20 @@ Merged !6716 renamed an IEEE 802.11 display-filter field while adding KDE suppor
 Compatibility rule: registered display-filter abbreviations are user-visible API. Before renaming one, search tests, documentation, examples, and likely scripting consumers; preserve the old spelling or deliberately document the compatibility break when practical.
 
 Confidence: High. Merged dissector change with the compatibility concern stated directly by Richard Sharpe.
+
+
+## Normalize literal syntax once at the scanner boundary
+
+Merged master MR !6628, authored by João Valverde, fixes a display-filter leak caused by retrying literal conversion first with transformed text and then with the original spelling. The accepted implementation moves syntax normalization into the scanner: literal prefix/delimiter syntax is stripped once when forming the token, while IPv6 forms that legitimately contain colons remain distinguishable. The change adds regression coverage for compressed IPv6, byte literal separator variants, hyphenated identifiers, and slice/range forms; nearby merged !6622 and !6614 reinforce those lexical edge cases.
+
+**Lexer rule:** turn syntax-only quoting or prefix markers into a canonical semantic token once, as early as practical. Do not make downstream value conversion guess whether punctuation is syntax or data by retrying alternate spellings.
+
+**Ownership rule:** failed conversion diagnostics need one owner and cleanup path; retry designs must not leak or overwrite the first attempt's error state.
+
+## Keep arithmetic grouping syntax explicit when delimiters already have another role
+
+Merged master MR !6633, also authored by João Valverde, extends arithmetic grouping through grammar, semantic checks, documentation, release notes, and tests. Parentheses already group boolean expressions, so the accepted arithmetic syntax uses curly brackets and documents that distinction.
+
+**Language-design rule:** avoid overloading an established delimiter when doing so makes parse context ambiguous; carry grammar changes through semantic checking, documentation, release notes, and regression tests as one unit.
+
+**Confidence:** Very high for !6628 and high for !6633; both are merged master display-filter changes by João Valverde.
