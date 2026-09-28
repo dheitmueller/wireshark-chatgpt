@@ -43,3 +43,14 @@ Merged master MR !13900 added RSVP SESSION_ATTRIBUTE support. During review Alex
 **Review rule:** when a feature MR contains an incidental bug fix, do not judge only whether the combined diff is correct on master. Check whether the correction should be independently backportable; if it should, request a split before the history makes that distinction harder to preserve.
 
 **Confidence:** Very high. Direct maintainer review in a merged feature MR, followed by exactly the requested split-out master fix and accepted backports to both maintained stable branches.
+
+
+## Finalize the development-tree fix before creating stable-branch backports
+
+Merged master MR 5783 fixed a one-byte PVFS2 out-of-bounds read by ordering the loop conditions so remaining input and destination capacity are checked before dereferencing the source pointer. When the contributor asked whether the security-relevant fix should be cherry-picked immediately, Jaap Keuter separated the workflows explicitly: finish the development-tree change first, then cherry-pick through separate merge requests for maintained releases. Merged MRs 5804 and 5805 are the resulting release-3.6 and release-3.4 backports.
+
+Merged master MR 5773 provides complementary evidence. Guy Harris explicitly asked whether its Npcap URL and reference cleanup should be backported and called out a possible semantic difference, removal of WinPcap references, before Gerald Combs chose a supported branch to receive it in MR 5776. A backport is therefore not automatic merely because the source change merged on master; branch applicability is itself a review decision.
+
+**Submission rule:** land and review the authoritative fix on the development branch first. Create stable-branch backports as separate merge requests after that result is settled, and review each backport for branch-specific semantic or dependency differences rather than assuming a clean cherry-pick is automatically appropriate.
+
+**Confidence:** Very high. Direct workflow guidance from Jaap Keuter is followed by the corresponding merged master fix and two merged stable backports, with independent Guy Harris review showing that backport scope still requires judgment.

@@ -195,3 +195,16 @@ Merged master MRs !7621 and !7612 fix related MySQL authentication state-machine
 **Testing rule:** captures for state bugs should include the complete transition sequence, not only the packet that is misdecoded, because the defect often lies in an earlier state mutation.
 
 **Confidence:** High. Two merged master fixes in the same state machine, with a supplied capture for the AuthSwitchResponse case and explicit rationale for the TLS/login phase.
+
+
+## Keep redissection-visible presentation separate from first-pass state mutation
+
+A field can need to be dissected and displayed on every pass even when state derived from that field must only be created or updated on the first pass. Guarding the whole decode path with the first-pass test can make fields disappear during redissection; removing the guard entirely can instead duplicate or corrupt persistent state.
+
+Merged master MR 5801 fixes this split in SSH Key Exchange Init handling. The accepted code calls `ssh_dissect_key_init()` on every dissection so the KEXINIT tree remains visible, while keeping packet or conversation state updates such as the saved cookie and frame bookkeeping behind `!PINFO_FD_VISITED(pinfo)`.
+
+**Architecture rule:** separate presentation work from persistent side effects. Parse and add the tree items needed for the current pass whenever the packet is dissected; guard learned or persistent state mutation with the appropriate first-pass condition.
+
+**Review rule:** when a regression appears only after changing filters, colorization, or selecting an already-seen frame, inspect whether a first-pass guard accidentally encloses presentation code or, conversely, whether redissection is replaying a persistent side effect.
+
+**Confidence:** Very high. Merged master correctness fix that cleanly demonstrates the two responsibilities in the same code path and corroborates the notebook's broader redissection-state guidance.
