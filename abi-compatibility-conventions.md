@@ -55,3 +55,22 @@ Merged master MR !8208 adds the missing `tfs_not_restricted_restricted` entry af
 **Packaging/ABI rule:** whenever `WS_DLL_PUBLIC` data or functions are added, check the symbol manifest for the library that actually exports them; small constants/helpers are ABI entries just as functions are.
 
 **Confidence:** High. Two merged manifest follow-ups corroborating the broader symbol-metadata rule already recorded above.
+
+
+## Restore accidentally removed stable-branch symbols with a compatibility wrapper and accurate provenance
+
+If a public symbol shipped in a maintained ABI and is accidentally removed in a patch release, restoring it as a deprecated compatibility wrapper can be safer than forcing downstream binaries to absorb the removal. The package symbol manifest must record the version in which the symbol is actually available again, not pretend that an intervening release exported it.
+
+Merged release-3.6 MR !5958, authored by Gerald Combs, restores `ws_log_default_writer()` after it disappeared in 3.6.1. The implementation is a deprecated wrapper around `ws_log_console_writer()`; the compatible library VERSION is incremented while the SOVERSION remains 13. Balint Reczey specifically requested that Debian's symbols file mark the restored symbol as first appearing in 3.6.2 because 3.6.1 did not contain it.
+
+**Stable-ABI rule:** when repairing an accidental stable-branch symbol removal, restore link compatibility with the narrowest compatible implementation, mark the old API deprecated when appropriate, and make symbol-version metadata tell the truth about the release history.
+
+**Confidence:** Extremely high. Merged maintained-branch ABI repair authored by Gerald Combs with explicit package-version review from Balint Reczey.
+
+## Moving a public implementation can require updating the transitive link interface for external consumers
+
+Merged master MR !5937 fixes external plugin linking after `wmem_alloc()` moved from libwireshark to libwsutil by adding `-lwsutil` to `wireshark.pc`. Source relocation inside the Wireshark tree does not make the new library dependency invisible to third-party consumers that link using pkg-config metadata.
+
+**Packaging rule:** when an exported API used by external consumers moves between shared libraries, audit not only symbol manifests but also pkg-config/import/link metadata. Consumers should receive every library required to resolve the public interface advertised by that metadata.
+
+**Confidence:** High. Merged fix for a concrete external-plugin link regression; closed predecessor !5935 was superseded only because its source branch prevented maintainer collaboration.

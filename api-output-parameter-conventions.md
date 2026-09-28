@@ -23,3 +23,12 @@ Merged master MR !6223, authored by Gerald Combs, fixes proto_item_fill_label af
 This is the string-buffer form of the broader output-parameter rule already documented above: every normal return path must leave advertised outputs deterministic.
 
 **Confidence:** Extremely high. Merged core API correction authored by Gerald Combs and motivated by a concrete static-analysis finding.
+
+
+## Establish a valid string result before parsing can take an early error return
+
+Merged master MR !5912, authored by Gerald Combs, tightens `dissect_kafka_string_new()`. If the optional `p_display_string` output is supplied, the helper initializes it to the valid sentinel string `"<INVALID>"` before parsing the varint length. Success paths may replace that value, but malformed-varint and bad-length returns no longer leave the caller's pointer untouched.
+
+**Implementation rule:** for an optional output pointer whose contract promises a usable value, establish the failure/default value before the first operation that can return normally with an error indication. This is preferable to assigning the fallback independently in selected error branches, which makes future early returns easy to miss.
+
+**Confidence:** Very high. Merged master correctness change authored by Gerald Combs and explicitly documented as guaranteeing a valid output string.

@@ -35,3 +35,16 @@ Merged master MR !7180, authored by John Thacker, registers the data dissector a
 **Rule:** do not collapse these states. Explicit Data is a positive dispatch choice; reset restores the original table registration; no binding can still participate in fallback behavior.
 
 **Confidence:** Very high. Merged master implementation with direct John Thacker design discussion.
+
+
+## Keep explicit Decode As semantics separate from heuristic ambiguity
+
+An explicit Decode As choice is user-supplied protocol identity and should invoke the protocol the user selected. A heuristic path, by contrast, may face genuine ambiguity that cannot be resolved from the available bytes or conversation metadata. Do not let an ambiguous heuristic silently redefine what an explicit Decode As selection means.
+
+Merged master MR !5950, authored by John Thacker, separates RTCP and SRTCP behavior: Decode As RTCP decodes as RTCP, Decode As SRTCP decodes as SRTCP, while the heuristic path uses a preference for which protocol to assume when it cannot reliably distinguish them. Anders Broman endorsed the preference approach. Companion !5948 changes the SRTCP diagnostic when required conversation metadata is absent: the encrypted bytes are reported as undecoded rather than falsely diagnosed as a length error.
+
+**Dispatch rule:** preserve explicit user dispatch choices exactly. When a heuristic cannot establish a unique protocol identity, expose the ambiguity through a documented preference/default or decline the heuristic; do not claim certainty by reusing Decode As behavior opportunistically.
+
+**Diagnostic rule:** if missing setup metadata prevents structural validation, report undecoded/unknown content rather than a malformed-length condition that has not actually been established.
+
+**Confidence:** Very high. Merged master changes by John Thacker with direct maintainer discussion of the ambiguous heuristic policy.

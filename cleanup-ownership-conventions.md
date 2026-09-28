@@ -15,3 +15,16 @@ Merged master MR !11546, authored and merged by Guy Harris, fixes Wiretap dump-p
 **Review rule:** when fixing a leak or adding cleanup, inspect the implementation/contract of existing higher-level cleanup functions before adding member-level destructors. “Free everything visible” is not safe when ownership is nested.
 
 **Confidence:** Extremely high. Merged master memory-safety fix authored and merged by Guy Harris, with the duplicate ownership and correct cleanup decomposition stated directly in the change.
+
+
+## Register an allocated private object with its owner before later initialization can fail
+
+When an owning object is responsible for final cleanup, attach a newly allocated private object to that owner immediately after allocation and establish the owner's cleanup callback before performing later operations that can fail. Delaying the ownership link until the end of initialization creates an error-path window in which normal teardown cannot see the allocation.
+
+Merged master MR !5911, authored by Guy Harris, fixes `libpcap_open()` by setting `wth->priv`, the read/seek/close callbacks, and the snapshot metadata before the later fallible initialization steps. It also zero-initializes the private `libpcap_t`. The explicit purpose is to ensure Wiretap's normal error cleanup can free the private object even when opening fails partway through.
+
+**Ownership rule:** once allocation succeeds, establish the owning object's pointer and destructor/close path before the next operation that can fail. Error cleanup should be able to use the same ownership graph as success cleanup rather than depending on ad-hoc frees for partially initialized state.
+
+**Initialization rule:** when the cleanup routine may inspect fields of a partially initialized private object, prefer zero-initialization so untouched members begin in a safe neutral state.
+
+**Confidence:** Extremely high. Merged master resource-lifetime fix authored by Guy Harris and motivated by a concrete Coverity leak finding.
