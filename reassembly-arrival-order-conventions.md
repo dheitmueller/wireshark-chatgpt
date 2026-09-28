@@ -13,3 +13,13 @@ Merged master MR !15300 fixes exactly this failure in ISO 15765. Previously, whe
 **Review rule:** for protocols allowing reordering, test a capture in which the logical final fragment arrives before one or more middle fragments, including a final fragment that contains padding. Verify both the reconstructed payload and the completion decision after the delayed fragments arrive.
 
 **Confidence:** High. Merged master correctness fix with the out-of-order padded-final-fragment failure and the protocol-derived replacement algorithm documented directly in the MR.
+
+## Preserve original fragment provenance when later packets make out-of-order TCP data processable
+
+Merged master MR !6567, authored by John Thacker, reworks TCP out-of-order dissection so a segment that closes a sequence gap can immediately release previously queued data to the subdissector. The implementation keeps pending segments ordered by TCP sequence number and adds a reassembly API that can record the fragment's original frame number even though the fragment is being incorporated while processing a different current frame. The current packet can still own the "reassembled in" event, preserving first-pass and redissection consistency.
+
+**Implementation rule:** distinguish sequence position, original arrival/frame identity, and the packet whose processing makes reassembly possible. Replaying an earlier out-of-order fragment must not rewrite its provenance to the later frame that happened to release it.
+
+**Redissection rule:** once a first pass decides when a reassembly becomes available, later passes must reproduce that decision rather than opportunistically dissecting queued fragments earlier merely because all state is now known.
+
+**Confidence:** Very high. Merged master reassembly work authored by John Thacker, with regression expectations updated to the earlier correct completion frames.
