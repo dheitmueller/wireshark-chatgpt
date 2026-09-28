@@ -33,3 +33,19 @@ Merged master MR !11629, authored and merged by John Thacker, fixes SNMP request
 **Review implication:** when request/response correlation is wrong, audit both key specificity and state initialization across all entry points. Symptoms such as unmatched responses, duplicate Follow Stream entries, or assertions can all arise from a conversation key or setup path that does not match the protocol's real topology.
 
 **Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker, with concrete request/response and assertion failures described in the MR.
+
+## Report NULL conversation proto-data use as a contract violation
+
+Merged !6748, authored by Gerald Combs, documents that conversation_add_proto_data(), conversation_get_proto_data(), and conversation_delete_proto_data() require a real conversation and adds REPORT_DISSECTOR_BUG handling for NULL callers. The substantive discussion on merged !6755 clarifies why this matters: silently returning NULL hides a dissector programming error, while an uncontrolled NULL dereference in a release dissector can turn the same mistake into a crash/security-handling problem.
+
+API rule: a missing conversation is not semantically equivalent to a valid conversation with no protocol data. Shared conversation helpers should enforce that precondition centrally with Wireshark's dissector-bug reporting path, while callers still remain responsible for creating/finding the conversation required by their state model.
+
+Confidence: Very high. Merged core API change authored by Gerald Combs, with direct design discussion between Gerald Combs and Dario Lombardo.
+
+## Make extension-facing conversation-filter registration idempotent and order-aware
+
+Merged !6711, authored and merged by Gerald Combs, makes the conversation-filter protocol list dynamically extensible so plugins can register filterable protocols. Roland Knall's review led to routing built-in and plugin registration through the same add function, suppressing duplicate names inside that function, and documenting precedence: lower layers are inserted first because prepend semantics place later upper-layer protocols earlier in selection order.
+
+API rule: initialization-time registries exposed to plugins/extensions should centralize insertion, duplicate policy, and ordering. If repeated registration is harmless, prefer an idempotent add operation so independent initialization paths do not need separate "already registered?" probes. When ordering affects selection precedence, encode and document that rule at registration time.
+
+Confidence: Very high. Merged plugin-extensibility work authored by Gerald Combs with substantive Roland Knall review shaping the final API behavior.

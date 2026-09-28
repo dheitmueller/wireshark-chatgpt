@@ -94,3 +94,18 @@ Merged MR !6893, authored by Guy Harris, changes the USBLL dissector from an ano
 
 **Confidence:** Extremely high. Small, merged core-dissector cleanup authored by Guy Harris.
 
+
+
+## Use semantic protocol registration, not parent sentinels, to classify tree nodes
+
+Merged !6735, authored by John Thacker, fixes protocol hierarchy statistics by replacing an hfinfo->parent == -1 heuristic with proto_registrar_is_protocol(). Text-only fields can also lack a parent protocol ID, so the structural sentinel did not uniquely mean "protocol".
+
+Implementation rule: when the registrar already exposes semantic type information, use that API rather than inferring protocol identity from tree placement, display labels, or parent sentinel values.
+
+## Faked tree items make later parent/length mutation ambiguous
+
+Merged !6746, also authored by John Thacker, documents an important limitation of protocol-tree item faking. When a logical child reuses another proto_item, later calls that ask for its parent or change its length cannot know whether the caller meant the original real item or the faked child. The ambiguity can cause additions to land at the packet root, defeat faking optimizations, and corrupt hierarchy-stat extent accounting.
+
+Optimization rule: do not assume that an optimization which makes two logical items share one node preserves mutable item identity. Any path that later depends on independent parentage, length, representation, or structural statistics needs a real distinguishable item or a different API contract.
+
+Confidence: Very high. Both merged core/tree-analysis changes were authored by John Thacker and describe the failure modes directly.

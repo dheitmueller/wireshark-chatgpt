@@ -161,3 +161,28 @@ Merged master MR !8444, authored and merged by João Valverde, removes the recen
 
 **Confidence:** Very high. Merged master parser-language correction by João Valverde with a targeted regression test and stable backport.
 
+
+
+## Model cross-cutting relation modifiers as semantic qualifiers
+
+Merged !6760, authored and merged by Joao Valverde, adds the display-filter any/all quantifiers across the existing relation family. The grammar records a match mode on the relation AST and code generation selects the corresponding VM operation, instead of duplicating a separate grammar/operator implementation for every quantified form. The same MR updates the filter reference, release notes, and syntax tests.
+
+Implementation rule: when a modifier applies uniformly across many language operators, represent that property orthogonally in the AST/compiler where practical. A language feature is complete only when lexer/grammar, semantic representation, VM/code generation, documentation, and regression tests agree.
+
+Confidence: Very high. Merged display-filter language work authored and merged by Joao Valverde.
+
+## Propagate scanner conversion failures instead of manufacturing a success token
+
+Merged !6713, also authored and merged by Joao Valverde, fixes quoted-string scanning where the wrapper called a value-conversion helper but then always returned TOKEN_STRING or TOKEN_CHARCONST. The helper could return SCAN_FAILED, and that result was being discarded.
+
+Implementation rule: if a lexer helper both builds the semantic value and reports token/error status, return that status unchanged unless the caller intentionally translates it. Matching delimiters is not sufficient reason to overwrite a conversion or validation failure with a successful token.
+
+Confidence: Very high. Small merged lexer correctness fix authored and merged by Joao Valverde.
+
+## Treat filter abbreviations as compatibility-facing names
+
+Merged !6716 renamed an IEEE 802.11 display-filter field while adding KDE support. The test suite immediately exposed the old name, and Richard Sharpe explicitly raised the risk of breaking user scripts while considering whether the rename should be retained.
+
+Compatibility rule: registered display-filter abbreviations are user-visible API. Before renaming one, search tests, documentation, examples, and likely scripting consumers; preserve the old spelling or deliberately document the compatibility break when practical.
+
+Confidence: High. Merged dissector change with the compatibility concern stated directly by Richard Sharpe.

@@ -31,3 +31,12 @@ Merged master MR !10565, authored by John Thacker and merged by Anders Broman, f
 **Testing rule:** when protocol-instance identity participates in persistent or reassembly state, test both ordinary and two-pass dissection and include a case where fragmentation changes which unrelated subdissectors run. Nested same-protocol cases are especially valuable because they expose accidental collapsing of distinct instances.
 
 **Confidence:** Very high. Merged master correctness fix by John Thacker with two targeted regression captures and explicit first-pass/redissection analysis.
+
+
+## Foundational layer-selector implementation distinguishes total depth from protocol occurrence
+
+Merged !6759, authored by Joao Valverde, introduced display-filter syntax such as selecting the second occurrence of a protocol field in nested encapsulation. The implementation added both curr_layer_num and curr_proto_layer_num bookkeeping and stored total_layer_num plus proto_layer_num on field_info. Regression tests use repeated nested IP layers and negative/range selectors.
+
+This is early foundational evidence for the protocol-relative identity rule already reinforced by later nested-TLS work: an absolute stack position answers "where is this item in the whole dissector stack?", while a protocol occurrence number answers "which instance of protocol X is this?". They are different contracts and should not be substituted for one another.
+
+Confidence: Very high. Merged display-filter/core packet bookkeeping work authored by Joao Valverde with targeted nested-protocol tests.
