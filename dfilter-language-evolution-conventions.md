@@ -11,3 +11,11 @@ User feedback on modulo in !6568 exposed an LHS-expression gap, and !6575 adds t
 **Lexer testing rule:** include adjacent-token cases such as field/literal operators with no spaces and regression cases for punctuation-heavy literals that could be re-tokenized by the new operators.
 
 **Confidence:** Very high. All core changes are merged and largely authored by João Valverde, with end-to-end tests and documentation in the accepted implementation.
+
+## Value-producing operators must work symmetrically in expression position
+
+Merged !6488 promotes display-filter bitwise AND from a boolean-only test into a typed value-producing expression across scanner, grammar, syntax tree, semantic validation, ftype operations, VM execution, documentation, release notes, and tests. Merged !6499 fixes the missing RHS-expression path.
+
+**Language rule:** once an operator produces a value, treat it as an ordinary typed expression everywhere expressions are legal. Test both operand positions, all advertised operand types, edge bounds, and error paths; parser acceptance is only the first layer of correctness.
+
+**Confidence:** Very high. Both core changes merged and were authored by João Valverde; user testing and static analysis exposed concrete follow-up gaps.

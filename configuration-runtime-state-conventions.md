@@ -15,3 +15,11 @@ Merged master MR !20475, authored by John Thacker and approved/merged by Anders 
 **Review rule:** when a configuration structure gains a mutable field, ask whether the value describes configuration or merely records what has happened while processing the current capture/session. If it is the latter, prefer explicit runtime state even if putting it in the configuration object would require fewer parameters today.
 
 **Confidence:** Very high. The separation and ownership rationale are explicit in a merged master MR authored by John Thacker and approved/merged by Anders Broman.
+
+## Initialize product configuration identity once and preserve the legacy default
+
+Merged !6494 generalizes filesystem/config initialization to `configuration_init(argv[0], namespace)`; config directories, plugin/extcap locations, and environment-variable prefixes are then derived from the selected product namespace. Jim Young's macOS validation caught that the initial null/default handling broke ordinary Wireshark executables, and Gerald Combs corrected it.
+
+**Initialization rule:** product/configuration identity should be established centrally and early, then consumed by generic path/configuration helpers. When generalizing an existing initialization API, preserve and test the legacy/default caller path in all ordinary executables, not only the new frontend.
+
+**Confidence:** Very high. Merged Gerald Combs architecture with an immediately reproduced cross-application initialization regression and accepted fix.
