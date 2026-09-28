@@ -21,3 +21,14 @@ Merged MRs !6166 and !6167 add a finite traversal limit to RTMPT AMF length pars
 **Implementation rule:** for decoded counts, lengths, or loop drivers, validate not only representability but also whether the value lies in a practical domain for downstream parsing. A representable maximum-width integer can still be an unsuitable size or iteration count.
 
 **Confidence:** High. Accepted fixes applied to maintained release branches from corresponding master changes.
+
+
+## Zero-width elements are a legitimate exception to strict progress
+
+Merged release-branch MRs !6116 and !6117 show that ASN.1 PER NULL values can validly consume zero bits. Their fix bounds repeated zero-width work and narrows the known ATN-ULCS cardinality instead of requiring every semantic item to advance.
+
+**Implementation rule:** require strict cursor movement only where the encoding promises it. For valid zero-width elements, bound work by count, cardinality, or another structural budget.
+
+The earlier ZigBee ZCL change corrected by Guy Harris in !6162 was merged master !6135, with stable counterparts !6136 and !6137. Those changes used the progress comparison backwards and therefore rejected normal forward movement. Treat !6135-!6137 as negative regression evidence and !6162 as the authoritative correction.
+
+**Testing rule:** every no-progress guard needs both a malformed/stationary case and an ordinary positive-progress case.

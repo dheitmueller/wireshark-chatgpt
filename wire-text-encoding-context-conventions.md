@@ -37,3 +37,12 @@ Merged master MR !6220, authored by João Valverde, removes redundant ENC_NA com
 **Implementation rule:** encoding flags should describe semantics the field type actually has. For ordinary string fields, specify the character encoding required by the wire format; do not combine it with a no-endianness flag merely because numeric fields use an endian position in the same API argument.
 
 **Confidence:** Very high. Merged tree-wide cleanup and tooling correction authored by João Valverde.
+
+
+## The printable-UTF-8 byte display policy was added explicitly for uncertain encodings
+
+Merged master MR !6120, authored by John Thacker, introduces `BASE_SHOW_UTF_8_PRINTABLE` and `tvb_utf_8_isprint()` for byte-valued fields whose contents may be UTF-8 but whose protocol does not guarantee a character encoding. The change updates public headers, documentation, introspection, and the exported-symbol manifest.
+
+This is the API foundation later applied by merged !6244 to 802.11 SSIDs. The semantic distinction is intentional: the value remains bytes; only its presentation gains a best-effort readable form.
+
+**Confidence:** Extremely high. Merged master API work by John Thacker, subsequently used by a merged protocol fix.

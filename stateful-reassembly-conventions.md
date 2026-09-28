@@ -105,3 +105,14 @@ Merged master MR !9996 fixes SOME/IP-TP reassembly after an address/port-only ke
 **Implementation rule:** when a collision exposes an incomplete key, do not simply swap one partial identity model for another. Enumerate all independent namespaces that can distinguish concurrent instances and combine the dimensions required by the protocol and its deployment model.
 
 **Confidence:** Very high. Merged master reassembly correction with direct protocol-maintainer review identifying the missing identity dimensions.
+
+
+## A first-observed frame is not a complete generation identifier
+
+Merged master MR !6146 improves RLC-NR reassembly by combining the sequence number with a remembered starting frame. Pascal Quantin points out that reset, out-of-order arrival, retransmission, and re-segmentation can still cause a fragment to bind to a stale earlier instance; the author explicitly notes that the algorithm is not correct in every case.
+
+Treat !6146 as cautionary historical evidence rather than the preferred architecture. The later merged !26230 guidance is stronger: represent the full RLC-NR identity with persistent structured keys and matching equality semantics rather than relying on a lossy or observation-derived scalar discriminator.
+
+**Review rule:** when a protocol can reset or reuse a sequence namespace, test fragments that arrive across the reset/reuse boundary and out of order. A key that works only when the first fragment is observed first does not model the protocol's full identity.
+
+**Confidence:** Very high for the negative lesson, with the later !26230 design carrying primary architectural weight.

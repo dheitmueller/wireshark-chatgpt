@@ -23,3 +23,14 @@ Merged master MR !6250 makes composite TVBuff append/prepend operations ignore a
 **Evidence note:** !6250 is the accepted merged implementation. !6249 is used only as negative design-history evidence explaining why the broader contract change was rejected.
 
 **Confidence:** High. Accepted master fix directly contrasted with its abandoned global alternative.
+
+
+## Repeated local empty-component guards motivated a narrow common-TVBuff rule
+
+Merged !6154 and !6142 add local zero-length guards before creating or appending TVBuff components. During !6154, Jaap Keuter explicitly asks whether the common TVBuff layer should absorb this edge case instead of requiring every dissector to repeat defensive guards.
+
+The later accepted design in merged !6250 is more precise than the broad constructor change considered at the time: composite append/prepend safely ignore absent or zero-length members, while zero-length subset construction does not globally change to a new NULL-return contract.
+
+**Review rule:** repeated caller-side guards are a signal to inspect the common API, but centralize behavior only at the narrowest boundary where the semantics are unambiguous.
+
+**Confidence:** High. Direct Jaap Keuter design review followed by a later merged common implementation.
