@@ -45,3 +45,16 @@ Merged master MR !5626 hardens Kafka so `tvb_get_varint()` failure reports exper
 
 **Confidence:** Extremely high. Merged master behavior plus maintained-branch backports, including a Guy Harris-authored backport.
 
+
+
+## Guard line-scanning loops with an explicit source-boundary predicate
+
+A line parser can have a valid zero-length result at the physical end of its input without producing a new cursor. If an enclosing loop is unconditional and depends only on the helper to signal termination, calling the helper after the cursor has already reached or passed the tvbuff boundary can become a stationary infinite loop.
+
+Guy Harris's merged master MR !5573 fixes RFC 7468 parsing by changing three tvb_find_line_end loops to while (tvb_offset_exists(tvb, offset)). The MR explains that, with reassembly disabled, tvb_find_line_end can return a zero-length line without advancing next_offset when called past the tvbuff end. Merged release-3.6 !5574 and release-3.4 !5575 preserve the same correction.
+
+**Implementation rule:** if the loop means "while input remains", put the input-existence predicate in the loop condition. Do not rely exclusively on a subordinate scanner's return value after the cursor is outside the scanner's meaningful domain.
+
+**Testing rule:** exercise exact-end, empty/truncated input, and ordinary nonempty lines. A progress guard must terminate at the boundary without rejecting valid zero-width grammar cases that are explicitly allowed elsewhere.
+
+**Confidence:** Extremely high. Guy Harris authored the merged master correction and it was immediately carried to both maintained release branches.
