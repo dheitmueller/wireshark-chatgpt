@@ -35,3 +35,11 @@ During merged master MR !6240, compile/runtime feature reporting was converted f
 **Review rule:** when refactoring diagnostic/version output, search for callers that parse the old text. Either migrate them to a semantic capability API in the same series or record the follow-up explicitly; do not preserve string parsing as the long-term contract.
 
 **Confidence:** Very high. Direct João Valverde review on a merged master architecture change, aligned with the structured feature-reporting design.
+
+## Package identity does not prove the compatibility API installed
+
+Merged stable MR !4482 handles distributions that provide minizip-ng compatibility code under the traditional minizip package name. Wireshark probes the concrete header member it needs and selects compatibility code from the observed API rather than from package branding.
+
+**Implementation rule:** when distributions can substitute implementations behind the same dependency name, detect the exact declaration, member, or signature the source uses. Package identity alone is not a capability contract.
+
+**Confidence:** High. Merged maintained-branch backport, consistent with the direct-capability guidance above.

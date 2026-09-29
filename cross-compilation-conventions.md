@@ -11,3 +11,11 @@ Merged MR !23688, authored by John Thacker and approved/merged by Gerald Combs, 
 **Implementation rule:** for every path emitted by cross-build tooling, identify which process will interpret it and on which system. Convert build-time source paths according to the build host and install/runtime paths according to the target; do not use target-OS conditionals or a generic “native path” conversion as a substitute for that distinction.
 
 **Confidence:** Very high. Merged master build/packaging correction authored by John Thacker and approved/merged by Gerald Combs, with the host-versus-target semantics explicitly documented in the MR and patch.
+
+## Build-time generators are host tools
+
+Merged stable MRs !4466 and !4467 make a useful host/target distinction for Lemon. A generator executed during the build must be compiled for the build host, and generated-file rules should invoke the actual CMake target path rather than depend on an executable name being present on PATH.
+
+**Implementation rule:** identify every program executed during a cross build as a host-side tool or a target artifact. Host-side generators need a host compiler and a concrete build-target path even when their generated output is consumed by the target build.
+
+**Confidence:** High. Both are merged maintained-branch backports of accepted master fixes.

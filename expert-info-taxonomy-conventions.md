@@ -43,3 +43,11 @@ Merged master MR !6623, authored and merged by John Thacker, reports `FragmentBo
 **Diagnostic rule:** incomplete data caused by disabled or unavailable reassembly belongs in reassembly-oriented diagnostics. Reserve malformed/error categories for structurally invalid input or genuine dissector/reassembly failures.
 
 **Confidence:** Very high. Both merged core changes were authored by John Thacker and intentionally pair TVB fragment semantics with the expert-info taxonomy.
+
+## Sequence loss is not malformed packet syntax
+
+Merged stable MR !4474 changes MPEG-TS continuity-counter loss from `PI_MALFORMED` to `PI_SEQUENCE`. Individual packets can remain structurally valid while the observed stream has skipped sequence values.
+
+**Diagnostic rule:** classify missing, duplicated, or out-of-order progression as a sequence condition when packet syntax is otherwise valid. Reserve `PI_MALFORMED` for invalid protocol structure; choose severity independently.
+
+**Confidence:** High. Merged maintained-branch correction consistent with the taxonomy above.
