@@ -102,3 +102,11 @@ Merged MR !6981 provides unusually explicit maintainer wording for the existing 
 **Rule:** if packet contents can make a condition false, handle it as input. Reserve dissector assertions for implementation invariants.
 
 **Confidence:** Very high. Direct Jaap Keuter review on a merged dissector/parser change, consistent with later merged hardening already recorded above.
+
+## Match diagnostic guards to configured build switches
+
+Merged master MR !4500, authored by João Valverde, corrected a debug assertion guard to use Wireshark's configured disable switch rather than assuming a different enable switch.
+
+**Implementation rule:** use the build configuration's actual guard and polarity for optional diagnostic code; do not infer a complementary macro name.
+
+**Confidence:** Very high. Merged master change.
