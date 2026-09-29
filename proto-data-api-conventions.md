@@ -26,3 +26,14 @@ Maintained-branch merged MRs !5162 and !5161 fix Gryphon crashes by looking up t
 **Recovery rule:** when creation is valid and idempotent for a missing state object, use state existence as the guard. This also makes redissection paths more robust to upstream reassembly/dispatch changes that alter when a nested dissector first sees a frame.
 
 **Confidence:** High. Two merged maintained-branch fixes by Gerald Combs with a concrete segfault failure mode; the master-origin MR is outside this reviewed batch, so these are used as accepted corroborating evidence rather than claiming a master review here.
+
+
+## Prefer actual dissector-owned proto-data existence over `visited` as the initialization predicate
+
+Merged master MR !5153, authored by John Thacker, is the master origin of the Gryphon fix previously seen in maintained branches !5162 and !5161. Release-3.6 MR !5160 carries the same change. The dissector first asks `p_get_proto_data()` whether its packet state exists and creates it only when absent, instead of assuming that `pinfo->fd->visited` proves Gryphon must have initialized that state on an earlier pass. The bug was a real segfault triggered by unusual TCP sequence behavior in which the frame lifecycle and the nested dissector's execution history diverged.
+
+**State rule:** a frame-level lifecycle flag is not a substitute for checking the state object a nested dissector actually owns. If later logic requires proto-data, test for that proto-data directly.
+
+**Redissection rule:** when creation is valid and idempotent, use state presence as the initialization guard. This remains correct if reassembly or dispatch changes which pass first reaches the nested dissector.
+
+**Confidence:** Extremely high. Merged master correctness fix by John Thacker, plus release-3.6, release-3.4, and master-3.2 propagation.

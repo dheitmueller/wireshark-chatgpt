@@ -101,3 +101,14 @@ Closed/superseded MR !7623 provides a second workflow lesson. Gerald Combs requi
 **Dissector rule:** when the intent is to add protocol support to upstream Wireshark, prefer the normal built-in dissector structure unless there is a specific project reason to keep it as a plugin.
 
 **Confidence:** High for process guidance because it comes directly from Guy Harris, Pascal Quantin, and Gerald Combs. The underlying !7659 implementation is down-weighted because the MR was closed.
+
+
+## Split a stable-worthy bug fix from the feature that exposed it
+
+Merged master MR !5115 began as a change that combined an MKA Announcement padding bug fix with new Announcement TLV parsing. Jaap Keuter explicitly asked for two MRs: the padding correction as one fix and the parsing implementation as a separate feature, because the fix could then be backported cleanly. The contributor reworked the series accordingly; feature MR !5128 remained on master, while the focused bug fix was carried to release-3.6 as !5154 and release-3.4 as !5155.
+
+**Submission rule:** if a new feature uncovers or depends on an independently useful correctness fix, separate the fix from the feature when supported branches may need only the fix. The master series should preserve a cherry-pickable correctness unit rather than force release maintainers to disentangle feature code.
+
+**Review rule:** backportability is a concrete reason to request MR/commit separation even when the combined master change would otherwise be understandable.
+
+**Confidence:** Extremely high. Direct Jaap Keuter review shaped the merged master series, and the resulting focused fix was in fact backported to two maintained branches.

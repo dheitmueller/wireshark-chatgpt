@@ -81,3 +81,14 @@ Merged master MR !16118 adds a single hidden MAC-LTE LCID field intended to let 
 **Implementation rule:** when one `hf_` field intentionally provides a common filter over several wire forms, normalize every form to the same protocol-level identifier before adding that field. Keep raw/codepoint-specific fields separately when those representations are independently useful, but do not leak representation-specific numbering into the normalized filter contract.
 
 **Confidence:** Very high. Merged master change with explicit protocol-expert review from Pascal Quantin and an accepted revision by Martin Mathieson addressing the semantic mismatch.
+
+
+## Use specification terminology exactly, and audit repetitive field registration for copy/paste identity errors
+
+Merged master MR !5125 adds MBIM base-station information covering several radio technologies. Pascal Quantin's review repeatedly aligns labels and abbreviations with the standards vocabulary—GSM, UMTS, TD-SCDMA, LTE, CDMA, NR, ARFCN, UARFCN, RSCP, EcNo, TAC, E-ARFCN, RSRP, RSRQ, NID, SID, GPS, NCI, and SINR—and catches a copied TD-SCDMA field abbreviation that incorrectly remained `max_gsm_count`. For unclear terms such as `Nt`, Ref PN, NMR, and MRL, the contributor quoted the source specification instead of inventing an expansion.
+
+**Naming rule:** registered field labels and abbreviations should use the protocol/specification's established terminology and capitalization. Do not normalize an unfamiliar acronym by guesswork when the authoritative document does not define the expansion.
+
+**Review rule:** large families of near-identical `hf_` registrations need an identity audit, not just a type/offset audit. Check that every filter abbreviation, label, technology prefix, unit, and acronym belongs to the field being registered rather than to the line that was copied as a template.
+
+**Confidence:** Very high. Merged master dissector expansion with extensive direct protocol-expert review from Pascal Quantin and corrections incorporated before merge.

@@ -24,3 +24,13 @@ Merged master MR !8419 changed the F5 Ethernet Trailer's expensive analysis pref
 
 **Confidence:** Very high. The bug was exposed by a real preference-path change, corrected in merged master, and backported.
 
+
+## A zero-initialized native handle is not necessarily an invalid handle
+
+Merged release-3.6 MR !5133, authored by Gerald Combs, fixes the MaxMind resolver startup path after a failed `mmdbresolve` spawn. The pipe structure had been zero-initialized, so closing its `stderr_fd` before verifying spawn success could close descriptor 0—stdin. The failure was normally silent but broke commands such as `tshark -r -`. The accepted fix delays closing the child stderr descriptor until after `ws_pipe_spawn_async()` has succeeded.
+
+**Handle rule:** do not equate zero initialization with a valid “not acquired” sentinel for platform handles whose value zero is meaningful. Cleanup of an output handle must be gated by successful acquisition or by an initializer that explicitly establishes a safe invalid sentinel.
+
+**Partial-initialization rule:** after a constructor/spawn/open operation fails, clean up only resources that are known to have been acquired. Output structure fields may still contain default values that alias unrelated process resources.
+
+**Confidence:** High. Accepted stable-branch correctness fix by Gerald Combs with a concrete stdin-clobbering failure mode. The master-origin change is expected in an older MR and should be preferred when that batch is reviewed.

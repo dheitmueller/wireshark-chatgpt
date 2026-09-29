@@ -43,3 +43,16 @@ Merged master MR !14615 corrects HTTP request/response correlation for asynchron
 **Lifetime/testing rule:** request-tracking containers must have an explicit capture/conversation lifetime. Prefer the appropriate wmem scope when it naturally owns the state, or prove explicit cleanup on every terminal path. Exercise multiple outstanding requests, missing responses, malformed correlation metadata, and end-of-capture cleanup; use leak/sanitizer tooling when correlation changes allocate new persistent state.
 
 **Confidence:** Very high. The master change merged after extensive review, and John Thacker's concrete fuzz, Valgrind, LeakSanitizer, nullability, and lifetime findings materially shaped the final implementation.
+
+
+## Preserve transaction history when wire identifiers can be reused
+
+Merged master MR !5151, authored by John Thacker, introduces `wmem_multimap_t` specifically for protocol state in which the same wire identifier can legitimately be reused during one capture. A plain map overwrote the earlier meaning, while one global ordered tree forced unrelated identifier components into the ordering key. The accepted container keeps a hash key for the protocol identity and a frame-number-keyed tree of values beneath it; `wmem_multimap_lookup32_le(..., pinfo->num)` retrieves the most recent value that was valid no later than the frame currently being dissected. ANSI MAP, ANSI TCAP, and GSM SMS were converted to this model in the same MR.
+
+**Architecture rule:** if an identifier is only temporally unique, retain versioned state rather than overwriting one file-scoped slot. Treat capture position or another protocol-valid generation dimension as part of the identity needed for redissection.
+
+**Lookup rule:** random-access redissection must recover the state that existed at the packet being revisited, not the newest state learned anywhere later in the capture. A nearest-prior lookup is often the correct operation for request/reply or fragment metadata keyed by a reusable ID.
+
+**API rule:** when a reusable pattern appears in several dissectors, prefer a shared container abstraction whose operations express the required semantics instead of open-coding composite map/tree logic in each protocol.
+
+**Confidence:** Extremely high. Merged master wsutil API and multi-dissector conversion authored by John Thacker, with direct Jaap Keuter review requesting the corresponding wmem documentation.
