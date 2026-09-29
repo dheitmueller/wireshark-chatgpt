@@ -46,3 +46,14 @@ Merged MR !7088 fixes SOME/IP configuration cleanup by replacing generic outer-o
 **Review rule:** when adding fields to a UAT record or derived cache object, update copy, free, and reset lifecycle code at the same time and audit every ownership-bearing member.
 
 **Confidence:** High. Two merged configuration-memory fixes, with detailed review on the SOME/IP cleanup.
+
+
+## Set callbacks can receive transient invalid values before check callbacks
+
+Merged master MR 4905, authored by John Thacker, fixes an EPL UAT overflow found by ASAN. The Qt UAT model calls the field setter with an empty string while inserting a new row before the check callback validates the value. The accepted implementation makes the setter tolerant of invalid input and uses the same `hex_str_to_bytes()` interpretation in both setter and validator.
+
+**Callback-order rule:** a UAT field setter must not assume that the check callback already accepted its input. Treat empty and partially edited text as normal transient states, leave the record in a safe placeholder state when parsing fails, and let validation produce the user-facing error.
+
+**Consistency rule:** where the setter and validator both parse the same textual representation, share the same parsing primitive and acceptance criteria.
+
+**Confidence:** Very high. Merged master correctness fix by John Thacker with an ASAN-detected concrete failure mode.

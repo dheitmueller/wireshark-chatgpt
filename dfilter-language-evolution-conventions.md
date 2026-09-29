@@ -19,3 +19,16 @@ Merged !6488 promotes display-filter bitwise AND from a boolean-only test into a
 **Language rule:** once an operator produces a value, treat it as an ordinary typed expression everywhere expressions are legal. Test both operand positions, all advertised operand types, edge bounds, and error paths; parser acceptance is only the first layer of correctness.
 
 **Confidence:** Very high. Both core changes merged and were authored by João Valverde; user testing and static analysis exposed concrete follow-up gaps.
+
+
+## Migrate syntax in stages and keep scanner, semantics, tests, and docs synchronized
+
+Merged master MR 4862 first adds comma-separated set elements while retaining the historical whitespace separator; release-3.6 MR 4874 carries the compatible syntax forward. Merged master MR 4881 later removes the deprecated whitespace form and updates the scanner, grammar, tests, release notes, User's Guide, and shipped filter examples. MR 4871 separately audits user documentation for the surrounding language changes.
+
+The same batch shows where invalid forms should fail. Merged master MR 4864 removes the scanner's arbitrary-character fallback and tightens punctuation-sensitive token patterns. Merged master MR 4880 adds an operator-specific semantic check for the left operand of `matches`, turning an assertion crash into a normal type error with regression coverage.
+
+**Migration rule:** introduce and test replacement syntax before removing the legacy form; then remove it with explicit negative coverage and synchronized documentation and examples. Treat the filter language as a public compatibility surface spanning lexer, grammar, semantic checker, diagnostics, documentation, and tests.
+
+**Failure-layer rule:** reject lexical impossibilities in the scanner and type or operator impossibilities during semantic checking rather than letting them reach runtime assertions.
+
+**Confidence:** Very high. A sequence of merged master language changes by João Valverde with a maintained-branch compatibility step and regression tests.

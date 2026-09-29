@@ -130,3 +130,12 @@ Merged master MR !5110 adds generated ETI, XTI, and EOBI dissectors. Anders Brom
 **Source-of-truth rule:** when generated dissector source is committed, keep the reproducible generator path in the repository when practical. Generated C without its generator makes later protocol revisions, review, and regeneration dependent on an external source that can drift or disappear.
 
 **Confidence:** Very high. Direct Anders Broman review incorporated into a merged master MR.
+
+
+## Scheduled generated-source refreshes should preserve the last good artifact
+
+Merged master MR 4873 converts ASTERIX to an in-tree template and update workflow while keeping the generated C dissector committed for reproducible builds. Gerald Combs required the updater to leave the tracked output unchanged on failure before the workflow was added to the weekly update job. Follow-up MR 4957 provided that safe update behavior. Merged MR 4906 independently shows the maintenance cost of direct generated-output edits: Skinny C had drifted from its XML, template, and generator inputs and had to be resynchronized.
+
+**Rule:** automated regeneration should produce and validate a complete prospective result before replacing the tracked generated artifact. Keep the generator path reproducible and avoid manual edits to generated C.
+
+**Confidence:** Very high. Direct Gerald Combs review followed by merged safe-update support and scheduled deployment.

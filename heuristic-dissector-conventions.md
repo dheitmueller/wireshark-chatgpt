@@ -143,3 +143,11 @@ Merged MR !6889 adds a UDP framing format for NAS-5GS intended for development/t
 
 **Confidence:** High. Merged master implementation by Pascal Quantin; independently corroborates later heuristic-recognition guidance in this file.
 
+
+## A negative recognition path must not leave presentation or packet-state side effects
+
+Merged master MR 4901, authored by John Thacker, moves EPL's message-type validity test to the beginning of the dissector path. Previously the code could set protocol columns and alter packet port/type state before eventually deciding that the packet was not valid EPL. The accepted implementation performs the ownership test first and returns zero immediately for a non-EPL packet.
+
+**Implementation rule:** on an ambiguous or heuristic dispatch path, establish sufficient protocol ownership before changing columns, endpoint or port metadata, conversation bindings, or other packet state. Returning "not mine" should be observationally clean so the next candidate dissector sees the original packet context.
+
+**Confidence:** Very high. Merged master fix authored by John Thacker and consistent with the later Guy Harris-reviewed recognition-before-mutation guidance already recorded in this file.

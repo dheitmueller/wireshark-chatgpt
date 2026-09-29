@@ -27,3 +27,14 @@ Merged master MR !11820, authored by Guy Harris, changes the PGM dissector to re
 **Review rule:** do not broaden recognition merely because a sample exists. Ask for provenance: standards drafts, reference implementations, historical code, vendor behavior, or captures that demonstrate interoperability. High-authority maintainer analysis can justify compatibility behavior when the formal specification is genuinely insufficient, but the uncertainty and evidence should remain visible in comments or review history.
 
 **Confidence:** Extremely high for the concrete PGMCC behavior and high for the general rule. The merged master change was authored by Guy Harris and explicitly framed around incomplete specification evidence rather than convenience.
+
+
+## Preserve distinguishable draft semantics when the final RFC changes more than the assigned value
+
+Merged master MR 4908 updates DTLS 1.2 Connection ID support from draft extension code point 53 to RFC 9146 code point 54 while deliberately retaining the deployed draft form. The compatibility work is not a value-string alias: RFC 9146 also changed the authenticated-data construction. Wireshark therefore records whether the deprecated extension was negotiated and carries that state into the AEAD authentication path so each wire version uses its own layout. Closed MR 4903 is useful negative history because its initial code-point-only update was superseded after review identified the deeper semantic change.
+
+**Compatibility rule:** when a draft becomes a final standard, diff the actual wire and cryptographic semantics, not only registries and numeric assignments. If old and new forms are distinguishable on the wire, keep explicit version or negotiation state and route downstream decoding through the matching rules.
+
+**Review rule:** a standards update that changes a code point should trigger a check of framing, lengths, transcript or AAD construction, negotiation state, and test captures. Numeric compatibility alone can silently produce plausible but undecryptable or misvalidated traffic.
+
+**Confidence:** Very high. The complete merged master implementation preserved both forms and incorporated review of the changed authentication calculation; the narrower competing proposal was closed.

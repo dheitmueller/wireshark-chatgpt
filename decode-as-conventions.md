@@ -48,3 +48,12 @@ Merged master MR !5950, authored by John Thacker, separates RTCP and SRTCP behav
 **Diagnostic rule:** if missing setup metadata prevents structural validation, report undecoded/unknown content rather than a malformed-length condition that has not actually been established.
 
 **Confidence:** Very high. Merged master changes by John Thacker with direct maintainer discussion of the ambiguous heuristic policy.
+
+
+## Use table-native preference registration when a preference only selects the default dispatch key
+
+Merged master MR 4870, authored by John Thacker, simplifies BSSAP+ by replacing a numeric preference plus handoff callback that deleted and re-added the `sccp.ssn` table entry with `dissector_add_uint_with_preference()`. The old preference is marked obsolete, while the standard Decode-As-capable table registration retains a user-configurable default key without bespoke old-value bookkeeping.
+
+**Implementation rule:** when the only preference semantics are which numeric key should bind a dissector by default, prefer the dissector-table API that combines registration with preference support. Reserve preference apply callbacks for additional state changes that genuinely need reconfiguration logic.
+
+**Confidence:** Very high. Merged master cleanup authored by John Thacker that removes custom re-registration state in favor of the standard Decode As mechanism.
