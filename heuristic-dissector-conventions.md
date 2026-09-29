@@ -151,3 +151,11 @@ Merged master MR 4901, authored by John Thacker, moves EPL's message-type validi
 **Implementation rule:** on an ambiguous or heuristic dispatch path, establish sufficient protocol ownership before changing columns, endpoint or port metadata, conversation bindings, or other packet state. Returning "not mine" should be observationally clean so the next candidate dissector sees the original packet context.
 
 **Confidence:** Very high. Merged master fix authored by John Thacker and consistent with the later Guy Harris-reviewed recognition-before-mutation guidance already recorded in this file.
+
+## Default enablement can follow stronger recognition evidence
+
+Merged master MR !4510, authored by John Thacker, strengthened BT-DHT recognition using several protocol-specific structural checks and then changed the UDP heuristic from opt-in to default-enabled. Merged !4476 provides the contrasting case: a broad VSS Monitoring trailer recognizer remains opt-in.
+
+**Implementation rule:** choose the default state from the confidence of the current recognizer. Stronger independent protocol invariants can justify default enablement; broad signatures should remain opt-in while false positives are plausible.
+
+**Confidence:** Very high for !4510; !4476 is corroborating stable-branch evidence.
