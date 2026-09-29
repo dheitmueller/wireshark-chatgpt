@@ -165,3 +165,12 @@ Merged !8394 handles a different class of problem at build-system scope: optimiz
 **Build rule:** distinguish disabling a diagnostic from demoting it. Preserve useful warnings and relax only their fatality at the narrowest practical scope. Use local diagnostic scopes for a specific call site; use global non-fatal treatment only when the warning class itself is unreliable across the tree.
 
 **Confidence:** Very high. Merged master warning-policy changes authored by João Valverde.
+
+
+## Treat CMAKE_BUILD_TYPE as single-config state
+
+Merged master MR !5090 makes the generator/build-type distinction explicit. Graham Bloice points out during review that a multi-config generator such as Visual Studio chooses its configuration at build time, so a generation-time `CMAKE_BUILD_TYPE` value does not describe the active configuration there. The accepted source comments that build type is ignored by multi-config generators. Later merged MRs !5327 and !5344 provide stronger operational corroboration when packaging logic had to distinguish single-config from multi-config behavior.
+
+**Build rule:** use `CMAKE_BUILD_TYPE` only where the generator is single-config. Configuration-sensitive paths, packaging choices, or status intended to work with Visual Studio, Xcode, or another multi-config generator must use CMake's configuration-aware mechanisms instead of assuming a generation-time active build type.
+
+**Confidence:** Very high. Direct review in merged master plus later accepted fixes.
