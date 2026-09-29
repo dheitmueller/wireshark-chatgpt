@@ -1,11 +1,9 @@
 # Formatted-I/O Portability Conventions
 
-Merged master MR !5498 moved epan formatting/parsing code toward the C library and `<inttypes.h>` format macros. Stig Bjørlykke caught a scanning call using the wrong family and requested `SCNx64` for `sscanf()`; João Valverde agreed and corrected it.
+MR !5498 shows that fixed-width integer format macros are split by operation: the printing family belongs with formatted output and the scanning family belongs with formatted input. Stig Bjørlykke caught the wrong family in a scanning call and João Valverde corrected it before merge.
 
-**Rule:** use `PRI*` macros with printf-family output and `SCN*` macros with scanf-family input. Treat input and output format strings as different contracts during mechanical migrations.
+MRs !5497 and !5503 show that a broad formatting API migration must also compile supported platform-conditional paths. A macOS-only branch exposed a missing declaration that common builds did not catch.
 
-Merged master MR !5497 also exposed a macOS-only missing declaration after the formatted-string API migration. João traced it to a header dependency hidden by conditional compilation, and merged follow-up !5503 fixed it.
+**Rules:** review formatted input and output call sites separately during mechanical migrations, and compile representative supported platform configurations after broad API/header changes.
 
-**Rule:** after broad API/header migrations, compile representative supported platform configurations that activate touched conditional paths. A clean common-platform build does not prove platform-only include/declaration correctness.
-
-**Confidence:** Very high. Both lessons come from merged master work, with direct Stig Bjørlykke review and a concrete supported-platform regression/follow-up.
+**Confidence:** Very high; all three are merged master changes and !5498 includes direct maintainer correction.
