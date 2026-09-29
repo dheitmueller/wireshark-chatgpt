@@ -53,10 +53,14 @@ Merged master MR !5280 fixes a BT-DHT endless loop this way. When a compact-node
 **Confidence:** Very high. Merged master endless-loop fix with two maintained-branch backports.
 
 
-## Bound traversal when sequence wrap breaks ordering
+## Use modular comparison for wrapping sequence spaces, then bound incompatible traversals
 
-Merged master MR !5225, authored by John Thacker, stops RTMPT tree traversal when TCP sequence wrap makes the lookup order ambiguous. The MR explicitly accepts somewhat less complete dissection in rare wraparound cases in exchange for guaranteed finite traversal; release-3.6 !5226 and release-3.4 !5230 carry the same fix. Earlier !5213/!5214 also use TCP's wrap-aware sequence comparison rather than raw integer ordering.
+Merged master MR !5190, authored by John Thacker, fixes an RTMPT infinite loop by replacing the raw comparison `tp->lastseq >= seq` with TCP's wrap-aware `GE_SEQ()`. Ordinary integer ordering is not valid across a wrapping TCP sequence-number space.
 
-**Rule:** use protocol-correct modular comparison for wrapping sequence spaces, but also bound an iterative lookup when its data structure still assumes a linear ordering. A narrow stop condition is preferable to repeatedly traversing ambiguous state.
+That correction was necessary but not sufficient for every RTMPT path. Later merged master MR !5225, also authored by John Thacker, stops a tree traversal when sequence wrap makes the lookup order itself ambiguous; release-3.6 !5226 and release-3.4 !5230 carry the same fix. Earlier !5213/!5214 provide additional wrap-aware comparison evidence.
 
-**Confidence:** Very high. Merged master fix by John Thacker with stable backports.
+**Progress rule:** use protocol-correct modular comparison for wrapping sequence spaces; never infer protocol ordering with ordinary relational operators on the encoded integer.
+
+**Data-structure rule:** separately inspect the ordering semantics of any tree/map used to traverse that sequence space. A wrap-aware comparison does not make a linearly ordered container modular. If wraparound can cause ambiguous/repeating traversal, add a conservative termination condition even if it sacrifices some recovery in the rare edge case.
+
+**Confidence:** Extremely high. Two merged master RTMPT infinite-loop fixes authored by John Thacker, with maintained-branch backports of the later traversal bound.

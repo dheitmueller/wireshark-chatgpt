@@ -27,8 +27,10 @@ Merged master MR !20604, authored by John Thacker and merged by Anders Broman, f
 
 ## Preference callbacks should match preference-dependent work
 
-Merged release-3.6 MR !5218, authored by Pascal Quantin, removes the WebSocket handoff routine as a preference-change callback because no relevant preference required rerunning it; doing so registered WebSocket in the TCP table again.
+Merged master MR !5209, authored by Pascal Quantin, removes the WebSocket handoff routine as the protocol's preference-change callback because none of its preferences requires rerunning handoff. Re-executing the routine registered WebSocket in the TCP table again and produced a duplicate-registration warning. Release-3.6 MR !5218 carries the corresponding stable fix.
 
-**Rule:** attach a handoff/apply callback only when preference changes actually require that work. Repeated registration is safe only when the registration API explicitly supports replacement or deduplication.
+**Rule:** attach a handoff/apply callback only when preference changes actually require that work. Do not use “rerun handoff” as a generic preference callback when handoff performs global registration that is not explicitly replaceable or idempotent.
 
-**Confidence:** High. Accepted stable-branch fix that complements the master duplicate-registration examples above.
+**Review rule:** when a preference module has a non-NULL apply callback, inspect what state each preference changes and every side effect of the callback. Registration code that is safe once at startup may be wrong when invoked repeatedly from preference application.
+
+**Confidence:** Very high. Merged master fix by Pascal Quantin with a maintained-branch corroborating MR.

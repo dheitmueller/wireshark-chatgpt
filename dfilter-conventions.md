@@ -218,3 +218,24 @@ Merged master MR !5302 complements source fidelity at the string level. The disp
 **Encoding rule:** when the language contract is UTF-8, do not byte-escape valid non-ASCII text merely because it is outside ASCII. Escape syntax-significant/control characters as required by the grammar while preserving valid UTF-8 source text.
 
 **Confidence:** Very high. Two merged master display-filter changes by João Valverde with explicit user-facing diagnostic/display rationale.
+
+
+## Validate and normalize character literals at the scanner boundary
+
+Merged master MR !5182 gives character constants a distinct syntax-tree type instead of treating them as generic unparsed strings. Merged master MR !5187, authored by João Valverde, goes further and parses character constants in the lexical scanner into their semantic numeric value, eliminating downstream conversions that could surprisingly reinterpret a character as a string or byte array. Merged master MR !5180 makes unknown escape sequences in double-quoted strings scanner errors, updates the User's Guide and release notes, and adds a regression test. Merged !5192 additionally cleans the scanner's partially built quoted-string state before returning `SCAN_FAILED`.
+
+**Lexer rule:** validate syntax-specific escapes and literal structure where tokens are formed. Once a literal is lexically valid, normalize it once to the semantic token representation that later grammar/type-checking stages expect. Do not pass invalid escape syntax downstream as ordinary text or repeatedly reinterpret the same source spelling in different type converters.
+
+**Ownership rule:** a scanner failure path owns any partially constructed token state and must release/reset it before returning failure.
+
+**Compatibility/testing rule:** when a language change makes previously accepted text invalid, carry the parser change together with user documentation/release notes and a negative regression test for the old form, plus positive coverage for the valid replacement forms where practical.
+
+**Confidence:** Very high. A sequence of merged master display-filter changes, principally authored by João Valverde, with tests and user-facing documentation in the accepted change.
+
+## Distinguish field abbreviations from complete display filters
+
+In closed MR !5165, Guy Harris corrects the title “Fix a couple of filters”: the strings being changed are registered field names/abbreviations. A display filter is an expression involving field names, operators, and values; a field abbreviation can appear inside a filter but is not itself the filter. Martin Mathieson agrees with the terminology and closes the MR because the branch also accidentally contained unrelated work.
+
+**Terminology rule:** use “display-filter field name” or “field abbreviation” for an `hf_` abbreviation, and reserve “display filter” for the expression/language construct. This improves review precision when discussing compatibility, renames, parser syntax, and field registration.
+
+**Confidence:** High for terminology. The implementation MR is closed and therefore not code precedent, but the correction is direct technical terminology guidance from Guy Harris.
