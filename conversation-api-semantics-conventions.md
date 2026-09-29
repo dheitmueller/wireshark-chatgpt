@@ -70,3 +70,12 @@ Closed MR !6901, authored by Gerald Combs, proposed removing `NO_PORT2_FORCE` on
 
 **Confidence:** Very high as negative evidence. The core API maintainer authored the simplification and then explicitly closed it after discovering the semantic distinction.
 
+
+
+## Bind time-varying conversation dispatch from the frame where ownership changes
+
+Merged master MR !4537, authored by John Thacker, handles BT-DHT and BT-uTP sharing a UDP conversation. Replacing one mutable conversation dissector with `conversation_set_dissector_from_frame_number()` keeps redissection of older frames stable when the protocol associated with the conversation changes over time.
+
+**Rule:** when conversation dispatch legitimately changes during a flow, persist the transition at the frame boundary rather than retroactively applying one current dissector to every frame. Historical redissection should not depend on GUI navigation order.
+
+**Confidence:** Very high. Merged master correctness fix authored by John Thacker.
