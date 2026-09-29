@@ -112,3 +112,12 @@ Merged master MR !5115 began as a change that combined an MKA Announcement paddi
 **Review rule:** backportability is a concrete reason to request MR/commit separation even when the combined master change would otherwise be understandable.
 
 **Confidence:** Extremely high. Direct Jaap Keuter review shaped the merged master series, and the resulting focused fix was in fact backported to two maintained branches.
+
+
+## Keep unrelated contribution work separate and make bug fixes traceable
+
+Merged master MR !5109 initially combined an Ubuntu test-environment fix with additional pytest work. Uli Heilmeier asked the contributor to create a separate MR per logical change and to improve the fix commit message with the associated issue reference (for example, `fixes #17730`). The contributor updated the commit and moved the unrelated pytest work to another MR.
+
+**Submission rule:** do not bundle unrelated work merely because it was discovered or tested together. A focused bug-fix commit/MR should state the problem clearly and carry the relevant issue reference so review, history, and later backport decisions remain traceable.
+
+**Confidence:** High. Explicit reviewer guidance followed by contributor restructuring in a merged MR.

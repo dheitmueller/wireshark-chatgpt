@@ -34,3 +34,12 @@ Guy Harris's merged master MR !7315, with release-3.6 and release-3.4 backports 
 **Field-definition rule:** when the wire format specifies one multi-octet control word split into bitfields, register the actual containing integer with the correct endianness and masks rather than independently reconstructing byte fragments. Where program logic also needs the value, prefer add-and-return field APIs so programmatic and displayed interpretations cannot drift apart.
 
 **Confidence:** Extremely high. Master implementation and two stable backports authored by Guy Harris.
+
+
+## Prefer the bitmask tree helper for one wire value represented as component flags
+
+Merged master MR !5079 improves the TCP Black Box Log dissector. Jaap Keuter explicitly asked that the packed flag groups use `proto_tree_add_bitmask()`; the accepted revision replaces manually constructed parent items, subtrees, and repeated child additions for the event flags and TCP flag words with the bitmask helper and registered component-field arrays. Release-3.6 !5108 carries the same implementation.
+
+**Implementation rule:** when one fixed-width wire integer is displayed as a parent value plus registered masked subfields, prefer `proto_tree_add_bitmask()` instead of hand-building the equivalent hierarchy. Use custom construction only when the wire layout or presentation cannot be represented by the helper contract.
+
+**Confidence:** Very high. Direct Jaap Keuter review incorporated into merged master and corroborated by a stable backport.

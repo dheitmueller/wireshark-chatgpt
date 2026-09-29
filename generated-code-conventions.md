@@ -121,3 +121,12 @@ Merged master MR !8876 enables `-Werror` in the Clang CI path. Merged !8874 init
 **Maintenance rule:** prefer named generator-specific diagnostic wrappers over scattered compiler pragmas so the supported warning exceptions remain centralized and auditable.
 
 **Confidence:** Very high. A sequence of merged master CI/build changes converges on narrow generator-specific suppression while expanding Werror coverage.
+
+
+## Keep the generator in-tree with committed generated dissectors
+
+Merged master MR !5110 adds generated ETI, XTI, and EOBI dissectors. Anders Broman explicitly asked that the Python generator be included under `tools/` so future regeneration remains maintainable; the accepted revision includes `tools/eti2wireshark.py` alongside the generated dissectors.
+
+**Source-of-truth rule:** when generated dissector source is committed, keep the reproducible generator path in the repository when practical. Generated C without its generator makes later protocol revisions, review, and regeneration dependent on an external source that can drift or disappear.
+
+**Confidence:** Very high. Direct Anders Broman review incorporated into a merged master MR.

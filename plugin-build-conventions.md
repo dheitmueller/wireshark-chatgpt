@@ -21,3 +21,14 @@ Merged documentation MR !23863 replaces Developer's Guide guidance that effectiv
 **Implementation/review rule:** when creating or updating a plugin, start from the semantic requirements documented by the current build system, then add only dependencies the plugin uses. Treat copied boilerplate as suspect: if it is not understood or required by the documented target contract, verify it before carrying it forward.
 
 **Confidence:** High. Merged Developer's Guide update accepted by Anders Broman, with substantive review from Michael Mann, and it documents the project's intended build idioms directly.
+
+
+## Third-party plugin examples must not depend on Wireshark-private generated headers
+
+Merged master MR !5063, authored by Guy Harris, removes Wireshark's generated `config.h` from the example plugin because that header is not available to third-party plugins. Release-3.6 !5064 carries the same correction.
+
+Earlier !5061 removed an obsolete `HAVE_CONFIG_H` conditional and made `config.h` unconditional in sample code. That rule remains appropriate for Wireshark-owned source built inside Wireshark, but !5063 is the later and more specific accepted outcome for the external plugin example.
+
+**Extension-boundary rule:** examples intended to compile out of tree must depend only on the public plugin/build contract. Do not leak assumptions about Wireshark's private generated build headers into third-party examples. An external plugin that generates its own configuration header owns that header itself.
+
+**Confidence:** Extremely high. Merged master correction authored by Guy Harris, with a stable backport.
