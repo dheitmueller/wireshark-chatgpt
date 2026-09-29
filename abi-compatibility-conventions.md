@@ -74,3 +74,12 @@ Merged master MR !5937 fixes external plugin linking after `wmem_alloc()` moved 
 **Packaging rule:** when an exported API used by external consumers moves between shared libraries, audit not only symbol manifests but also pkg-config/import/link metadata. Consumers should receive every library required to resolve the public interface advertised by that metadata.
 
 **Confidence:** High. Merged fix for a concrete external-plugin link regression; closed predecessor !5935 was superseded only because its source branch prevented maintainer collaboration.
+
+
+## Keep compatibility helpers private when the symbol belongs to a dependency
+
+Merged master MR !4569 changes Wireshark's fallback implementation of `g_memdup2` from a compiled wsutil function into a `static inline` header definition. The purpose is to avoid exporting a symbol that is owned by GLib. Release-3.6 MR !4579 carries the same correction.
+
+**ABI rule:** when Wireshark provides a local fallback for a newer dependency function, keep that helper private unless Wireshark intentionally defines its own public API. Otherwise a compatibility helper can accidentally expand the shared-library ABI and collide with the dependency's real symbol.
+
+**Confidence:** Very high. Merged master ABI correction with a maintained-branch backport.

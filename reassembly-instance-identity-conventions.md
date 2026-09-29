@@ -33,3 +33,14 @@ Merged master MR !6331, also authored by John Thacker, shows that even frame+lay
 **Implementation rule:** use the complete semantic identity of the reassembly occurrence before dispatching the completed payload. Start with frame and layer where appropriate, but add protocol-local instance/completion state when multiple logical boundaries can still collide.
 
 **Confidence:** Extremely high. Two merged master reassembly fixes authored by John Thacker.
+
+
+## Persist first-fragment semantics with the reassembly instance
+
+A stable fragment key is necessary but not always sufficient. If only the first fragment carries metadata that determines how the completed message must be interpreted, that metadata is part of the logical reassembly state and must survive until completion.
+
+Merged master MR !4599 adds WebSocket frame reassembly with a per-conversation fragment-series identifier and retains the first data fragment's opcode for later dispatch of the completed payload. The earlier closed MR !4583 was explicitly abandoned because the author had not yet solved unique fragment identity, making it useful negative evidence but not implementation precedent.
+
+**Implementation rule:** assign each fragmented logical message a collision-free identity for its full lifetime and retain first-fragment-only semantic fields alongside that state. Do not dispatch partial continuation payloads as though they were complete application messages, and do not reconstruct completion semantics from the final fragment if the protocol defines them on the first.
+
+**Confidence:** Very high for the merged implementation; the closed predecessor is used only to explain why identity completeness matters.

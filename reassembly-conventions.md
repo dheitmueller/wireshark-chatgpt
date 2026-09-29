@@ -117,3 +117,16 @@ The same review records an important layering boundary: QUIC is responsible for 
 **Testing rule:** exercise ordering, overlap, retry/duplicate, missing-fragment, and redissection behavior for nontrivial reassembly changes. Where layers have distinct reassembly responsibilities, test the semantic result rather than forcing a cosmetically flat fragment tree.
 
 **Confidence:** Very high. Merged master work by John Thacker with extensive real-capture review and committed regression tests.
+
+
+## Bound each fragment copy by the destination reassembly capacity
+
+TVBuff source bounds do not prove that a destination reassembly buffer has enough remaining capacity. Reassembly code must separately validate how much space remains in the aggregate buffer before copying the current fragment.
+
+Merged master MR !4603, authored by Gerald Combs, fixes Bluetooth HCI ISO reassembly by computing `tot_len - cur_off` before each copy. If the captured fragment is larger than the available destination capacity, Wireshark reports malformed length and copies only the safe prefix. Release-3.6 MR !4607 and release-3.4 MR !4608 corroborate the fix.
+
+Merged master MR !4604 applies the same capacity principle to Bluetooth SDP continuation state: a packet-declared state length larger than the protocol's fixed maximum is diagnosed and clamped before it is retained in the fixed-size state representation.
+
+**Safety rule:** validate both sides of every packet-to-state copy. Source availability protects the read; destination capacity protects the write. When recovery is useful, clamp only to an explicitly known-safe destination bound and preserve an expert diagnostic that the wire value was invalid.
+
+**Confidence:** Extremely high. Two merged master memory-safety fixes authored by Gerald Combs, one with maintained-branch backports.

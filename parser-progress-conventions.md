@@ -64,3 +64,14 @@ That correction was necessary but not sufficient for every RTMPT path. Later mer
 **Data-structure rule:** separately inspect the ordering semantics of any tree/map used to traverse that sequence space. A wrap-aware comparison does not make a linearly ordered container modular. If wraparound can cause ambiguous/repeating traversal, add a conservative termination condition even if it sacrifices some recovery in the rare edge case.
 
 **Confidence:** Extremely high. Two merged master RTMPT infinite-loop fixes authored by John Thacker, with maintained-branch backports of the later traversal bound.
+
+
+## Enforce monotonic progress at the repeated-parser boundary
+
+A repeated parser should not depend on every child helper using exactly one failure sentinel. The loop itself can enforce the more fundamental invariant: after parsing one packet-controlled element, the input cursor must have advanced.
+
+Merged master MR !4570, authored by Gerald Combs, fixes a BT-DHT bencoded-list loop by saving the element's starting offset and checking the returned offset after every element. If the new offset is less than or equal to the starting offset, the dissector reports expert information and terminates that parse path. Release-3.6 MR !4587 carries the same fix.
+
+**Progress rule:** for repeated packet-derived structures, compare the cursor before and after each iteration. If the parser cannot prove strict forward progress, diagnose the malformed element and stop rather than re-entering the loop at the same or an earlier position. This complements helper-specific return-value rules: the loop boundary is the final authority on whether progress occurred.
+
+**Confidence:** Very high. Merged master malformed-input fix authored by Gerald Combs with a maintained-branch backport.

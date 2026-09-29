@@ -122,3 +122,14 @@ During merged master MR !6642, Gerald Combs states the project preference direct
 **Submission rule:** expect a focused MR to land as one squashed commit. Preserve multiple commits when they communicate genuinely distinct, reviewable structure, not merely because fixups and review iterations existed during development.
 
 **Confidence:** Very high. Direct project-maintainer guidance from Gerald Combs on a merged MR.
+
+
+## Split independent correctness fixes out of a large feature submission
+
+A large feature is easier to review and backport when pre-existing correctness fixes are not mixed into the feature diff.
+
+During merged master MR !4577, Alexis La Goutte asked the contributor to separate fixes to the existing TCPCL dissector from the TCPCLv4 feature. The author moved those fixes into a separate MR and kept the version-4 submission focused. Closed MR !4581 independently contains Alexis's request not to submit from a long-lived `master` branch; its clean successor merged, so that branch-history evidence is corroborating rather than primary.
+
+**Submission rule:** when a feature uncovers independently useful fixes to existing behavior, submit the fixes separately when they can stand on their own. Keep the feature branch dedicated to the feature so reviewers can reason about new architecture separately from unrelated corrections and maintainers can backport fixes without taking the feature.
+
+**Confidence:** Very high for scope separation because the requested split occurred before a merged MR; the closed branch example is lower-weight corroboration of the existing topic-branch rule.

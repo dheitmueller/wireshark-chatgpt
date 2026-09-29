@@ -59,3 +59,13 @@ Merged master MR !11493, authored and merged by John Thacker, fixes RTP extended
 **Review rule:** when code keeps a “last”, “highest”, cycle count, rolling timestamp, or similar history at conversation scope, ask whether every packet in that conversation is normatively part of the same number space. Multi-stream captures and reuse of a familiar 5-tuple are useful tests for state-key collisions.
 
 **Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker, with the protocol namespace requirement stated directly from RTP/RFC semantics.
+
+## Use protocol-defined paired endpoint identifiers when the transport tuple is not the session identity
+
+Some transport-like protocols define their own connection identifiers, including different but related values in the two directions. In that case the UDP/TCP endpoint tuple is only the carrier; it is not sufficient to identify the logical protocol conversation.
+
+Merged master MR !4592, authored by John Thacker, adds uTP conversation tracking using the protocol's connection IDs as an endpoint type. SYN packets provide special identity information; non-SYN traffic can be observed before both directional IDs are known, so the implementation first creates/finds a wildcarded conversation and completes it when the opposite direction is seen. One generated stream ID is then attached to the resulting logical conversation.
+
+**Architecture rule:** derive conversation identity from the protocol's actual session/end-point identifiers and handshake rules. Where only part of that identity is initially observable, use Wireshark's wildcard/completion mechanisms rather than inventing a lower-layer proxy key or prematurely splitting the session.
+
+**Confidence:** Extremely high. Merged master state-modeling change authored by John Thacker.

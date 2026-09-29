@@ -15,3 +15,14 @@ Merged master MR !16146, authored by John Thacker and merged by Anders Broman, f
 Merged MR !16261 provides corroborating negative evidence: a later John Thacker note records a TCP analysis regression at 32-bit sequence-number wraparound, reinforcing that apparently ordinary arithmetic on sequence values must be reviewed and tested as modular/extended-sequence arithmetic rather than as unbounded integers.
 
 **Confidence:** Very high for the canonical-extended-value rule: merged master correctness fix authored by John Thacker and merged by Anders Broman, with the failure mode and replacement model explicit in the accepted diff. High for the general wraparound testing rule, additionally corroborated by the later TCP wraparound regression note.
+
+
+## Keep missing-value sentinels out of wrap-aware sequence arithmetic
+
+A placeholder numeric value is not a protocol sequence number merely because it has the same C type. Feeding a sentinel through wrap-aware comparison can make the sentinel appear legitimately before or after real values.
+
+Merged master MR !4576, authored by John Thacker, fixes TCP Follow Stream handling where ACK value zero was sometimes only a placeholder for “no usable ACK”. Passing it to `GT_SEQ` could make Wireshark infer missing bytes and drop frames from the follow stream. The accepted code carries explicit ACK validity and only applies sequence comparison when an ACK is actually present. Release-3.6 MR !4582 corroborates the fix.
+
+**Implementation rule:** represent validity separately from the numeric sequence value whenever the full numeric domain can contain legitimate protocol values or wrap. Check validity before modular comparison; do not overload an ordinary number as both data and absence state.
+
+**Confidence:** Extremely high. Merged master correctness fix authored by John Thacker with a maintained-branch backport.

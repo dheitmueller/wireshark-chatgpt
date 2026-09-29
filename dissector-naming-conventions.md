@@ -55,3 +55,14 @@ Merged master MR !8043 converts many anonymous handles to named registrations. D
 **Validation rule:** after broad registration changes, exercise normal protocol registration at runtime, not only compilation. Startup paths such as `tshark -v` can expose duplicate registry keys that a compiler cannot.
 
 **Confidence:** High. Merged master migration with a concrete duplicate-name assertion found by Anders Broman; later naming work in this notebook reinforces the same registry contract.
+
+
+## Reject display-filter keywords as registered filter names
+
+A spelling can satisfy the character rules for a filter identifier and still be unusable when the display-filter lexer treats that spelling as a keyword.
+
+Merged master MR !4567 extends protocol filter-name validation so names matching reserved display-filter words are rejected during registration.
+
+**Implementation rule:** validate registry identifiers against both character syntax and the lexical namespace of the language that consumes them. Reject reserved words at registration time rather than allowing a registration that produces ambiguous or unreachable filter syntax.
+
+**Confidence:** High. Merged master registration validation authored by João Valverde.
