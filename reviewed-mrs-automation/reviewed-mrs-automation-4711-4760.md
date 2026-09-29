@@ -1,0 +1,15 @@
+# Wireshark MR review automation ledger — 4711–4760
+
+Corpus commit: `ddcaa22b51c68f594e425a23388c3a2086813054`
+
+Exactly 50 MRs reviewed:
+
+!4760 !4759 !4758 !4757 !4756 !4755 !4754 !4753 !4752 !4751
+!4750 !4749 !4748 !4747 !4746 !4745 !4744 !4743 !4742 !4741
+!4740 !4739 !4738 !4737 !4736 !4735 !4734 !4733 !4732 !4731
+!4730 !4729 !4728 !4727 !4726 !4725 !4724 !4723 !4722 !4721
+!4720 !4719 !4718 !4717 !4716 !4715 !4714 !4713 !4712 !4711
+
+Historical batch 17571–17620 remains preserved and counted as 50 reviewed MRs.
+
+Outcome: 49 merged; 1 closed/unmerged (4732).
