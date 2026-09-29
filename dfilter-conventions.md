@@ -203,3 +203,18 @@ Merged master MR !6633, also authored by João Valverde, extends arithmetic grou
 **Language-design rule:** avoid overloading an established delimiter when doing so makes parse context ambiguous; carry grammar changes through semantic checking, documentation, release notes, and regression tests as one unit.
 
 **Confidence:** Very high for !6628 and high for !6633; both are merged master display-filter changes by João Valverde.
+
+
+## Preserve the user's source lexeme for diagnostics
+
+A parser/compiler can normalize multiple spellings to one semantic operator while still preserving the exact spelling the user supplied for diagnostics. User-facing errors should not gratuitously rewrite valid source syntax into a different alias.
+
+Merged master MR !5287 stores lexical token values in display-filter syntax-tree nodes. Its motivating example is a user who writes `a && b`: semantic checking should not later report an error using `and` merely because both spellings map to the same operator. The same machinery improves quote consistency.
+
+Merged master MR !5302 complements source fidelity at the string level. The display-filter escaping helper stops converting every non-ASCII byte of valid UTF-8 to byte escapes; it escapes only characters required by display-filter syntax and passes other UTF-8 bytes through, so text such as “João” remains readable.
+
+**Implementation rule:** keep canonical semantic identity and source representation as separate data when both matter. Compile/type-check with the canonical operator or value, but retain the original lexeme for diagnostics, pretty-printing, and source-oriented error locations.
+
+**Encoding rule:** when the language contract is UTF-8, do not byte-escape valid non-ASCII text merely because it is outside ASCII. Escape syntax-significant/control characters as required by the grammar while preserving valid UTF-8 source text.
+
+**Confidence:** Very high. Two merged master display-filter changes by João Valverde with explicit user-facing diagnostic/display rationale.

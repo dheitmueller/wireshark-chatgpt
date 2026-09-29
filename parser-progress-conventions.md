@@ -38,3 +38,16 @@ Merged master MR !10756, authored and merged by Gerald Combs, fixes an XRA disse
 
 **Confidence:** High. Merged master infinite-loop fix with a concrete overflow-to-no-progress failure mode.
 
+
+
+## Error returns must not masquerade as successful consumption
+
+A parser helper's return value is often part of the caller's loop-control contract. An error path must not return a plausible positive byte count if the caller interprets positive values as successful consumption.
+
+Merged master MR !5280 fixes a BT-DHT endless loop this way. When a compact-node string has an invalid length, the helper already adds expert information, but it formerly returned `tvb_reported_length_remaining(tvb, offset)`. The caller treated that positive value as a normal consumed length and could continue incorrectly. The accepted fix returns `0`, which is the helper's failure signal and causes the caller to report the error and terminate that parse path. Release-3.6 !5281 and release-3.4 !5282 carry the same correction.
+
+**Progress rule:** define helper return values together with the caller's advancement/termination behavior. On a structural error, return the documented failure sentinel or propagate an explicit status; do not synthesize a positive “remaining” length merely to leave the helper.
+
+**Review rule:** for every helper used inside a repeated parse, inspect both its malformed-input return and the caller's interpretation of that return. A locally reasonable error value can become a no-progress or excessive-work bug one stack frame up.
+
+**Confidence:** Very high. Merged master endless-loop fix with two maintained-branch backports.

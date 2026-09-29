@@ -186,3 +186,11 @@ Before submitting one of our Wireshark MRs, check and, where useful, state in th
 ## Review-access note
 
 Use the local JSON corpus in `dheitmueller/wireshark-corpus-mrs` as the preferred source for MR mining. It contains MR metadata, full discussions (including DiffNote `position` objects), changes/diffs, commits, and diff-version metadata, avoiding dependence on GitLab web indexing while preserving review context.
+
+### Keep each meaningful commit in a review series independently clean
+
+**Evidence:** Merged MR !5303 (SSH decryption architecture). Jörg Mayer asked that format changes, new behavior, and incidental whitespace not be mixed gratuitously; required the Windows build fix to be folded into the commit that introduced the warning; explained that each patch should compile and satisfy project rules on its own; requested representative captures and instructions; and praised the reworked series as small patches that were easy to review and test. He also recommended getting the architectural foundation reviewed/merged before stacking additional algorithms/features to reduce rework.
+
+**Lesson:** A multi-commit MR may preserve meaningful logical steps, but every submitted commit should be internally buildable/check-clean and reviewable. Fold pure fixup commits into the commit that introduced the issue, avoid carrying whitespace cleanup in a later semantic commit, and stabilize foundational architecture before piling dependent feature MRs on top. Supply captures/instructions when reviewers need them to validate behavior.
+
+**Confidence:** High for submission/review practice. Direct detailed review on a merged MR. Runtime semantics from that MR later needed follow-up fixes, so this evidence is used for patch-series hygiene rather than as architectural correctness precedent.
