@@ -51,3 +51,18 @@ This is the concrete historical precursor to the rule above about independently 
 
 **Confidence:** Very high. Both the original test-adding change and the later John Thacker correction were merged; the correction explicitly changes the mistaken expectations.
 
+
+
+## Validate input before fixed-position ISO-8601 lookahead
+
+Merged master MR !5219, authored by John Thacker, fixes `iso8601_to_nstime()` so it validates the four-digit year before inspecting the following byte to select Basic versus Extended syntax. Release-3.6 !5222 carries the fix. Once the syntax form is known, later parsing reuses that decision instead of probing unchecked separator positions.
+
+**Rule:** prove a textual prefix exists before reading a fixed later position, and carry a validated grammar-mode decision forward. For digit-only fields, remember that scanf-family integer conversions can accept syntax such as signs that the protocol grammar may not permit.
+
+## Normalize before timezone arithmetic
+
+Merged master !5231 and stable !5232 first convert broken-down calendar fields to epoch seconds and then apply the timezone offset, avoiding manual carry/borrow in hour and minute fields. Later merged !5668 corrected the offset direction, so !5668 remains authoritative for sign semantics.
+
+**Rule:** do timezone arithmetic in a normalized time domain, and verify sign direction independently against known UTC-equivalent instants.
+
+**Confidence:** Very high for the bounds/normalization patterns; the older sign behavior is explicitly superseded by !5668.
