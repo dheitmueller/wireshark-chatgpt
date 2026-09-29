@@ -23,3 +23,12 @@ Merged master MR !20604, authored by John Thacker and merged by Anders Broman, f
 **Implementation rule:** represent compile-time protocol identifiers in the most structured form accepted by the API. String-based registration is appropriate when the input is genuinely textual/dynamic; do not choose it by default for constants when a typed representation is available.
 
 **Confidence:** High to very high. The duplicate-registration rule is independently demonstrated by three merged master MRs from John Thacker; the structured-OID guidance comes from a merged master corrective change with a clearly stated safety/performance rationale.
+
+
+## Preference callbacks should match preference-dependent work
+
+Merged release-3.6 MR !5218, authored by Pascal Quantin, removes the WebSocket handoff routine as a preference-change callback because no relevant preference required rerunning it; doing so registered WebSocket in the TCP table again.
+
+**Rule:** attach a handoff/apply callback only when preference changes actually require that work. Repeated registration is safe only when the registration API explicitly supports replacement or deduplication.
+
+**Confidence:** High. Accepted stable-branch fix that complements the master duplicate-registration examples above.

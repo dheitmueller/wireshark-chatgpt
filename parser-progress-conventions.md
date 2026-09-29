@@ -51,3 +51,12 @@ Merged master MR !5280 fixes a BT-DHT endless loop this way. When a compact-node
 **Review rule:** for every helper used inside a repeated parse, inspect both its malformed-input return and the caller's interpretation of that return. A locally reasonable error value can become a no-progress or excessive-work bug one stack frame up.
 
 **Confidence:** Very high. Merged master endless-loop fix with two maintained-branch backports.
+
+
+## Bound traversal when sequence wrap breaks ordering
+
+Merged master MR !5225, authored by John Thacker, stops RTMPT tree traversal when TCP sequence wrap makes the lookup order ambiguous. The MR explicitly accepts somewhat less complete dissection in rare wraparound cases in exchange for guaranteed finite traversal; release-3.6 !5226 and release-3.4 !5230 carry the same fix. Earlier !5213/!5214 also use TCP's wrap-aware sequence comparison rather than raw integer ordering.
+
+**Rule:** use protocol-correct modular comparison for wrapping sequence spaces, but also bound an iterative lookup when its data structure still assumes a linear ordering. A narrow stop condition is preferable to repeatedly traversing ambiguous state.
+
+**Confidence:** Very high. Merged master fix by John Thacker with stable backports.

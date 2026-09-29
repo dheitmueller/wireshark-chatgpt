@@ -147,3 +147,13 @@ Merged master MR !11753 adds per-exception expert information to the Thrift subd
 **Confidence:** High. Merged master extensibility change with the public-versus-private decision and compatibility tradeoffs explicitly reasoned through in the MR discussion and accepted in the final implementation.
 
 Merged master MR !11722, authored by Guy Harris, also reinforces the naming side of this file: `slist_break_commas()` was renamed `process_enable_disable_list()` because splitting comma-separated strings was only an implementation mechanic; the helper's stable responsibility was applying an enable/disable list through a callback.
+
+## Separate mutually exclusive semantic choices from orthogonal modifiers
+
+An API should not encode independent semantic dimensions in one enum merely because both are passed to the same operation. A choice for "which one" and a set of independent modifiers have different contracts and should normally have different types/parameters.
+
+Merged master MR !5260, authored by João Valverde, refactors `format_size()` accordingly. The old `format_size_flags_e` combined unit values with prefix-selection bits and required callers, including C++ callers, to OR those categories together. The accepted interface passes a `FORMAT_SIZE_UNIT_*` enum separately from `FORMAT_SIZE_PREFIX_*` flags, removing the C++ enum-`operator|` workaround and making invalid combinations less natural to express.
+
+**Implementation rule:** represent a mutually exclusive mode as one enum/value and reserve bit flags for independent modifiers that can legitimately be combined. If callers need casts or language-specific operator overloads merely to combine conceptually different categories, reconsider the API model rather than normalizing the workaround.
+
+**Confidence:** Very high. Merged master API cleanup by João Valverde with all callers and unit tests migrated to the separated contract.

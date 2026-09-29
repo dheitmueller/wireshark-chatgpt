@@ -53,3 +53,12 @@ Merged master MR !7252, authored by John Thacker, and stable backport !7257 chan
 **Dissector rule:** framing units that only delimit a larger semantic entity should normally be represented as framing fields/subtrees. Invoke the payload/content dissector after the framing has been removed and the semantic entity body is available.
 
 **Confidence:** Very high. Merged master change plus accepted stable backport.
+
+
+## A UDP datagram can contain multiple application PDUs
+
+Merged master !5235, with stable !5248 and !5249, updates Foundation Fieldbus to iterate over several PDUs in one UDP payload. The wrapper validates each declared PDU length, creates a bounded subset tvbuff, invokes the one-PDU decoder, and advances by the decoder's consumed length.
+
+**Rule:** do not equate a message-transport boundary with one application-PDU boundary. When concatenation is valid, keep transport iteration outside the one-PDU decoder and make consumed-length returns precise.
+
+**Confidence:** Very high. Merged master change plus two stable backports.
