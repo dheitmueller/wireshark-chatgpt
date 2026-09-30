@@ -150,3 +150,12 @@ Merged master MR !4008 broadly converts TVB formatting/string helpers away from 
 **Implementation rule:** making allocation scope explicit is an API-contract change, not just a call-site refactor. Thread the owner through return-value APIs, keep scratch allocation local when ownership need not escape, and remove historical names/comments that falsely imply a fixed lifetime.
 
 **Confidence:** Extremely high. Broad merged master API conversion plus direct Guy Harris review, with the requested naming correction adopted before merge.
+
+
+## Prefer `pinfo->pool` over ambient packet scope when packet context is available
+
+Merged !3673 deliberately used the TCP dissector as a proof of concept for replacing `wmem_packet_scope()` with `pinfo->pool`, then merged !3710 applied the same change broadly. The accompanying wmem documentation says `pinfo->pool` should be preferred when `pinfo` is available; the ambient packet-scope accessor remains for cases that genuinely lack packet context.
+
+**Implementation rule:** make the lifetime owner explicit in the call path when the caller already has it. For packet-lifetime dissector allocations, use `pinfo->pool` instead of reaching through global packet-scope state. When a broad mechanical migration changes lifetime plumbing across many dissectors, validate the approach first in a heavily-used/stateful path and exercise memory tooling before expanding it.
+
+**Confidence:** Very high. Merged proof-of-concept and broad follow-up by Evan Huus, with the preference recorded in Wireshark's own wmem documentation.

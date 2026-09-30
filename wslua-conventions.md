@@ -34,3 +34,14 @@ Roland Knall explicitly raised compatibility concerns about changing an establis
 **API rule:** generic scripting bindings should make return behavior consistent across supported field types, document all returned values, and test them against the native decoding primitive. Changes to established binding behavior are compatibility-sensitive even when they make the API more regular.
 
 **Confidence:** High. Merged master API expansion with substantive maintainer review and dedicated tests.
+
+
+## Provide exact-width paths when Lua numbers cannot represent the native integer domain
+
+Merged !3686 extends ProtoField masks from 32 to 64 bits. Review explicitly identifies the representation mismatch: ordinary Lua numbers are floating-point and cannot exactly represent every 64-bit integer. The accepted binding therefore allows masks to arrive as an ordinary number where appropriate, a decimal string, or Wireshark's exact-width `UInt64` userdata, and adds tests across those argument forms.
+
+**API rule:** do not require a scripting language's default numeric type to carry native integer values outside its exact domain. Expose an exact-width object or other lossless representation path and perform conversion in the native binding.
+
+**Testing rule:** cover the supported argument representations, nil/default handling, invalid values, and platform compiler diagnostics around width/format conversion.
+
+**Confidence:** High. Merged scripting API extension whose design was shaped by explicit discussion of Lua's numeric precision limits.

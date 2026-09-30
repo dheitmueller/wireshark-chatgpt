@@ -37,3 +37,14 @@ Merged master MR !6792, authored by Guy Harris, adds a section number to `wtap_r
 **Presentation rule:** keep intentional internal-versus-display numbering conversion at the presentation boundary.
 
 **Confidence:** Extremely high. Merged master Wiretap/frame change authored by Guy Harris.
+
+
+## Let typed packet-block option presence carry optional metadata presence
+
+Merged !3708 moves packet drop count, packet ID, and interface queue from fixed `wtap_rec` packet-header members plus parallel `WTAP_HAS_*` flags into typed `WTAP_BLOCK_PACKET` options. Consumers query the option and only expose the field when the typed getter reports success.
+
+**Architecture rule:** when metadata is semantically an optional packet-block property, prefer the typed block-option system over maintaining both a fixed record member and a separate presence bit. The existence of the option is the presence discriminator; its typed payload is the value.
+
+**Review rule:** when moving metadata into a block/option representation, audit every producer and consumer together—reader, writer, text import/extcap, frame display, and any scripting/export surface—so no path continues to rely on the removed parallel state.
+
+**Confidence:** Very high. Merged cross-layer Wiretap/EPAN/extcap/text-import conversion.

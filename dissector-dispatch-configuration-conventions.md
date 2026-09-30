@@ -30,3 +30,14 @@ Merged master MR !4206, authored by John Thacker, changes TCP, UDP, and SCTP dis
 **API rule:** if dispatch needs to distinguish an explicit override from a default registration, represent that distinction in the dissector-table API rather than reverse-engineering it independently in each transport.
 
 **Confidence:** Very high. Merged cross-transport framework change authored by John Thacker.
+
+
+## Keep overlapping numeric identifier domains in separate specific tables
+
+Merged !3668 adds separate `can.id` and `can.extended_id` tables because standard CAN IDs and extended CAN IDs can have the same numeric value while belonging to different semantic domains. Those specific tables are tried before the pre-existing generic `can.subdissector` mechanism, which is retained as a compatibility fallback. Follow-up merged MRs !3682, !3684, and !3685 propagate the same dispatch API to other CAN carriers/consumers.
+
+**Dispatch rule:** if two protocol identifier spaces overlap numerically but have different wire semantics, do not collapse them into one keyed table. Use separate domain-specific tables and route according to the decoded identifier class before lookup.
+
+**Compatibility rule:** when an older generic extension point is already in use, preserve it as a fallback unless there is a deliberate migration plan. New more-specific registrations may take precedence without silently invalidating existing Decode-As or plugin registrations.
+
+**Confidence:** Very high. Merged master API design with multiple immediate merged adopters.

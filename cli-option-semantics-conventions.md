@@ -45,3 +45,15 @@ Merged master MR !12274 changes the shared ring-buffer parser so an unrecognized
 **Testing rule:** include at least one unknown sub-option/name in CLI tests, in addition to valid names and malformed values, so future additions do not accidentally turn the parser into an accept-and-ignore path.
 
 **Confidence:** High. Merged master behavior change, approved and merged by Anders Broman.
+
+## Bind option ownership and validation to the semantic capability, not a neighboring subsystem
+
+Guy Harris-authored merged !3675 and !3676 clean up `--capture-comment`. The option had been stored with live-capture state, but TShark can also add comments while reading one capture file and writing another, including builds without libpcap. The accepted design moves handling to the applications that support the operation, performs validation outside live-capture build guards, queries the selected output format for comment support rather than hard-coding pcapng, and preserves multiple repeated comments.
+
+**Architecture rule:** locate a CLI option in the subsystem that owns its observable operation. Do not make file-conversion behavior depend on whether an unrelated live-capture feature was compiled in.
+
+**Capability rule:** ask the output-format API whether the requested metadata is supported instead of encoding “the only format that supports this today” into frontend policy.
+
+**Semantics rule:** if repeated occurrences are additive, keep every value and describe the option as “add” rather than “set.”
+
+**Confidence:** Extremely high. Two consecutive merged changes authored by Guy Harris.

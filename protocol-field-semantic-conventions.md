@@ -92,3 +92,14 @@ Merged master MR !5125 adds MBIM base-station information covering several radio
 **Review rule:** large families of near-identical `hf_` registrations need an identity audit, not just a type/offset audit. Check that every filter abbreviation, label, technology prefix, unit, and acronym belongs to the field being registered rather than to the line that was copied as a template.
 
 **Confidence:** Very high. Merged master dissector expansion with extensive direct protocol-expert review from Pascal Quantin and corrections incorporated before merge.
+
+
+## Parser hardening must not accidentally redefine registered field values
+
+Merged !3693 fixes a JSON string-unescape overflow by replacing ad-hoc output buffering with bounded TVB access and a wmem string buffer. An intermediate revision also started retaining quotation marks in the field value, which broke an existing display-filter test. Gerald Combs explicitly preferred restoring the established unquoted semantic value rather than changing the test to bless an unrelated presentation/semantic change.
+
+**Rule:** when hardening or refactoring a parser, preserve the semantic values exposed by existing registered fields unless changing that contract is intentional and separately justified. A test failure caused by output/value drift is a signal to inspect the behavioral change, not an invitation to automatically update expected output.
+
+**Validation rule:** for crash fixes, re-run the original reproducer under the relevant memory-debug configuration when practical in addition to the ordinary regression suite.
+
+**Confidence:** Very high. Merged crash fix with direct Gerald Combs validation and semantic-output guidance.

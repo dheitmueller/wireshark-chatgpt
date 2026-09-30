@@ -21,3 +21,12 @@ Merged master MR !3811 adds a bus ID to CAN state and changes Signal-PDU lookup 
 **Architecture rule:** when a wire identifier is only unique within a bus or interface, include that context in state and lookup keys. If configuration supports a wildcard, make that wildcard explicit rather than discarding the context.
 
 **Confidence:** High. Merged master multi-CAN support that directly demonstrates the uniqueness-scope rule.
+
+
+## LIN frame IDs require bus context too
+
+Merged !3689 predates and independently supports the later CAN multi-bus lesson. LIN has only a small frame-ID space and deployments commonly reuse the same numeric ID on multiple parallel buses. The accepted implementation adds bus identity to LIN metadata and Signal-PDU lookup keys; bus ID zero is an explicit wildcard fallback rather than an implicit loss of bus context.
+
+**Architecture rule:** the same numeric identifier can be safe only inside its protocol-defined uniqueness domain. For LIN and similar bus protocols, include bus/interface context in state and dispatch keys, and encode wildcard behavior explicitly.
+
+**Confidence:** Very high. Merged master architecture change, independently corroborated by later CAN multi-bus work.
