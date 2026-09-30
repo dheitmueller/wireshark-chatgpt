@@ -56,3 +56,22 @@ Merged work is primary implementation evidence. Closed and open work is down-wei
 | 3863 | closed | scanned | Closed iWARP attempt; merged 3976 is stronger conversation-identity precedent. |
 | 3862 | merged | scanned | CMake module include fix. |
 | 3861 | merged | scanned | Documentation-only stable fix. |
+
+
+## Durable themes promoted by this run
+
+**Serialized Exported-PDU compatibility.** Merged 3908 and 3905, both authored by Guy Harris, show that file-format constants should live in a shared low-level layer and remain independent from mutable in-process enums, while integer serialization should use Wireshark's byte-order packing helpers instead of repeated manual shifts.
+
+**Compressed capture random access.** Merged 3901 records Guy Harris review that large-file backward navigation is part of a compressed reader's practical contract. Measure random-access latency and I/O/copy costs; sequential decompressor throughput alone is insufficient. The same MR shows why optional codec integrations must compile against the supported dependency/API matrix.
+
+**Allocator ownership.** Merged 3904, authored by Guy Harris, confirms that pool-owned wmem storage is released by its owning scope and must not be released through another allocation domain. Merged 3893 independently reinforces explicit `pinfo->pool` propagation, including ASN.1 source templates.
+
+**Redissection and reassembly.** Merged 3896, authored by John Thacker, establishes that a missing completed reassembly entry on a later pass does not by itself mean an incomplete PDU: a complete PDU may never have required reassembly. One-pass and two-pass behavior should be tested against the same capture.
+
+**Persisted compatibility.** Pascal Quantin's merged 3897 review preserves removed preference keys as obsolete so older profiles load cleanly. Guy Harris's merged 3871 review highlights that changing a UAT field from decimal to hexadecimal affects the persisted representation and must be evaluated against existing profiles. Merged 3890 shows that distinct version-specific hf masks can retain one display-filter abbreviation when the semantic field is unchanged.
+
+**Parser progress and testing.** Merged 3873 reinforces strict cursor progress in repeated or recursive dissection, filterable hf fields in addition to compact text, focused captures, and fuzz validation. Open 3885 contains useful but provisional guidance to use TCP stream/PDU helpers rather than treating segments as message boundaries.
+
+**Checker and submission practice.** Merged 3880, authored by Martin Mathieson, extends field-label structural checking to unbalanced punctuation. Merged 3879 and 3866 reinforce commit-message and topic-history hygiene, including component-prefixed subjects, readable bodies, squashing when requested, and valid contribution metadata.
+
+Closed 3903 contains useful maintainer review about third-party dependency integration and source provenance, but it remains down-weighted because the implementation did not merge.
