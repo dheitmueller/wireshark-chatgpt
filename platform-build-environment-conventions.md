@@ -37,3 +37,20 @@ Merged master MR !3645 fixes Windows-only ETW source that used pointer syntax on
 **Review rule:** distinguish “the project has a runner for this platform” from “this MR actually executed that runner.” Gaps caused by runner availability remain coverage gaps and should be treated explicitly.
 
 **Confidence:** Extremely high. Direct Guy Harris review on a merged correction, with Gerald Combs documenting the actual CI coverage limitation.
+
+
+## Feature-test optional dependency functions at the link boundary
+
+Merged master MR !3570 adds Kerberos PAC ticket-signature verification. The code compiled far enough on Unix to expose ordinary signedness and const-correctness issues, but Anders Broman's Windows build then failed to link because the required `decode_krb5_enc_tkt_part` and `encode_krb5_enc_tkt_part` functions were not exported by the Windows Kerberos library. The accepted implementation adds configure-time function checks and compiles the optional verification path only when the required functions are available.
+
+**Dependency rule:** do not infer that an optional external-library function is usable merely because a header declares it, another platform exports it, or the dependency version appears new enough. Probe the exact function at configure/link time when platform packages can expose different symbol sets, and guard the optional feature on that result.
+
+**Confidence:** Very high. Merged master implementation with direct cross-platform build review from Anders Broman and Isaac Boukris.
+
+## Version-gated compiler/linker flags still need workflow validation
+
+Merged master MR !3571 reverts Windows CET/EHCONT hardening that had been gated to MSVC versions advertising those options. In Wireshark's real incremental-build workflow, the combination caused internal compiler and linker failures.
+
+**Toolchain rule:** a compiler-version test proves nominal option availability, not that the option combination is stable in every supported build mode. Validate hardening and unusual linker flags in the same full and incremental workflows developers and CI actually use before treating the version gate as sufficient.
+
+**Confidence:** High. Merged master revert of a concrete Windows build regression.

@@ -39,3 +39,12 @@ Merged !3629 then uses the lower-layer arrangement to test and consume generic `
 **Migration rule:** moving implementation ownership downward does not by itself eliminate existing lifecycle contracts. Preserve validity assertions or equivalent checks until the scope contract itself is intentionally removed and callers are migrated.
 
 **Confidence:** Very high. Merged architectural refactor with substantive review from Evan Huus, Anders Broman, João Valverde, and Gerald Combs.
+
+
+## Historical antecedent: break wmem dependency cycles before settling final ownership
+
+Merged master MR !3602, authored by João Valverde, removes wmem's dependency on wsutil so wmem can remain independently reusable and so equivalent utility functionality does not have to be duplicated across layers. Guy Harris explicitly asks whether the long-term intent includes allowing Wiretap to use wmem; João confirms that direction. This is historical antecedent to the later, stronger !3636 architecture already recorded above, where generic wmem infrastructure moves into the lower shared utility layer while EPAN-specific scope lifecycle remains distinct.
+
+**Architecture lesson:** an intermediate dependency-breaking refactor is evidence about desired dependency direction, not necessarily the final directory/library placement. Evaluate the end state by semantic ownership and an acyclic dependency graph, and prefer the later merged architecture when it supersedes an earlier transitional arrangement.
+
+**Confidence:** Very high as historical architecture evidence; the later !3636 design remains the stronger current precedent.
