@@ -142,3 +142,11 @@ Merged !4185 and !4186 extend the same direction to WSLua and OSI helpers, using
 **Review rule:** when an API creates derived objects over time, verify that every nested allocation uses the retained owner scope, not just the top-level object. Prefer a design the compiler can force callers to satisfy.
 
 **Confidence:** Very high. Coherent merged master series authored by Evan Huus.
+
+## When lifetime stops being implicit, update both allocator plumbing and API naming
+
+Merged master MR !4008 broadly converts TVB formatting/string helpers away from ambient `wmem_packet_scope()`. Helpers returning allocated data take an explicit allocator so callers choose the correct lifetime; short-lived scratch data uses explicit temporary allocation and matching free after bounds-sensitive work. Guy Harris additionally caught that `tvb_bcd_dig_to_wmem_packet_str*` still encoded the old lifetime in its name and requested `tvb_bcd_dig_to_str*` once the allocator became a parameter.
+
+**Implementation rule:** making allocation scope explicit is an API-contract change, not just a call-site refactor. Thread the owner through return-value APIs, keep scratch allocation local when ownership need not escape, and remove historical names/comments that falsely imply a fixed lifetime.
+
+**Confidence:** Extremely high. Broad merged master API conversion plus direct Guy Harris review, with the requested naming correction adopted before merge.

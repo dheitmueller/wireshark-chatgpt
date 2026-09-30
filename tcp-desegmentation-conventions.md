@@ -67,3 +67,11 @@ Merged master MR !6621, authored by John Thacker, handles a TCP PDU that extends
 **Review rule:** test both enabled and disabled desegmentation for PDUs spanning TCP segments and verify that the disabled path is reported as unreassembled, not malformed.
 
 **Confidence:** Very high. Merged TCP/core behavior authored by John Thacker.
+
+## Early AMQP evidence: restore TCP's saved capability before nested version dispatch
+
+Merged master MR !3977, authored by John Thacker, fixes AMQP PDUs split across TCP segments by restoring `pinfo->can_desegment = pinfo->saved_can_desegment` before invoking the AMQP version subdissector. The nested call would otherwise decrement the shared state a second time and leave `tcp_dissect_pdus()` unable to request the missing bytes. Later release fixes !4012 and !4013 carry the same correction.
+
+This is early master-origin evidence for the broader save/restore rule above: nested dissectors must preserve the caller-owned desegmentation capability rather than treating `packet_info` reassembly fields as private scratch state.
+
+**Confidence:** Extremely high. Merged master correctness fix authored by John Thacker plus stable-branch backports.

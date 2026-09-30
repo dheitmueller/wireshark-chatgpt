@@ -71,3 +71,13 @@ Merged !19734 added support for Darwin's legacy process-information blocks and t
 **Implementation rule:** whenever a block or option contains an identifier that is scoped to a section, audit every save/merge/passthrough path for that scope. Do not move definitions across sections or collapse sections unless all dependent references are remapped consistently, and validate the resulting file against important external readers when compatibility matters.
 
 **Confidence:** Very high. Merged master feature with prolonged architecture review including direct Guy Harris and John Thacker discussion.
+
+## Early custom-block lessons from BBLog
+
+Merged master MR !3990 added BBLog custom-block support and received extensive Guy Harris review. Guy asked that format-specific code point maintainers to a defining document or source. He also distinguished pcapng-defined framing fields from extension data: standard block and option framing follows the pcapng section byte order, while extension payload data may define a stable byte order of its own.
+
+Guy preferred common custom-block processing rather than repeated format-specific parsing in core code. His following merged MRs !3994 and !3996 expose shared option-section helpers, make section/big/little byte-order domains explicit, and centralize alignment-safe integer extraction and conversion. The later !19979–!20132 series in this file continues that architectural direction.
+
+**Implementation rule:** keep standardized pcapng framing and extension payload semantics as separate domains, document the defining source for an extension, and reuse generic pcapng parsing/registration machinery.
+
+**Confidence:** Extremely high. Direct Guy Harris review plus adjacent Guy-authored merged follow-ups.

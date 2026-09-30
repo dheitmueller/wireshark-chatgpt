@@ -69,3 +69,11 @@ Merged master MR !4592, authored by John Thacker, adds uTP conversation tracking
 **Architecture rule:** derive conversation identity from the protocol's actual session/end-point identifiers and handshake rules. Where only part of that identity is initially observable, use Wireshark's wildcard/completion mechanisms rather than inventing a lower-layer proxy key or prematurely splitting the session.
 
 **Confidence:** Extremely high. Merged master state-modeling change authored by John Thacker.
+
+## Layer-specific conversation identity for iWARP MPA and RPC
+
+Merged master MR !3976 fixes iWARP MPA carrying RPC/NFS-over-RDMA. MPA had already associated the TCP conversation with MPA, while nested RPC processing also used TCP conversation identity. The accepted change introduces distinct `PT_IWARP_MPA` and `ENDPOINT_IWARP_MPA` values and teaches RPC to treat that carrier as connection-oriented.
+
+**Architecture rule:** when an encapsulating transport-like layer and a nested stateful protocol both require conversation state, model the carrier's semantic endpoint type explicitly instead of forcing both layers into the same lower-layer conversation identity.
+
+**Confidence:** Very high. Merged master architecture/correctness change.
