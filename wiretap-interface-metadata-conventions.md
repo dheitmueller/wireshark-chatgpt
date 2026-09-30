@@ -73,3 +73,15 @@ Merged master MR !13559, authored and merged by John Thacker, fixes display and 
 **Review rule:** test captures with at least two sections whose interface numbering overlaps, including repeated interface ID zero with different IDBs. Verify both user-visible interface names/descriptions and rewritten packet interface IDs after save/export/merge.
 
 **Confidence:** Very high. Merged master architecture/correctness fix authored and merged by John Thacker; the section-scoped mapping and single-SHB dump behavior are stated directly in the MR description.
+
+## Keep link-layer transformations consistent across packet and interface metadata
+
+A capture transformation that changes the link-layer type must update every metadata surface that tells later readers how packet bytes should be interpreted. Changing only the file-level or per-packet encapsulation can leave Interface Description Blocks describing a different link type.
+
+Merged master MR !3858, authored by Guy Harris, fixes editcap -T so the requested output encapsulation is also applied to every IDB. The accepted implementation makes a copy of each source IDB, changes the copy's mandatory wtap_encap, writes that copy, and releases it. It deliberately preserves the unmodified source IDB in the retained idbs_seen set because a later split output file may need to be constructed from the original metadata. Release-3.4 MR !3860 carries the same behavior; closed !3859 was an earlier backport attempt and is not implementation precedent.
+
+**Implementation rule:** when a capture edit/conversion changes packet interpretation, trace the corresponding file-, interface-, and record-level metadata and keep them mutually consistent. If source metadata is retained for later reuse, transform a copy rather than mutating the retained object in place, and follow the block ownership/refcount contract of the writer API.
+
+**Review rule:** test transformations on formats with explicit interface metadata and on split/multi-output paths. A one-file success can hide mutation bugs that appear only when retained IDBs are reused for a subsequent output.
+
+**Confidence:** Extremely high. Merged master correctness fix authored by Guy Harris with an accepted stable-branch backport.

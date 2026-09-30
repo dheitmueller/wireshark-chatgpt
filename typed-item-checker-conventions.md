@@ -66,3 +66,15 @@ Merged master MR !4094 fixes a duplicate display-filter abbreviation. Martin Mat
 **Historical note:** !4094 records an early single-file invocation. For current submissions use the repository's current command/options, including the later-established commit-range and bitmask checks recorded elsewhere in this notebook.
 
 **Confidence:** Very high. Merged correction with direct maintainer explanation from Martin Mathieson.
+
+## Apply field-contract checks across equivalent tree APIs
+
+Registered field width and type constraints apply equally when a dissector uses a cursor helper instead of the ordinary tree-add API.
+
+Merged master MR !3848, authored by Martin Mathieson, extends check_typed_item_calls.py to several ptvcursor calls and adds literal-length validation for ptvcursor_add. The same MR corrects NFAPI fields whose registered integer widths did not match the lengths used by those calls.
+
+**Checker rule:** when two API families impose the same registered-field contract, cover both in the checker. Account for their different argument layouts explicitly.
+
+**Review rule:** inspect newly exposed findings against protocol semantics; broader checker coverage can reveal real old mismatches but does not decide the correct field definition by itself.
+
+**Confidence:** Very high. Merged master checker change authored by Martin Mathieson with concrete field-width fixes in the same MR.

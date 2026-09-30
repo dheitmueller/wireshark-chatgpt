@@ -37,3 +37,15 @@ Merged master MR !5153, authored by John Thacker, is the master origin of the Gr
 **Redissection rule:** when creation is valid and idempotent, use state presence as the initialization guard. This remains correct if reassembly or dispatch changes which pass first reaches the nested dissector.
 
 **Confidence:** Extremely high. Merged master correctness fix by John Thacker, plus release-3.6, release-3.4, and master-3.2 propagation.
+
+## Use native proto-data for native dissector packet state, not the Lua private table
+
+Packet-scoped state owned by a native dissector belongs in Wireshark's proto-data mechanism rather than in pinfo->private_table, whose ownership/contract is for Lua.
+
+Merged master MR !3855 replaces RTPS use of pinfo->private_table with p_add_proto_data() / p_get_proto_data(), keyed by the RTPS protocol ID and an explicit proto-data key. The participant GUID copied into that slot is allocated from pinfo->pool, so the state container and stored value have the same packet lifetime.
+
+**API rule:** native dissectors should use the scoped proto-data APIs for per-packet cross-function/cross-dissector state. Do not repurpose a framework-private table owned by another API surface merely because it is reachable through packet_info.
+
+**Lifetime rule:** allocate the stored value from a scope compatible with the proto-data entry, and use the same scope/protocol/key tuple for add and lookup.
+
+**Confidence:** Very high. Merged master cleanup whose MR rationale explicitly identifies pinfo->private_table as Lua-only.

@@ -13,3 +13,11 @@ Merged master MR !14262, authored and merged by Martin Mathieson, adds an F1AP-d
 **Review rule:** when two candidate identifiers differ mainly by protocol hierarchy (device-local vs controller-wide, bearer-local vs UE-wide, interface-local vs chassis-wide, and similar), review the topology/cardinality rules before choosing the convenient field. Tests should include multiple parent entities where a local identifier could legitimately repeat.
 
 **Confidence:** Very high. The collision risk was identified explicitly in review by Pascal Quantin, the author changed the implementation accordingly, and the merged diff uses the controller-scoped identifier.
+
+## Preserve bus context in protocol identity keys
+
+Merged master MR !3811 adds a bus ID to CAN state and changes Signal-PDU lookup from a CAN-ID-only key to CAN ID plus bus ID. This prevents the same numeric CAN ID on two buses from being treated as one identity. Bus ID zero remains an explicit fallback for mappings intended to match any bus.
+
+**Architecture rule:** when a wire identifier is only unique within a bus or interface, include that context in state and lookup keys. If configuration supports a wildcard, make that wildcard explicit rather than discarding the context.
+
+**Confidence:** High. Merged master multi-CAN support that directly demonstrates the uniqueness-scope rule.

@@ -23,3 +23,17 @@ Merged master MR !9919 fixes Sharkd RTP APIs where the rtp-streams tap emitted S
 **Documentation rule:** machine-facing status/error codes and token formats should be documented even when the code change itself is small enough to merge first.
 
 **Confidence:** High. Merged master API consistency fix with focused self-tests and explicit maintainer documentation feedback.
+
+## Use canonical machine identifiers and an explicit schema for repeated metadata
+
+Machine-readable output should use stable programmatic identifiers rather than human descriptions, and its structure must remain parseable when one logical input object can contain repeated sub-objects.
+
+Merged master MR !3853 changes capinfos -M and table output to emit canonical Wiretap file-type and encapsulation names via wtap_file_type_subtype_name() and wtap_encap_name() instead of human descriptions. The regression tests consequently expect identifiers such as ether and rawip4, not presentation strings such as Ethernet or Raw IPv4.
+
+Merged master MR !3854 removes ad hoc Section N prose from capinfos table output because it breaks the table format. The MR still acknowledges that repeated pcapng sections/comments can create columns that do not line up with a single header. Guy Harris explicitly pointed out the architectural alternative: define the table format so file-wide information and per-section information have distinct places.
+
+**Serialization rule:** machine-facing modes should emit canonical names/IDs supplied by the registry/API, not localized or presentation-oriented descriptions.
+
+**Schema rule:** do not inject human headings into tabular machine output. When metadata cardinality is one-to-many, define how repeated/per-section values are represented rather than pretending a fixed one-row schema can absorb arbitrary repetitions without an explicit contract.
+
+**Confidence:** Very high for the canonical identifier behavior because it is merged and tested; high for the structural schema direction because it is direct Guy Harris review guidance on a merged MR.

@@ -66,3 +66,13 @@ Merged master MR !4567 extends protocol filter-name validation so names matching
 **Implementation rule:** validate registry identifiers against both character syntax and the lexical namespace of the language that consumes them. Reject reserved words at registration time rather than allowing a registration that produces ambiguous or unreachable filter syntax.
 
 **Confidence:** High. Merged master registration validation authored by João Valverde.
+
+## Prefix dissector-local helpers with the dissector namespace
+
+Local helper names should make their ownership obvious and should not look like common proto-tree API entry points.
+
+During merged master MR !3845, Anders Broman objected to a local helper using the proto_ prefix and explained that proto_ should be used for common functions that add or manage protocol-tree data, while local dissector helpers should use the protocol/dissector name as their prefix. The contributor renamed the helper accordingly before merge. Alexis La Goutte separately noted that forcing the small helper inline was unnecessary.
+
+**Naming rule:** prefix file-local dissector helpers with the protocol/dissector namespace rather than borrowing a prefix associated with common Wireshark APIs. Use inline only for a demonstrated reason, not as routine micro-optimization.
+
+**Confidence:** High. Direct maintainer review from Anders Broman and Alexis La Goutte on a merged master MR, with the naming change applied before merge.
