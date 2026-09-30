@@ -139,3 +139,12 @@ Merged master MR 4873 converts ASTERIX to an in-tree template and update workflo
 **Rule:** automated regeneration should produce and validate a complete prospective result before replacing the tracked generated artifact. Keep the generator path reproducible and avoid manual edits to generated C.
 
 **Confidence:** Very high. Direct Gerald Combs review followed by merged safe-update support and scheduled deployment.
+## Put the semantic fix in the generator template, not only the generated dissector
+
+Merged master MR !4202, authored by Guy Harris, fixes IEC 61850 SV trailer handling by editing `epan/dissectors/asn1/sv/packet-sv-template.c` and regenerating `packet-sv.c`. Guy explicitly explains that the change belongs in the template so regeneration cannot overwrite the fix.
+
+**Source-of-truth rule:** when a generated dissector needs a semantic change, identify and modify the authoritative template/conformance/generator input first, then regenerate the derivative. A correct direct edit to generated C is still incomplete if the source-of-truth file remains stale.
+
+**Review rule:** a generated-file diff should be traceable to the authoritative source change that produces it. Treat generated output as evidence of regeneration, not as the primary maintenance surface.
+
+**Confidence:** Extremely high. Direct merged master implementation and rationale from Guy Harris; independently corroborates the later generated-source rules in this file.

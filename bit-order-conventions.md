@@ -15,3 +15,16 @@ Merged MR !11574 fixes the Wi-SUN FAN Join Metrics IE after exactly this mistake
 **Testing rule:** include values that distinguish the competing interpretations. A test vector with only zeroes, all ones, or symmetric bit patterns can pass under both mask orientations and therefore does not validate the mapping.
 
 **Confidence:** Very high. This is a merged master correctness fix with explicit specification text explaining the failure and maintainer approval.
+## Carry bit-order semantics through extraction, array conversion, and presentation
+
+Merged master MR !4200 extends Wireshark's bit APIs so bit numbering can be explicitly big- or little-endian. The change propagates the encoding through `tvb_get_bits*`, `tvb_get_bits_array()`, proto-tree bit helpers, and formatted bit display. Existing callers are explicitly passed `ENC_BIG_ENDIAN` to preserve their prior behavior while USB HID uses `ENC_LITTLE_ENDIAN`.
+
+Capture-based review then exposed a remaining hidden assumption: the FT_BYTES path still called `tvb_get_bits_array()` as though bit numbering were always big-endian, producing incorrect USB HID padding. The API was extended there as well and the reviewer retested the capture successfully.
+
+**Implementation rule:** when bit order is semantically meaningful, propagate it through every helper layer that reads, converts, or formats the field. Fixing only the leaf caller can leave a hidden default in a lower-level path.
+
+**Compatibility rule:** when adding an explicit encoding parameter to a widely used API, make existing callers state the old behavior rather than silently changing their interpretation.
+
+**Testing rule:** use capture values that distinguish the competing bit-numbering interpretations, including unaligned fields crossing byte boundaries. Byte-aligned or symmetric patterns can miss exactly this class of bug.
+
+**Confidence:** Very high. Merged framework change with targeted capture testing and review-driven correction before merge.

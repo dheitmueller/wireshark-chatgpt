@@ -70,3 +70,12 @@ The same master change makes unknown native-type length and alignment recovery u
 ## Do not confuse a remaining length with an absolute parser offset
 
 Merged master MR !9082, authored by John Thacker, fixes a BPv6 loop where `tvb_reported_length_remaining()` was assigned to an absolute offset. A remaining byte count can be smaller than the current cursor, so the error path could move parsing backward and repeat indefinitely. The accepted code marks the extension terminal and returns the current absolute offset; release backports !9083 and !9084 carry the same correction. Keep offsets, consumed lengths, and remaining lengths distinct even when they share an integer type.
+## Bound a directly encapsulated child to its declared extent so the parent can own trailers
+
+Merged master MR !4202, authored by Guy Harris, changes the IEC 61850 SV dissector to call `set_actual_length(tvb, sv_length)`. SV is carried directly over Ethernet and has its own declared length; without that boundary the child can make trailing bytes look like part of SV and prevent the Ethernet dissector from recognizing an Ethernet trailer or FCS.
+
+**Boundary rule:** when a child protocol has an authoritative declared body length and the containing layer owns possible trailing bytes, constrain the child's TVB to the declared child extent. Do not let the child consume all remaining captured bytes merely because they are present.
+
+**Generated-source note:** for generated dissectors, apply the boundary fix in the authoritative template/configuration source and regenerate, as !4202 does, rather than patching the generated C alone.
+
+**Confidence:** Extremely high. Direct merged master implementation by Guy Harris.

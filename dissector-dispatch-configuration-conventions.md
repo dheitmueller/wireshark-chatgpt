@@ -21,3 +21,12 @@ Merged MR !21065, authored by John Thacker and merged by Michael Mann, removes t
 **Implementation rule:** before adding a boolean or enum preference to force a particular subdissector, check whether the relevant dissector table already provides Decode As for that selection. Prefer the generic mechanism unless the preference represents genuinely different protocol semantics rather than another spelling of the same dispatch choice.
 
 **Confidence:** Very high. Merged master simplification authored by John Thacker and accepted by Michael Mann.
+## Explicit user overrides take precedence over default transport dispatch heuristics
+
+Merged master MR !4206, authored by John Thacker, changes TCP, UDP, and SCTP dispatch when both endpoint keys have registered dissectors. The accepted code first detects registrations changed from their defaults by Decode As or a preference and tries those explicit choices before the ordinary server/lower-port ordering. Only unchanged/default entries fall back to the historical heuristic order.
+
+**Implementation rule:** when a user has explicitly changed a dissector-table binding, honor that choice before applying default heuristics such as lower-port or server-port preference. User configuration is stronger evidence than the framework's guess about which endpoint represents the application.
+
+**API rule:** if dispatch needs to distinguish an explicit override from a default registration, represent that distinction in the dissector-table API rather than reverse-engineering it independently in each transport.
+
+**Confidence:** Very high. Merged cross-transport framework change authored by John Thacker.

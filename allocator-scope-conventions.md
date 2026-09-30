@@ -131,3 +131,14 @@ Merged master MR !14059, authored and merged by John Thacker, fixes an RDPUDP le
 **Review rule:** when placing cloned, referenced, file-backed, or otherwise resource-owning objects into wmem containers, identify both who frees the container nodes and who releases each payload. Scope-managed container allocation is not a substitute for the payload object's destruction contract.
 
 **Confidence:** Very high. Merged master leak fix authored and merged by John Thacker with an explicit file-scope cleanup callback.
+## Parser and cursor helpers should retain an explicit allocator rather than infer lifetime from presentation state
+
+Merged master MRs !4193 and !4194, both authored by Evan Huus, make `tvbparse` and `ptvcursor` receive explicit `wmem_allocator_t *` scopes. `tvbparse` stores that scope and uses it for tokens, extracted strings, and callback stacks. For `ptvcursor`, the tree cannot safely serve as an implicit lifetime proxy because callers may pass a NULL tree or replace/reset the tree after cursor creation.
+
+Merged !4185 and !4186 extend the same direction to WSLua and OSI helpers, using `pinfo->pool` when packet context exists or an explicitly managed allocation path otherwise.
+
+**API rule:** allocation lifetime is part of a reusable parser/helper object's contract. Pass or retain the allocator that owns the result instead of reaching for ambient `wmem_packet_scope()` or inferring lifetime from a nullable presentation object.
+
+**Review rule:** when an API creates derived objects over time, verify that every nested allocation uses the retained owner scope, not just the top-level object. Prefer a design the compiler can force callers to satisfy.
+
+**Confidence:** Very high. Coherent merged master series authored by Evan Huus.

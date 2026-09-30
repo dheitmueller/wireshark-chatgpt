@@ -40,3 +40,14 @@ Merged master MR 4284 changes the USBDump reader's `err_info` assignment from a 
 **Error-contract rule:** when a Wiretap `gchar **err_info` path transfers ownership to a caller that frees the string, allocate the diagnostic with the expected allocator on every path. Do not return a literal or borrowed pointer merely because the message has static contents.
 
 **Confidence:** Extremely high. Merged master fix plus two maintained-branch backports authored by Guy Harris.
+## Distinguish clean end-of-capture from truncation after a record has started
+
+Merged master MR !4168, authored by Guy Harris, makes the BLF reader's EOF contract explicit. The first read used to locate the next packet may return EOF as the normal end of the capture. Once a packet record has begun, however, failure to obtain any required header, payload, or trailer bytes is not normal EOF; the accepted helper converts an otherwise bare EOF into `WTAP_ERR_SHORT_READ`.
+
+Merged master MR !4169, also authored by Guy Harris, complements that change by assigning explicit Wiretap errors to other BLF failure paths: malformed structures become `WTAP_ERR_BAD_FILE`, unsupported compression/header forms become `WTAP_ERR_UNSUPPORTED`, and failures that indicate internal reader-state problems become `WTAP_ERR_INTERNAL`, with `err_info` populated rather than relying only on debug output.
+
+**Reader-contract rule:** clean EOF is meaningful only at a valid record boundary. After a record has been recognized and parsing has begun, missing required bytes are a short read or another classified error.
+
+**Error-contract rule:** returning `FALSE` is not enough when callers use `err == 0` to mean EOF. Every non-EOF failure path must set the category and, where required by the API, useful owned error text.
+
+**Confidence:** Extremely high. Both accepted master fixes were authored by Guy Harris and directly encode the distinction. They strengthen the later !4353 reviewer guidance already recorded above.
