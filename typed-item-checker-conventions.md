@@ -78,3 +78,14 @@ Merged master MR !3848, authored by Martin Mathieson, extends check_typed_item_c
 **Review rule:** inspect newly exposed findings against protocol semantics; broader checker coverage can reveal real old mismatches but does not decide the correct field definition by itself.
 
 **Confidence:** Very high. Merged master checker change authored by Martin Mathieson with concrete field-width fixes in the same MR.
+
+
+## Cover the bitmask API family with its own argument contract
+
+Merged master MR !3758, authored by Martin Mathieson, extends `check_typed_item_calls.py` across the `proto_tree_add_bitmask*` family. Those calls do not place the hf index in the same argument position as ordinary add-item APIs, so the checker adds API-specific parsing and validates the field against the integer/boolean types accepted by bitmask helpers. Guy Harris's merged !3755, !3756, and !3757 provide the concrete bug class: an aggregate BTATT bitmask field had been registered as `FT_NONE` and was corrected to `FT_UINT24`; Martin explicitly points from !3755 to the new checker coverage.
+
+Merged !3745 adds a lower-severity readability check for masks written as multi-digit all-zero hexadecimal values and normalizes existing cases to `0x0`.
+
+**Checker-design rule:** when extending structural validation to another proto-tree API family, model that family's actual argument layout and accepted field types instead of assuming the signature of the most common API. Distinguish hard field-contract contradictions from warning-level metadata/readability hygiene.
+
+**Confidence:** Extremely high for the bitmask rule: merged checker work by Martin Mathieson plus three merged Guy Harris fixes of the exact class.
