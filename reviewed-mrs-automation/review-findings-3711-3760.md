@@ -12,7 +12,7 @@ This run reviewed the 50 highest-numbered corpus MRs below the prior frontier af
 | !3757 | merged | Guy Harris changes a BTATT aggregate field from `FT_NONE` to `FT_UINT24`; bitmask/container fields must have a numeric type compatible with the API that consumes them. |
 | !3756 | merged | Same Guy-authored BTATT field-contract repair in another characteristic. |
 | !3755 | merged | Same Guy-authored BTATT repair; Martin Mathieson explicitly points to !3758 as the checker coverage that will catch this class of error automatically. |
-| !3754 | merged | Adds F1AP statistics UI. Pascal Quantin questions redundant Info-column append behavior already provided by other 3GPP dissectors. |
+| !3754 | merged | Adds F1AP statistics UI. Pascal Quantin objects to a second manually synchronized message-name array; the accepted code reuses one `value_string` mapping for display/stats. Discussion also covers Info-column fencing and Exported PDU. |
 | !3753 | merged | Guy Harris code organization cleanup in the 3GPP 32.423 Wiretap reader. |
 | !3752 | merged | Large Thrift Binary/Compact completion: reassembly-aware helper APIs, exported ABI updates, subdissector option context, fuzzing and real-life Jaeger validation; Anders Broman requests squash before merge. |
 | !3751 | merged | wslog cleanup; no durable discussion. |
@@ -25,7 +25,7 @@ This run reviewed the 50 highest-numbered corpus MRs below the prior frontier af
 | !3744 | merged | Documentation typo fix. |
 | !3743 | merged | Removes unused CMake definitions. |
 | !3742 | merged | Evan Huus converts ASN.1 dissectors to `pinfo->pool`, including authoritative ASN.1 templates/configuration and regenerated output. |
-| !3741 | merged | WOWW decryption refactor supports multiple messages per PDU and stops when server data cannot be decrypted. |
+| !3741 | merged | WOWW decryption refactor supports multiple messages per PDU; cached decrypted-header identity changes from frame number alone to frame plus message index, avoiding state collisions between logical messages in one frame. |
 | !3740 | closed | Pascal Quantin says the MR is too large for GitLab review, requires splitting, and rejects reintroducing deprecated `wmem_packet_scope()` that earlier work intentionally replaced with `pinfo->pool`. |
 | !3739 | merged | CMS ASN.1 correction with regenerated dissector output. |
 | !3738 | merged | Guy Harris adds IPv6 support to rpcap findalldevs dissection. |
@@ -51,10 +51,10 @@ This run reviewed the 50 highest-numbered corpus MRs below the prior frontier af
 | !3718 | merged | Guy Harris adds packet-flags metadata only when direction is actually present; optional metadata presence must not be synthesized from a default value. |
 | !3717 | merged | Removes unnecessary GLib libraries from CMake target link lists. |
 | !3716 | merged | Adds Gcrypt specifically to `sdjournal_LIBS`; accepted focused fix after closed !3713 proposed making Gcrypt PUBLIC for all wsutil consumers. |
-| !3715 | merged | New FiveCo Legacy dissector; review favors existing value-string helpers, removing template leftovers, avoiding unnecessary `if (tree)`, and using the normal offset idiom. |
+| !3715 | merged | New FiveCo Legacy dissector. Review favors normal hf/`BASE_CUSTOM` and existing checksum helpers over custom raw-pointer presentation, says `DISSECTOR_ASSERT_NOT_REACHED()` is for implementation-impossible states rather than malformed wire data, requests a pcap/release-note entry, separates unrelated changes, and records Pascal Quantin's warning that Wireshark's utility rebase can lose GitLab auto-squash. |
 | !3714 | closed | Documentation-warning fix closed because the changes already existed on master. |
 | !3713 | closed | Proposed making Gcrypt PUBLIC on wsutil to fix sdjournal linkage. Gerald Combs instead asks to link Gcrypt only into sdjournal because most wsutil consumers do not require it; accepted !3716 implements that narrower dependency edge. |
-| !3712 | merged | New SHICP dissector. Review requires license declaration and sample capture; Jaap Keuter challenges a UDP heuristic when the protocol has a fixed port, preferring direct `udp.port` registration as more efficient. |
+| !3712 | merged | New SHICP dissector. Review requires license declaration, release note, sample capture, typed-item correctness, and appropriate expert severity. Jaap Keuter initially prefers direct `udp.port` registration, but the contributor explains HICP legitimately shares the same port, justifying heuristic arbitration. |
 | !3711 | merged | WiMAX display-filter abbreviation fix; no durable discussion. |
 
 ## Durable conventions extracted
@@ -66,5 +66,13 @@ This run reviewed the 50 highest-numbered corpus MRs below the prior frontier af
 5. **Safety limits need a stated failure model and malformed-input tests.** !3734 accepts a much larger profile-file cap because real configurations exceed the old arbitrary limit, while review focuses on the malformed ZIP/runaway behavior the guard was intended to contain.
 6. **Optional capture metadata requires an existence contract.** !3718 records packet direction only when direction is known, while !3719 constructs the correct packet block before attaching options.
 7. **Link dependencies at the narrowest target that requires them.** Closed !3713 proposed making Gcrypt PUBLIC through wsutil; Gerald Combs instead recommends adding Gcrypt specifically to sdjournal, and merged !3716 is that focused fix.
-8. **Prefer deterministic table dispatch over broad heuristics when the protocol has a reliable fixed binding.** In merged !3712, Jaap Keuter explicitly prefers direct fixed-port registration.
+8. **A shared/default port is not necessarily unique dispatch evidence.** In merged !3712, direct registration is initially preferred for efficiency, but HICP legitimately shares the same UDP port; selective heuristic arbitration is therefore justified.
 9. **Submission size is a reviewability constraint.** In closed !3740, Pascal Quantin requires an MR too large for GitLab's review UI to be split into smaller reviewable units.
+
+
+## Additional high-value evidence
+
+- **!3754 — one source of truth for protocol labels.** Pascal Quantin explicitly warns that a second F1AP message-name table would need manual synchronization whenever messages are added. The accepted revision reuses one mapping.
+- **!3752 — pass parent-owned semantics to subdissectors.** Reply-field context is decoded before dispatch and delivered through structured call data so children do not re-parse the container protocol.
+- **!3741 — frame number is not always a unique protocol-instance key.** Multiple WOWW messages can inhabit one PDU/frame, so cached state includes a per-message index.
+- **!3715 — assertion and submission discipline.** Jaap Keuter distinguishes malformed packet data from impossible internal states, while Graham Bloice and Pascal Quantin require a clean local squash because merge-time squash can be lost during project rebasing.
