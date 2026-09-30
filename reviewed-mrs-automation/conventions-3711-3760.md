@@ -44,14 +44,39 @@ Closed !3713 proposed restoring Gcrypt as a PUBLIC dependency of wsutil to fix a
 
 **Rule:** fix missing link dependencies on the narrowest target that actually consumes the symbols. Promote a dependency to PUBLIC only when downstream consumers genuinely require it as part of the library's interface.
 
-## Prefer deterministic dispatch when a strong binding exists
+## Shared transport ports can require heuristic arbitration
 
-In merged !3712, Jaap Keuter questions a UDP heuristic for SHICP and recommends direct `dissector_add_uint("udp.port", SHICP_UDP_PORT, ...)`, explicitly calling it more efficient.
+In merged !3712, Jaap Keuter initially questions a UDP heuristic for SHICP and notes that a direct `udp.port` registration is more efficient. The contributor then explains the decisive constraint: HICP legitimately uses the same UDP port, so the port alone cannot distinguish the two protocols.
 
-**Rule:** when a protocol has a reliable fixed port/table key and no strong reason to recognize it elsewhere, prefer direct table registration over a heuristic that must inspect unrelated traffic.
+**Rule:** prefer direct table registration when a key uniquely identifies a protocol, but do not treat a well-known port as unique evidence when multiple legitimate protocols share it. In that case use a selective heuristic or another discriminator rather than letting one fixed registration steal all traffic.
 
 ## Reviewability is part of MR scope
 
 Closed !3740 was too large for GitLab's review UI. Pascal Quantin requires it to be split into smaller commits/MRs and the contributor subsequently moves the work into successor MRs.
 
 **Rule:** a logically related change can still be too large to review safely. If tooling cannot present the diff or reviewers cannot reason about it effectively, split the submission into reviewable units with explicit dependency/order where needed.
+
+
+## Keep one authoritative mapping for repeated protocol semantics
+
+In merged !3754, Pascal Quantin objects to introducing a second F1AP message-name array for statistics because every future message addition would require manually keeping two tables synchronized. The accepted revision reuses one `value_string` mapping.
+
+**Rule:** when tree text, Info-column output, taps, and statistics all need the same protocol identifier-to-name mapping, keep one authoritative table and derive the consumers from it.
+
+## Compute parent-owned context before child dispatch
+
+Merged !3752 moves the Thrift reply-field peek before subdissector dispatch and passes `reply_field_id` through the structured options supplied to the child. That lets child dissectors distinguish nominal replies from exceptions without re-parsing Binary/Compact framing.
+
+**Rule:** decode context at the layer that owns the wire representation and pass the semantic result explicitly to subdissectors; do not force children to reconstruct their parent's framing.
+
+## Per-message state needs an instance discriminator inside multi-message frames
+
+Merged !3741 changes WOWW decrypted-header state from a frame-number-only lookup to a key that also includes the message index within the PDU.
+
+**Rule:** when one capture frame can contain multiple independently stateful logical messages, frame identity alone is not a unique state key. Include a stable per-frame instance discriminator.
+
+## Assertions are for impossible implementation states, not malformed packets
+
+During merged !3715 review, Jaap Keuter asks whether a `DISSECTOR_ASSERT_NOT_REACHED()` path represents a dissector bug or invalid protocol data, explicitly noting that malformed protocol data is not a valid use for that assertion. The same review pushes the dissector toward ordinary hf/`BASE_CUSTOM` and existing checksum helpers rather than bespoke raw-pointer presentation code.
+
+**Rule:** reserve assertion-not-reached paths for conditions that should be impossible if Wireshark itself is correct. Represent malformed or unexpected wire data with normal validation/expert mechanisms, and prefer established dissector APIs over custom presentation machinery when they fit.
