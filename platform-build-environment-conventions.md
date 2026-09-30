@@ -27,3 +27,13 @@ Merged master MR !12198, authored and merged by Guy Harris, centralizes CMake in
 **Build-environment rule:** validate bootstrap dependencies by running the same kind of build-tree executables developers and CI use, not only by checking that libraries compiled and installed. Runtime loader metadata such as install names/RPATHs is part of the dependency-build contract.
 
 **Confidence:** Extremely high. All three master changes were authored and merged by Guy Harris and document concrete failures caused by stale SDK metadata, implementation-specific configure assumptions, and runtime loader metadata respectively.
+
+## Platform-specific source needs platform-specific merge-request coverage
+
+Merged master MR !3645 fixes Windows-only ETW source that used pointer syntax on a stack object. The mistake escaped non-Windows compilation because the affected code is only built on Windows. In direct review, Guy Harris states that a Windows build is needed in the merge pipeline specifically to catch code that passes on UNIX systems only because the Windows source path is not compiled there. Gerald Combs notes that the project did have a Windows runner, but infrastructure constraints meant it did not execute for every fork-originated MR.
+
+**CI rule:** if a source path is selected only by a platform guard, at least one ordinary pre-merge configuration should compile that guarded path. Success on platforms that exclude the code is not evidence of portability.
+
+**Review rule:** distinguish “the project has a runner for this platform” from “this MR actually executed that runner.” Gaps caused by runner availability remain coverage gaps and should be treated explicitly.
+
+**Confidence:** Extremely high. Direct Guy Harris review on a merged correction, with Gerald Combs documenting the actual CI coverage limitation.

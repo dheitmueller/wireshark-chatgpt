@@ -26,3 +26,16 @@ Merged master MR !4212, authored by João Valverde, moves several numeric and IP
 
 **Confidence:** Very high. Merged master library-layering refactor by João Valverde. It independently corroborates the later, stronger Guy Harris !21899 rule above about moving genuinely generic capabilities into the lowest common owning layer.
 
+
+
+## Separate generic allocator infrastructure from EPAN-specific scope lifecycle
+
+Merged master MR !3636, authored by João Valverde, moves wmem into `wsutil` so generic utility and lower-layer code can use the allocator without depending on EPAN or duplicating memory-management helpers. Review distinguishes the generic allocator implementation from EPAN's packet/file scope lifecycle. During the refactor, scope-validity tracking was considered for removal, but Evan Huus pointed out that the assertions it powered still enforced an important caller contract; the accepted change retains them.
+
+Merged !3629 then uses the lower-layer arrangement to test and consume generic `wsutil` formatting without an EPAN dependency.
+
+**Architecture rule:** put generic memory-management machinery in the lowest shared layer that semantically owns it, while keeping higher-level lifecycle policy with the subsystem that defines that lifecycle.
+
+**Migration rule:** moving implementation ownership downward does not by itself eliminate existing lifecycle contracts. Preserve validity assertions or equivalent checks until the scope contract itself is intentionally removed and callers are migrated.
+
+**Confidence:** Very high. Merged architectural refactor with substantive review from Evan Huus, Anders Broman, João Valverde, and Gerald Combs.

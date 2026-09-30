@@ -48,3 +48,14 @@ Merged !3708 moves packet drop count, packet ID, and interface queue from fixed 
 **Review rule:** when moving metadata into a block/option representation, audit every producer and consumer together—reader, writer, text import/extcap, frame display, and any scripting/export surface—so no path continues to rely on the removed parallel state.
 
 **Confidence:** Very high. Merged cross-layer Wiretap/EPAN/extcap/text-import conversion.
+
+
+## Present zero is not the same as absent metadata
+
+Merged master MR !3643 moves packet flags from fixed `wtap_rec` storage plus a parallel presence flag into typed `WTAP_BLOCK_PACKET` options. Guy Harris's immediately following merged master MR !3655 sharpens the semantic contract: iptrace, Sniffer, and Peek classic records always provide packet flags even when the flag value is zero. For those formats, zero means a known value such as “no packet errors,” not “metadata was not supplied,” so the accepted code always emits `OPT_PKT_FLAGS` instead of conditioning option creation on a nonzero payload.
+
+**Implementation rule:** determine optional metadata presence from the format contract or typed option/getter result, not from whether its numeric value is nonzero. A present zero-valued option remains semantically present.
+
+**Review rule:** when converting fixed metadata plus presence bits into typed options, explicitly test three cases where meaningful: absent, present with zero value, and present with nonzero value.
+
+**Confidence:** Extremely high. The representation change is merged master work, and the zero-versus-absence correction was authored and merged by Guy Harris.
