@@ -46,3 +46,19 @@ Merged master MR !5642, authored by John Thacker, removes text2pcap's repeatable
 
 **Confidence:** Extremely high. Merged master change authored by John Thacker.
 
+## Do not attach incidental reporting-site provenance to deferred failures
+
+Merged master MR !3404, authored by Guy Harris, changes dissector-bug reporting from `ws_warning()` to an explicit `ws_log()` call that does not add the source file, source line, and function of the generic exception handler. Those coordinates describe where the deferred message is emitted, not where the dissector bug occurred, and therefore add misleading rather than useful provenance.
+
+**Implementation rule:** source-location metadata is useful only when it identifies the operation that failed. If an exception or saved diagnostic is emitted later from a common wrapper/catch site, preserve the original semantic context and omit generic reporting-site coordinates that would be identical for every failure.
+
+**Confidence:** Extremely high. Merged master logging correction authored by Guy Harris.
+
+## Early corroboration: guard expensive runtime diagnostics
+
+Merged master MR !3393, shaped by João Valverde review, keeps dot11decrypt debug logging available through the runtime logging system rather than locally compiling it out. When João noticed that the debug dump allocates/formats memory, he requested an early `ws_log_message_is_active()` check; the accepted implementation adds it. The contributor also benchmarked roughly 800,000 encrypted frames and found no meaningful penalty once inactive work was avoided.
+
+This is early independent corroboration of the later, stronger inactive-message construction rule already recorded in this file.
+
+**Confidence:** High. Merged implementation with direct maintainer review and a workload-based performance check.
+

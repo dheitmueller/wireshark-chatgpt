@@ -159,3 +159,16 @@ Merged master MR !4510, authored by John Thacker, strengthened BT-DHT recognitio
 **Implementation rule:** choose the default state from the confidence of the current recognizer. Stronger independent protocol invariants can justify default enablement; broad signatures should remain opt-in while false positives are plausible.
 
 **Confidence:** Very high for !4510; !4476 is corroborating stable-branch evidence.
+
+## Successful heuristic dispatch must preserve the parent's consumption bookkeeping
+
+Merged master MR !3366 adds heuristic payload dispatch to ICMP and ICMPv6. During review, Pascal Quantin caught that the direct data-dissector path advanced the parent's offset, while the successful heuristic path initially did not. The author fixed the discrepancy before merge. Pascal also required nested HiPerConTracer presentation to append protocol-column text rather than displacing the parent ICMP identity.
+
+**Implementation rule:** when replacing a direct child call with heuristic dispatch, preserve all caller-visible control-flow semantics of a successful child parse, including consumed-length or offset advancement where the parent uses it. Recognition success alone is not enough if the parent cursor/state no longer reflects the bytes handed to the child.
+
+**Presentation rule:** for a protocol genuinely nested inside another protocol, use append-style column composition when both identities are useful rather than overwriting the parent protocol's presentation.
+
+**Testing rule:** exercise a successful heuristic path in a context where the parent continues parsing or tracks offsets, not only a standalone packet where cursor drift is invisible.
+
+**Confidence:** Very high. Merged master change with explicit Pascal Quantin review and a pre-merge correction.
+

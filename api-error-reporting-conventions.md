@@ -69,3 +69,12 @@ Merged master MR !7832 adds error handling when a TLS helper initialization can 
 **API rule:** match the established success/failure representation used by neighboring functions unless there is a compelling reason to change the API contract.
 
 **Confidence:** High. Merged master correctness change shaped by substantive Pascal Quantin review.
+
+## Early Wiretap evidence: propagate nested failures to the owning reader
+
+Merged master MR !3396, authored by Guy Harris, changes ERF metadata/interface helpers so nested failures return status and carry `err` / `err_info` through to the Wiretap reader. Callers stop processing on failure and release temporary arrays/lists before returning. The change also marks violated internal helper preconditions as `WTAP_ERR_INTERNAL` with specific diagnostic text instead of allowing the operation to continue with invalid state. Merged !3397 carries the same behavior to release-3.4.
+
+This is early high-authority corroboration of the helper-failure propagation rule already recorded in this file.
+
+**Confidence:** Extremely high. Master and stable-branch changes authored by Guy Harris.
+

@@ -81,3 +81,14 @@ Guy preferred common custom-block processing rather than repeated format-specifi
 **Implementation rule:** keep standardized pcapng framing and extension payload semantics as separate domains, document the defining source for an extension, and reuse generic pcapng parsing/registration machinery.
 
 **Confidence:** Extremely high. Direct Guy Harris review plus adjacent Guy-authored merged follow-ups.
+
+## Early provenance: normalize block and option framing in common code
+
+Merged master MRs !3372 and !3373, both authored by Guy Harris, provide early high-authority evidence for the common-framing rule recorded above. !3372 moves tolerated 4-byte block-length normalization into the common pcapng reader so individual block handlers do not repeat it. !3373 then moves option-header reading, length validation, content reading, and padding into common option-processing code, leaving typed/block-specific callbacks with normalized option code, length, and content.
+
+Merged !3374 immediately removes per-handler rounding that became redundant after !3372, demonstrating the intended architectural consequence of centralization.
+
+**Implementation rule:** container-wide compatibility quirks and framing mechanics should be normalized once at the shared read boundary. A block-specific handler should receive the semantic extent it parses rather than duplicate header/padding policy.
+
+**Confidence:** Extremely high. Three adjacent merged master changes authored by Guy Harris, and independently corroborated by the later pcapng architecture series in this notebook.
+
