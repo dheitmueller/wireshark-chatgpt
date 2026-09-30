@@ -174,3 +174,16 @@ Merged master MR !5090 makes the generator/build-type distinction explicit. Grah
 **Build rule:** use `CMAKE_BUILD_TYPE` only where the generator is single-config. Configuration-sensitive paths, packaging choices, or status intended to work with Visual Studio, Xcode, or another multi-config generator must use CMake's configuration-aware mechanisms instead of assuming a generation-time active build type.
 
 **Confidence:** Very high. Direct review in merged master plus later accepted fixes.
+
+## Reconfigure optional dependencies from clean CMake state when feature toggles change
+
+Optional-dependency failures can be artifacts of stale CMake cache state rather than source-code dependency bugs. CMake cache variables do not carry a complete dependency graph that invalidates every previously discovered `*_FOUND` or `HAVE_*` result when the corresponding `ENABLE_*` option changes.
+
+Closed MRs !4227 and !4223 provide useful diagnostic history. Guy Harris reproduced the disabled-feature configurations independently, then traced the reported contradictions through `config.h` and `CMakeCache.txt`. In !4227, clearing `CMakeCache.txt` fixed the reporter's failure; Guy noted that when changing CMake configuration parameters he normally recreates the build directory. Merged !4221 attempted an SMI source guard for the same class of symptom, but João Valverde later reverted it in merged !4229 after the stale-configuration explanation prevailed.
+
+**Build/reproduction rule:** when changing optional-feature switches such as `ENABLE_*`, reproduce the result from a clean build directory, or at minimum clear the CMake cache, before changing source conditionals. Inspect both the generated configuration header and `CMakeCache.txt` when `HAVE_*`, `*_FOUND`, and `ENABLE_*` disagree.
+
+**Review rule:** do not add source-level guards merely to accommodate contradictory generated configuration state until a clean configure reproduces the contradiction. A stale cache is build state, not an API contract source code should encode.
+
+**Confidence:** High for the workflow rule because it comes from detailed Guy Harris review and is corroborated by the later merged revert. The triggering !4227 and !4223 submissions were closed, so they are not implementation exemplars.
+

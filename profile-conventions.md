@@ -29,3 +29,16 @@ Merged MR !7359 makes command-line profile selection behave like the GUI when a 
 **Implementation rule:** when multiple frontends expose the same profile concept, share the same semantic operation rather than letting GUI and CLI behavior diverge accidentally. Frontend-specific error handling may differ, but the resulting profile state should match.
 
 **Confidence:** Very high. Merged master behavior-alignment change authored by John Thacker.
+
+## Register profile-owned files that are loaded lazily
+
+A file can semantically belong to a configuration profile even if no startup path happens to open it. Profile copy, import, export, and related operations therefore must not infer the complete profile file set solely from files touched during startup.
+
+Merged master MR !4219 moves Import Hex Dump dialog settings into a per-profile `import_hexdump.json` file. During review Roland Knall noticed that profile import/export and copy operations would not know about that file because the dialog is loaded lazily. Merged follow-up !4251 adds `profile_register_persconffile()` and explicitly registers both `io_graphs` and `import_hexdump.json` so the profile machinery knows about files that are not naturally discovered during startup.
+
+**Profile rule:** when a lazily loaded UI or subsystem owns a persistent file that is part of a profile, register that filename with the shared profile-file registry independently of whether the subsystem has been opened in the current process.
+
+**Testing rule:** for new per-profile files, test profile copy plus import/export without first opening the feature that consumes the file. Discovery must not depend on incidental UI execution order.
+
+**Confidence:** Very high. The settings change and the registration follow-up both merged, and the missing profile-operation coverage was identified directly during review.
+

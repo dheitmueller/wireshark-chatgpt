@@ -22,4 +22,4 @@ Primary durable themes recorded in `conventions-4211-4260.md`:
 - cross-platform getopt unification;
 - focused MR history, provenance, and test artifacts.
 
-Topical existing-file replacements were not forced after the repository mutation layer rejected Contents-API replacement writes in this run. The durable material is preserved in the authoritative per-run conventions and findings artifacts.
+Topical promotions completed in `build-conventions.md`, `platform-capability-detection-conventions.md`, `dfilter-type-inference-conventions.md`, `profile-conventions.md`, `library-layering-conventions.md`, and `reassembly-instance-identity-conventions.md`. The per-run conventions and findings artifacts remain the authoritative compact record of this batch.

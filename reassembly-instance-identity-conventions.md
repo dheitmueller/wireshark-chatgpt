@@ -44,3 +44,14 @@ Merged master MR !4599 adds WebSocket frame reassembly with a per-conversation f
 **Implementation rule:** assign each fragmented logical message a collision-free identity for its full lifetime and retain first-fragment-only semantic fields alongside that state. Do not dispatch partial continuation payloads as though they were complete application messages, and do not reconstruct completion semantics from the final fragment if the protocol defines them on the first.
 
 **Confidence:** Very high for the merged implementation; the closed predecessor is used only to explain why identity completeness matters.
+
+## Do not replace one incomplete reassembly identifier with another collision-prone scalar
+
+When an existing reassembly key is demonstrably non-unique, changing it to a different scalar is not enough unless the replacement is unique in the actual protocol and session domain. Frame numbers can collide when multiple reassembly instances begin in one frame; sequence numbers can wrap and can be reused by later connections with the same addresses and ports.
+
+Closed MR !4256 is useful negative-design history. John Thacker agreed that `msp->first_frame` is not unique when encapsulation allows more than one TCP multisegment PDU to begin in a frame, but warned that using only the TCP sequence number still risks wraparound, relative-sequence reuse, and connection reuse because the reassembly table itself did not distinguish TCP flows strongly enough. He described the more correct direction as scoping identity to the flow and then assigning a unique instance identifier. The MR was closed rather than accepted.
+
+**Design rule:** fix reassembly identity by modeling the complete uniqueness domain, not by swapping in another convenient scalar that happens to distinguish the reproducer. Include connection or flow identity and a per-instance discriminator whenever either coordinate alone can be reused.
+
+**Evidence weight:** Supporting negative evidence only because !4256 did not merge. The later merged John Thacker fixes !6330 and !6331 recorded above are the stronger accepted implementation precedent.
+

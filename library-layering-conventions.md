@@ -15,3 +15,14 @@ Merged master MR !21899, authored and merged by Guy Harris, moves compressed-fil
 Merged !21906, !21894, and !21896 independently reinforce the same broader principle at extension boundaries: generic Decode As, UI, and Lua infrastructure should use generic callbacks/adapters or isolate protocol-specific helpers instead of acquiring direct protocol dependencies. Those points are already covered in `application-layer-boundary-conventions.md`, so they are corroborating evidence rather than duplicate rules here.
 
 **Confidence:** Very high. The primary exemplar is a merged master architectural refactor authored and merged by Guy Harris with the dependency objective stated directly.
+
+## Generic numeric and address formatting belongs below EPAN
+
+A helper that performs generic numeric or address-to-text conversion does not inherently belong in the packet-analysis layer merely because its first users were there. If the operation has no EPAN-specific state or semantics, locating it in `wsutil` lets lower-level and higher-level consumers share the implementation without acquiring an EPAN dependency.
+
+Merged master MR !4212, authored by João Valverde, moves several numeric and IP formatting routines and their exported symbols from `epan/to_str` to `wsutil/to_str`, adjusts callers, and updates the shared-library symbol lists accordingly.
+
+**Architecture rule:** place generic conversion and formatting primitives in the lowest library that semantically owns them. Moving an exported helper across libraries is an ABI/package-surface change as well as a source refactor, so update symbol manifests and callers together.
+
+**Confidence:** Very high. Merged master library-layering refactor by João Valverde. It independently corroborates the later, stronger Guy Harris !21899 rule above about moving genuinely generic capabilities into the lowest common owning layer.
+

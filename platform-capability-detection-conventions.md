@@ -41,3 +41,16 @@ Merged master MR !12228, authored by Guy Harris, handles macOS 14 system libpcap
 **Diagnostic rule:** when a platform compatibility stub returns a generic error, translate it at the abstraction boundary into the feature the user was attempting to use. Preserve the underlying failure semantics, but make the unavailable capability clear enough to diagnose.
 
 **Confidence:** Extremely high. The master fix was authored by Guy Harris and directly documents the Sonoma libpcap stub behavior; the release backport immediately preserved the same policy.
+
+## Discover package-manager installation prefixes from the package manager, not from CPU architecture
+
+An architecture name is not a reliable package-manager installation locator. Installation layout can change independently of CPU architecture, users can have non-default prefixes, and one host can contain multiple package-manager installations for different build targets.
+
+Closed MR !4242 proposed selecting Homebrew's prefix from the macOS processor architecture. Guy Harris challenged that assumption and the scope of the claimed fix; the discussion converged on asking Homebrew for its own prefix instead. Gerald Combs specifically suggested invoking `brew --prefix` directly and checking its result. Roland Knall additionally argued for an explicit user-supplied path because `PATH` may not contain Homebrew during initial configuration and multi-install or cross-architecture setups can contain more than one valid Homebrew tree.
+
+**Discovery rule:** when an external package manager can report its installation prefix, prefer that authoritative query over reconstructing the path from host architecture or historical defaults. Preserve a user/configuration override when multiple installations or cross-target builds can make the executable found through `PATH` ambiguous.
+
+**Scope rule:** describe the fix in terms of the environment it actually changes. A Homebrew-specific path fix is not a generic macOS ARM build fix if non-Homebrew ARM builds already work.
+
+**Confidence:** Medium-high as durable maintainer guidance. Guy Harris, Gerald Combs, and Roland Knall gave detailed review, but !4242 was ultimately closed rather than merged, so this is review-derived guidance rather than accepted implementation precedent.
+
