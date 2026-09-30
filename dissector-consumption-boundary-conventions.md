@@ -79,3 +79,12 @@ Merged master MR !4202, authored by Guy Harris, changes the IEC 61850 SV dissect
 **Generated-source note:** for generated dissectors, apply the boundary fix in the authoritative template/configuration source and regenerate, as !4202 does, rather than patching the generated C alone.
 
 **Confidence:** Extremely high. Direct merged master implementation by Guy Harris.
+
+
+## Historical origin: RTCP child-consumed padding must be removed from parent state
+
+Merged master MR !4071 is the original RTCP transport-feedback padding correction later seen in !4388. The child decoder consumes the packet padding itself and clears the parent's shared padding flag before returning, preventing the outer RTCP parser from treating already-consumed framing as a second padding region and marking the packet malformed.
+
+This directly corroborates the existing ownership rule above: byte consumption by a nested dissector must be mirrored in the parent's framing state.
+
+**Confidence:** High. Merged master correctness fix with a precise reproducer/bug reference; later merged work independently reinforces the same contract.

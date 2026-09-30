@@ -48,3 +48,12 @@ Merged master MR !7581, also authored by John Thacker, converts many RTP payload
 **Architecture rule:** when a core registration table already owns the binding and preference machinery, prefer that single source of truth over parallel dissector-local preference state.
 
 **Confidence:** Very high. Both are merged master changes authored by John Thacker.
+
+
+## Removing a development preference can still require obsolete-key handling
+
+Merged master MR !4075 removes an O-RAN preference. Jaap Keuter objects to deleting the registration outright because existing preference files then produce read errors, and the accepted code registers the old key with `prefs_register_obsolete_preference()`. Anders Broman notes that the key existed only on the development branch, but the contributor keeps the obsolete registration because users were already running master.
+
+**Migration rule:** compatibility is determined by whether users may have persisted the key, not solely by whether it appeared in a formal stable release. When the migration cost is small, retain explicit obsolete-key recognition.
+
+**Confidence:** High. Merged implementation after direct Jaap Keuter review; discussion records the development-release nuance explicitly.

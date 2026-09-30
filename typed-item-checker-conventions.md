@@ -55,3 +55,14 @@ Merged MR !6871 expanded the CI invocation of `check_typed_item_calls.py` with t
 
 **Confidence:** High. Merged CI/tooling change with direct review from Alexis La Goutte.
 
+
+
+## Review warning-only checker output even when CI is green
+
+Merged master MR !4094 fixes a duplicate display-filter abbreviation. Martin Mathieson demonstrates `check_typed_item_calls.py --consecutive --file ...`, which also reports several field-width warnings in the same dissector, and explains that CI intentionally fails only obvious or clear checker errors so contribution friction stays reasonable.
+
+**Workflow rule:** run the checker locally on touched dissectors and inspect warning-only findings even when the pipeline passes. A green CI result means the hard-error threshold was not crossed; it does not mean there are no structural inconsistencies worth reviewing.
+
+**Historical note:** !4094 records an early single-file invocation. For current submissions use the repository's current command/options, including the later-established commit-range and bitmask checks recorded elsewhere in this notebook.
+
+**Confidence:** Very high. Merged correction with direct maintainer explanation from Martin Mathieson.

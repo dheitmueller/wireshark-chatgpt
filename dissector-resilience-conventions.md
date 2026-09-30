@@ -33,3 +33,11 @@ Merged MR !20646, authored and merged by Guy Harris, handles LDANeo picosecond t
 **Implementation rule:** optional numeric decoding should degrade explicitly. If an exact result cannot be computed on a supported build target, omit that derived value and report the limitation; never present an approximation as though it were the protocol value unless the protocol/API explicitly defines that approximation.
 
 **Confidence:** Extremely high. Merged master change authored and merged by Guy Harris, with the graceful-degradation behavior stated directly in the MR description.
+
+## Explicit schema fallback is safer than inferring omission from malformed ordering
+
+Merged master MR !4104 adds partial-schema support to Thrift subdissectors. Jaap Keuter objected to an approach that inferred an omitted field from numeric field ordering because Wireshark must remain robust when wire data itself is wrong. Anders Broman proposed making the caller's intent explicit instead; the accepted implementation adds `DE_THRIFT_T_GENERIC` so one declared field can deliberately fall back to the generic Thrift decoder.
+
+**Implementation rule:** if a specialized decoder intentionally delegates part of a structure to a generic decoder, encode that intent explicitly in its schema/API. Do not overload malformed or out-of-order input as a control signal for fallback.
+
+**Confidence:** Very high. Merged master design revised directly in response to Jaap Keuter and Anders Broman review.

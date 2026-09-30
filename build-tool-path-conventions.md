@@ -16,3 +16,12 @@ Merged master MR !5111, authored by Jörg Mayer, handles Qt 6 extending CMake's 
 **Review rule:** major dependency migrations should audit shared CMake variables for side effects from package discovery, not only whether `find_package()` succeeds.
 
 **Confidence:** High. Merged master build-system fix that isolates a concrete Qt 6 side effect without changing normal Qt 5 resolution.
+
+
+## Use the output directory of the concrete target being invoked
+
+Merged master MR !4062 removes a hand-built `WS_PROGRAM_PATH` and uses CMake's `$<TARGET_FILE_DIR:tshark>` generator expression. Merged !4074 then corrects the test runner to use `$<TARGET_FILE_DIR:wmem_test>`, because the tshark directory represented only some executable layouts on macOS.
+
+**Rule:** derive an executable path from the exact CMake target needed by the command. Do not reconstruct platform/configuration layouts manually, and do not assume a different executable target necessarily lands in the same output directory.
+
+**Confidence:** Very high. Two merged build-system fixes authored by Gerald Combs.
