@@ -17,3 +17,15 @@ Merged release MRs !15204 and !15205, authored and merged by Guy Harris, harden 
 **Review implication:** malformed-file tests should include undersized headers, total lengths smaller than header lengths, unsupported header variants, truncated reads, and failed seeks where practical. Review every subtraction and derived seek against the validated invariants that make it safe.
 
 **Confidence:** Extremely high. Both accepted fixes were authored and merged by Guy Harris, and !15204 explicitly changes the reader's validation, error propagation, seek checking, and cleanup behavior.
+
+## Treat unexpected EOF during packet reread as a read failure
+
+Random-access packet reread has a stronger precondition than sequential iteration: the packet was already discovered successfully, so an end-of-file result at its recorded offset is not the normal end of iteration.
+
+During review of merged master MR 4353, which adds a default seek-and-read implementation for Lua FileHandlers, Guy Harris says that this case should report `WTAP_ERR_SHORT_READ`. He also notes that the rule is general enough to enforce at the shared Wiretap layer so C and Lua readers receive the same behavior.
+
+**Reader-contract rule:** distinguish normal sequential EOF from unexpected EOF while rereading a previously discovered packet.
+
+**Layering rule:** when an error-semantic invariant applies to every reader backend, prefer enforcing it at the shared abstraction boundary rather than separately in each implementation.
+
+**Confidence:** High as direct senior-maintainer review guidance from Guy Harris. The specific merge supplies the fallback mechanism; the shared-layer placement is review guidance rather than proof of the exact historical implementation.

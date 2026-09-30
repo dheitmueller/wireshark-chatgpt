@@ -157,3 +157,16 @@ Merged master MR !5260, authored by João Valverde, refactors `format_size()` ac
 **Implementation rule:** represent a mutually exclusive mode as one enum/value and reserve bit flags for independent modifiers that can legitimately be combined. If callers need casts or language-specific operator overloads merely to combine conceptually different categories, reconsider the API model rather than normalizing the workaround.
 
 **Confidence:** Very high. Merged master API cleanup by João Valverde with all callers and unit tests migrated to the separated contract.
+
+
+## Prefix project-owned public compatibility APIs to avoid system namespace collisions
+
+A compatibility wrapper can reproduce the behavior of a platform API without inheriting its unqualified identifier namespace. Public structures, constants, and macros are especially prone to collisions because they enter many translation units and can coexist with native SDK headers.
+
+Merged master MR 4341, authored by João Valverde, renames Wireshark's getopt compatibility surface from generic identifiers such as `struct option`, `no_argument`, `required_argument`, and `optional_argument` to `struct ws_option` and `ws_*_argument`. The MR rationale explicitly says these names are part of the API and need renaming to avoid conflicts.
+
+**API rule:** give project-owned public C types, macros, and constants a project namespace even when they intentionally mimic a familiar system interface. Compatibility should be behavioral, not an invitation to claim libc or SDK identifiers.
+
+**Review rule:** when adding a public compatibility shim, inspect not just exported functions but every type/tag, macro, enum constant, and helper symbol exposed by its header for collision risk.
+
+**Confidence:** Very high. Merged master API cleanup by João Valverde with the collision concern stated directly in the accepted change.

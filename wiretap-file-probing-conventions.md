@@ -25,3 +25,17 @@ The same merged !13461 change checks `file_eof()` after a negative peek/read res
 **Testing rule:** include zero-length and truncated inputs, high-bit byte values on paths that use character-oriented I/O, and injected/read-error cases where practical. Run on or otherwise exercise both signed- and unsigned-`char` assumptions when a parser has historically stored stdio results in `char`.
 
 **Confidence:** Very high. Merged master Wiretap correctness/portability fix authored and merged by John Thacker, with the signedness failure modes and EOF-vs-I/O distinction described directly in the accepted change.
+
+## Put a conservative work budget on speculative format detection
+
+A Wiretap opener can run merely because a file is being considered, before Wireshark knows that the format belongs to that opener. A weak heuristic therefore must not use the format's maximum legal file size as permission to scan arbitrarily far into an unrecognized file.
+
+Merged master MR 4344, authored by John Thacker, fixes CAM Inspector and Ixia VeriWave probes that could read an enormous candidate file while `wtap_open_offline()` was still determining its type. The same change also moves the CAM Inspector accounting to a width that cannot overflow when evaluating a large candidate. The accepted implementation introduces a finite probe bound. Direct review from Guy Harris says even the historical 1 GiB bound could probably be cut back much further, suggesting roughly 1 MiB or 16 MiB.
+
+**Format-probing rule:** impose an explicit work/byte budget on speculative recognition, independent of the largest file the committed reader can handle. The budget should be only as large as needed to distinguish the format with acceptable confidence.
+
+**Arithmetic rule:** counters used to score a bounded or unbounded probe must still be wide enough for the maximum values and intermediate expressions they can reach.
+
+**Review rule:** treat the numeric threshold in MR 4344 as historical, not normative. Guy's review is strong evidence that reviewers should challenge an apparently bounded probe that can still stall interactive callers for an unreasonable amount of time.
+
+**Confidence:** Extremely high for the bounded-probe principle: merged master correctness/performance fix by John Thacker plus direct Guy Harris review. The exact byte budget remains format-specific.

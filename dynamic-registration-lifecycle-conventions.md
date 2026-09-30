@@ -21,3 +21,12 @@ Merged !4362, with release-3.4 backport !4361, fixes capture information state w
 **Implementation rule:** a mutable preference can decide whether a resource is created, but once creation has happened, later use and cleanup must follow actual ownership state. Clear that state when the resource is released so subsequent callbacks cannot mistake it for a live resource.
 
 **Confidence:** High. All three rules come from merged accepted changes; !4363 and !4362 are authored by Stig Bjørlykke and !4361 independently carries the capture-resource correction to a maintained branch.
+
+
+## Master-origin strengthening: retained packet state drives reclamation timing
+
+Merged master MR 4324 is the origin of the delayed heuristic-registration cleanup later carried to release-3.4 by MR 4332 and independently encountered again in reviewed MR 4363. The UDP path can store a heuristic-table entry pointer in packet protocol data; reloading Lua plugins can deregister that heuristic while already-dissected packets still hold the pointer. The accepted master change therefore removes the entry from active lookup but places its allocation on deferred deregistration cleanup instead of freeing it immediately. Discussion includes a reproducer confirmation that this fixes the crash when combined with Lua reload.
+
+**Strengthened rule:** determine reclamation time from the last possible retained reference, not the registry operation itself. Redissection is often the event that makes packet-attached references obsolete, so plugin, field, and heuristic teardown must respect that boundary.
+
+**Confidence:** Very high. This is the merged master-origin implementation, corroborated by a stable backport and by later merged lifecycle fixes.

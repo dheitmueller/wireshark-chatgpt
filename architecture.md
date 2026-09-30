@@ -128,3 +128,16 @@ Merged master MR !9716, authored and merged by John Thacker, fixes tshark packet
 **Review rule:** for refcounted objects embedded in larger records or contexts, trace who owns a reference before and after each lifecycle API. Reset functions deserve particular attention because they may clear structure state and release objects that later output or copy code still expects.
 
 **Confidence:** Extremely high. Merged master lifetime fix authored and merged by John Thacker, plus an accepted stable backport.
+
+
+## Keep epan below dissectors in the dependency graph
+
+Merged master MR 4319, authored by João Valverde, records an explicit Wireshark architecture direction in the developer documentation: `epan/` must be buildable without depending on `epan/dissectors/`. Dissector code is a client of the API provided by epan; the reverse dependency is intentionally not part of the architecture.
+
+The MR ties that separation to runtime registration of dissectors, preferences, taps, and extension mechanisms. That inversion makes plugin support possible and leaves room for on-demand dissector loading and more isolated testing.
+
+**Architecture rule:** common epan facilities must not call upward into concrete dissector implementations through hard-coded link dependencies. When epan needs behavior supplied by dissectors or extensions, model it through an epan-owned registration, table, callback, or interface and let the higher layer register its implementation.
+
+**Review rule:** a convenient include or direct call from `epan/` into `epan/dissectors/` is an architecture regression even when it resolves an immediate implementation problem. Look for an inversion point instead.
+
+**Confidence:** Very high. This is explicit architecture guidance merged into Wireshark's own developer documentation by João Valverde.
