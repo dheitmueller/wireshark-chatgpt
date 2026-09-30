@@ -45,3 +45,14 @@ Merged !3686 extends ProtoField masks from 32 to 64 bits. Review explicitly iden
 **Testing rule:** cover the supported argument representations, nil/default handling, invalid values, and platform compiler diagnostics around width/format conversion.
 
 **Confidence:** High. Merged scripting API extension whose design was shaped by explicit discussion of Lua's numeric precision limits.
+
+## Distinguish reported length from captured length
+
+Merged master MR !3353, authored by Guy Harris, makes the WSLua TVBuff length contract explicit: reported length is the logical length the packet or subset had on the network, while captured length is the amount the capture process saved. It adds `Tvb:captured_len()` and retains the established `Tvb:len()` behavior as a backwards-compatible captured-length alias rather than silently changing it. Stable backports !3354 and !3355 preserve the same distinction. Guy's adjacent !3356-!3358 correct `reported_length_remaining()` documentation to match the implementation's zero result rather than an obsolete `-1` description.
+
+**API rule:** expose reported and captured length as separate concepts. Do not call captured length the "actual" length, and preserve established scripting behavior when introducing a more precise API name.
+
+**Dissector rule:** use reported length for the logical on-wire extent unless code specifically needs the amount physically captured.
+
+**Confidence:** Extremely high. Master and stable changes were authored by Guy Harris.
+
