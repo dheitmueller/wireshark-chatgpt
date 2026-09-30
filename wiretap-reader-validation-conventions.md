@@ -29,3 +29,14 @@ During review of merged master MR 4353, which adds a default seek-and-read imple
 **Layering rule:** when an error-semantic invariant applies to every reader backend, prefer enforcing it at the shared abstraction boundary rather than separately in each implementation.
 
 **Confidence:** High as direct senior-maintainer review guidance from Guy Harris. The specific merge supplies the fallback mechanism; the shared-layer placement is review guidance rather than proof of the exact historical implementation.
+
+
+## Return error text with the ownership required by the Wiretap API
+
+An error-output parameter is also a memory-ownership contract. Returning a pointer to static storage through an output that callers release can make the error path itself invalid even though the message text is constant.
+
+Merged master MR 4284 changes the USBDump reader's `err_info` assignment from a string literal to allocated GLib storage. The identical fix was carried to release-3.4 and master-3.2 by MRs 4285 and 4286, both authored by Guy Harris.
+
+**Error-contract rule:** when a Wiretap `gchar **err_info` path transfers ownership to a caller that frees the string, allocate the diagnostic with the expected allocator on every path. Do not return a literal or borrowed pointer merely because the message has static contents.
+
+**Confidence:** Extremely high. Merged master fix plus two maintained-branch backports authored by Guy Harris.

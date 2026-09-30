@@ -130,3 +130,24 @@ Merged master MR !4604 applies the same capacity principle to Bluetooth SDP cont
 **Safety rule:** validate both sides of every packet-to-state copy. Source availability protects the read; destination capacity protects the write. When recovery is useful, clamp only to an explicitly known-safe destination bound and preserve an expert diagnostic that the wire value was invalid.
 
 **Confidence:** Extremely high. Two merged master memory-safety fixes authored by Gerald Combs, one with maintained-branch backports.
+
+
+## Do not start protocol-level defragmentation from an incomplete transport fragment
+
+A higher-layer reassembly preference does not make an incomplete lower-layer fragment safe to insert into the higher-layer reassembly state.
+
+Merged master MR 4283, authored by John Thacker, changes RPC-over-TCP so RPC fragment defragmentation is allowed only when the complete RPC record fragment is available. When the TCP segment lacks required bytes and TCP desegmentation cannot or will not supply them, the dissector reports that a segment is needed and disables RPC-level defragmentation for that path.
+
+**Reassembly rule:** before adding a protocol fragment to a second reassembly layer, prove that the bytes defining that fragment are complete at the transport layer. Missing lower-layer data must not become a partially populated higher-layer fragment simply because the higher-layer preference is enabled.
+
+**Confidence:** Very high. Merged master correctness fix by John Thacker; later maintained-branch work independently corroborates the same prerequisite.
+
+## Keep reassembly navigation references distinct from reassembly identity
+
+A frame-number reference and a grouping identifier answer different questions. Overloading one field for both can create self-references and break the semantic meaning users already rely on.
+
+In closed MR 4290, Pascal Quantin rejects adding `tcp.reassembled_in` to the frame where reassembly itself completes because the field is intended to navigate from a contributing segment to that completion frame. Ronnie Sahlberg confirms that the omission was intentional and suggests a separate integer `tcp.reassembly_id`-style field if users need to group all member frames.
+
+**Field-semantics rule:** preserve the established meaning of generated reassembly fields. If a workflow needs a stable equivalence/group key, add a distinct identity field rather than making a directional frame reference point to itself.
+
+**Confidence:** High as explicit design guidance from Pascal Quantin and Ronnie Sahlberg, but the MR itself was closed; treat this as negative-review guidance rather than accepted implementation precedent.

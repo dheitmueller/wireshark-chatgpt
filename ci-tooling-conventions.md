@@ -127,3 +127,14 @@ Merged master MR !9545 corrects the MSYS2 workflow by carrying the workflow's im
 **CI rule:** a job's package-build source identity should remain the same as the revision being validated. When a nested build system resolves source independently, pass it the immutable revision from the outer CI job rather than relying on a moving branch name.
 
 **Confidence:** High. Merged master build-infrastructure correction whose MR description identifies the branch-tip mismatch.
+
+
+## Run source checkers only on translation units valid for the active target
+
+A checker that invokes a compiler or compiler-like parser inherits the platform assumptions required by the source file. Scanning every C file uniformly can therefore create false CI failures when some files are intentionally valid only under another target's headers, defines, or APIs.
+
+Guy Harris-authored merged master MR 4273 updates `tools/validate-clang-check.sh` to skip `capture-wpcap.c`, explicitly noting that it is compiled only on Windows, just like the existing ETW exclusions. The issue surfaced while MR 4272 was fixing a legitimate build without libpcap; the host-side checker failure was not evidence that the Windows translation unit itself was wrong.
+
+**CI/checker rule:** source-analysis wrappers must model target eligibility. If a translation unit is platform-exclusive, either run its compiler-based checks in that target environment or exclude it from incompatible host checks; do not force it through a host compilation context that the build never uses.
+
+**Confidence:** Extremely high. Merged master checker fix authored by Guy Harris, with the concrete CI interaction visible in MR 4272.

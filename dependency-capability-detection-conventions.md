@@ -43,3 +43,20 @@ Merged stable MR !4482 handles distributions that provide minizip-ng compatibili
 **Implementation rule:** when distributions can substitute implementations behind the same dependency name, detect the exact declaration, member, or signature the source uses. Package identity alone is not a capability contract.
 
 **Confidence:** High. Merged maintained-branch backport, consistent with the direct-capability guidance above.
+
+
+## Strengthening: package identity can hide a different compatibility implementation
+
+Merged master MR 4275 is the master-origin evidence for the Minizip compatibility rule later seen through stable MR 4482. Some distributions expose minizip-ng compatibility code under the traditional minizip package/library identity, but the `zip_fileinfo` member spelling differs. Wireshark therefore probes the concrete struct member in the installed header and selects the compatibility path from observed API shape.
+
+**Strengthened rule:** when downstream distributions can substitute implementations behind the same dependency name, make the configure test about the exact declaration/member/signature the source consumes. The installed package name is provenance, not a sufficient API capability test.
+
+**Confidence:** Very high. Merged master implementation by João Valverde, later corroborated on a maintained branch.
+
+## Probe required C-library semantics, not merely symbol availability
+
+Merged master MR 4263 uses a configure-time run test to verify the C99 `snprintf`/`vsnprintf` truncation-return contract that Wireshark depends on. If the behavior is absent, configuration fails with the target system and compiler identified instead of allowing a build whose formatting semantics are incompatible.
+
+**Implementation rule:** if correctness depends on a library function's behavior rather than its existence, use a semantic configure/run probe when the build environment permits it. Make a mandatory contract fail early and diagnostically rather than relying on platform/version folklore.
+
+**Confidence:** Very high. Merged master portability/build change by João Valverde, followed by MinGW adjustments that make the probe run under the intended runtime semantics.

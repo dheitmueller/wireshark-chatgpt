@@ -83,3 +83,13 @@ Merged master MR !14929, authored and merged by Guy Harris, introduces `PI_DISSE
 **Diagnostic rule:** choose the expert group/protocol owner according to the failed semantic contract. Use packet-malformation diagnostics only when the packet representation itself is malformed; use dissector-bug diagnostics for internal implementation failures, and unreassembled/incomplete-data diagnostics when missing reconstruction is the actual cause. Do not make the packet carry blame for a Wireshark implementation or processing-state failure.
 
 **Confidence:** Extremely high. Two merged master corrections authored and merged by Guy Harris, with the unreassembled correction also accepted on supported release branches.
+
+## Malformed packet arithmetic must stay inside defined C behavior
+
+A packet can encode a value outside Wireshark's supported numeric domain. That does not authorize the parser to execute undefined C operations or convert a packet problem into an assertion failure.
+
+Merged master MRs 4292 and 4295, authored by John Thacker, harden H.264 and H.265 Exp-Golomb decoding. They special-case the 32-leading-zero boundary to avoid shifting a 32-bit integer by 32, clamp unsupported larger values, attach malformed expert information, and advance according to the encoded extent. The same code keeps `DISSECTOR_ASSERT_FIELD_TYPE` for the implementation-controlled field-registration invariant while explicitly avoiding `DISSECTOR_ASSERT` for invalid packet content.
+
+**Implementation rule:** validate packet-controlled shift counts, widths, and arithmetic before performing the C operation. Recover/report malformed wire values through normal dissector diagnostics where practical; reserve assertions for invariants the program controls rather than for hostile packet values.
+
+**Confidence:** Very high. Two parallel merged master fixes by John Thacker, with the assertion-versus-malformed distinction stated directly in the accepted commit rationale.
