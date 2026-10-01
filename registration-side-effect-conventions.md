@@ -34,3 +34,12 @@ Merged master MR !5209, authored by Pascal Quantin, removes the WebSocket handof
 **Review rule:** when a preference module has a non-NULL apply callback, inspect what state each preference changes and every side effect of the callback. Registration code that is safe once at startup may be wrong when invoked repeatedly from preference application.
 
 **Confidence:** Very high. Merged master fix by Pascal Quantin with a maintained-branch corroborating MR.
+
+
+## Keep one-time registrations inside one-time initialization
+
+Merged master MR !3123, authored by John Thacker, moves RANAP heuristic registration inside the handoff routine's initialization guard. Preference changes can call the handoff path again; leaving heuristic registration outside the guard caused attempts to register the same SCCP/SUA heuristic dissectors repeatedly. Release-3.4 MR !3124 carries the same fix.
+
+**Rule:** separate handoff work that may legitimately repeat after preference changes from global registry mutations that must happen once. Put one-time registrations under the initialization guard rather than assuming the containing handoff routine itself runs only once.
+
+**Confidence:** Extremely high. Merged master fix authored by John Thacker with a maintained-branch backport.
