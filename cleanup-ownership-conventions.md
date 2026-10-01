@@ -28,3 +28,27 @@ Merged master MR !5911, authored by Guy Harris, fixes `libpcap_open()` by settin
 **Initialization rule:** when the cleanup routine may inspect fields of a partially initialized private object, prefer zero-initialization so untouched members begin in a safe neutral state.
 
 **Confidence:** Extremely high. Merged master resource-lifetime fix authored by Guy Harris and motivated by a concrete Coverity leak finding.
+
+## Allocate only after prerequisites are satisfied and track ownership transfer explicitly
+
+Avoid allocating an object before the code knows it has the information required to use or transfer that object. Once an allocation can be handed to another owner, make that ownership transition explicit so every non-transferred object is freed exactly once.
+
+Merged master MR !3083, authored by Guy Harris, fixes RTP-stream discovery by delaying allocation of the forward and reverse `rtpstream_id_t` objects until after the display filter has been compiled, the frame has been dissected, and the required SSRC field has actually been found. The routine then tracks whether each allocated ID was appended to the caller's output vector; any ID that was not transferred is freed before return.
+
+**Ownership rule:** allocate as late as practical, after fallible prerequisites that do not need the object. When insertion into an output container or another owner is conditional, track successful transfer explicitly and retain cleanup responsibility until that transfer occurs.
+
+**Review rule:** for a leak in code that allocates early, consider changing the lifetime boundary rather than merely adding frees to every earlier failure path. Fewer live resources across fallible operations means fewer cleanup states to audit.
+
+**Confidence:** Extremely high. Merged master lifetime cleanup authored by Guy Harris with the allocation and transfer rationale stated directly in the change.
+
+## Centralize failure cleanup and preserve the primary error
+
+A common failure epilogue should own teardown that is shared by multiple failure paths. Do not perform the same destructive cleanup immediately before jumping to that epilogue, and do not replace the operation's primary failure with an incidental cleanup failure unless the API contract specifically requires that.
+
+Merged master MR !3079, authored by Guy Harris, removes a duplicate unlink in `cf_export_specified_packets()`: the packet-processing failure path already jumps to shared failure code that removes the temporary file, so unlinking it first only duplicates teardown. The same change documents why an error returned by `wtap_dump_close()` is not reported in that path: the packet-processing error that caused the export to fail has already been reported. Merged !3076 and its stable backports independently ensure that the abort path both unlinks the temporary file and frees its allocated pathname.
+
+**Cleanup rule:** give each resource-removal action one owner on a given exit path, preferably a shared epilogue when several failures converge there.
+
+**Diagnostic rule:** distinguish the failure that caused the operation to fail from errors encountered while cleaning up after it. Preserve the primary diagnostic unless cleanup failure itself changes the externally visible result or leaves an important unsafe state.
+
+**Confidence:** Extremely high. Merged master cleanup changes authored by Guy Harris, with the duplicate-cleanup and diagnostic rationale stated directly.

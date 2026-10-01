@@ -88,3 +88,15 @@ Merged master MR !4071 is the original RTCP transport-feedback padding correctio
 This directly corroborates the existing ownership rule above: byte consumption by a nested dissector must be mirrored in the parent's framing state.
 
 **Confidence:** High. Merged master correctness fix with a precise reproducer/bug reference; later merged work independently reinforces the same contract.
+
+## Give reusable child dissectors a bounded TVBuff and the standard dissector contract
+
+When a nested protocol already has a well-defined byte extent, prefer passing a TVBuff subset containing exactly that extent instead of passing the parent's TVBuff plus separate offset and length parameters. If the child can reasonably be invoked from more than one carrier, give it the normal `dissector_t` signature so it can become a first-class dissector handle without another parsing API.
+
+Merged master MR !3093, authored by John Thacker, refactors DVB-S2 GSE accordingly. The BBFrame parser now constructs a subset for each GSE region, and `dissect_dvb_s2_gse()` receives only that bounded TVBuff with the normal packet-info/tree/data signature. The MR explicitly notes that this makes the code cleaner and permits future direct GSE dissector handles for GSE frames carried outside a BBFrame.
+
+**Boundary rule:** encode the child's byte boundary in its TVBuff when the parent already knows that boundary. This removes an extra coordinate system from the child and makes “remaining length” naturally relative to the child protocol unit.
+
+**Architecture rule:** use the standard dissector signature for a coherent subprotocol that may have multiple carriers. Carrier-specific code should establish framing/bounds; the child should consume its own bounded protocol unit.
+
+**Confidence:** Extremely high. Merged master dissector refactor authored by John Thacker with the reuse/boundary rationale stated directly.

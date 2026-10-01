@@ -31,3 +31,15 @@ Roland Knall's review exposed the corresponding lifetime constraint: a menu that
 **Implementation rule:** prefer the ordinary application event loop over nested event loops when blocking semantics are unnecessary. When converting synchronous UI work to asynchronous behavior, redesign object ownership/lifetime at the same time.
 
 **Confidence:** Very high. Merged broad Qt change with direct Tomasz Moń and Roland Knall design discussion.
+
+## Make printf-style helpers compiler-checkable and keep per-call scratch state local
+
+A variadic formatting helper should declare its printf-like contract so the compiler can check format strings against arguments. If its formatting buffer is only scratch space for one invocation, that buffer should be automatic rather than mutable static storage so concurrent or nested calls do not share it.
+
+Merged master MR !3075, authored by Guy Harris, adds `G_GNUC_PRINTF(4, 5)` to O-RAN's `write_pdu_label_and_info()`. The annotation immediately exposes a real missing `%d` argument, which the same change fixes. The MR also changes the helper's static formatting buffer to a stack-local buffer specifically to make it thread-safe.
+
+**Implementation rule:** annotate internal printf-like variadic functions with the compiler-supported format attribute, not only public library APIs. Treat warnings from that annotation as contract bugs rather than cosmetic diagnostics.
+
+**State rule:** scratch formatting buffers belong to the invocation unless persistence or process-wide sharing is intentional. Mutable static scratch storage creates an unnecessary cross-call concurrency and re-entry dependency.
+
+**Confidence:** Extremely high. Merged master cleanup authored by Guy Harris; the compiler-checking and thread-safety motivations are explicit.

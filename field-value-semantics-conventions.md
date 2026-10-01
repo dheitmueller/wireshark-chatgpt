@@ -142,3 +142,15 @@ Merged MR !9512 registered an O-RAN grouping item as `FT_STRING` with a nonzero 
 **Implementation rule:** use `FT_NONE` for a synthetic grouping item with no semantic value, and do not attach integer-style masks to string or no-value fields.
 
 **Confidence:** High as negative-plus-corrective evidence: direct John Thacker review followed by an immediate merged revert.
+
+## Store the typed field value and let field metadata provide reusable display formatting
+
+When the protocol-tree field has a real typed value, add that value through the appropriate typed API and put reusable presentation rules in the field registration. Do not reduce the field to an ad hoc formatted string merely to obtain one visual representation.
+
+Merged master MR !3073, authored by Guy Harris, changes a DOF session key from manual `bytestring_to_str(..., ':')` formatting plus `proto_tree_add_bytes_format_value()` to `proto_tree_add_bytes_with_length()`, and registers the `FT_BYTES` field with `SEP_COLON`. This makes the 32-byte session key and its length the actual field value, delegates colon-separated rendering to libwireshark, and removes the temporary formatted-string allocation that was leaking.
+
+**Field rule:** preserve the semantic value in the tree and use registration metadata such as the appropriate display mode/separator for presentation that should follow the field across tree, filter, column, and export consumers.
+
+**API rule:** prefer a typed add routine that records the complete value contract over a formatting-only path that happens to make the tree look right. Manual formatting should be reserved for presentation that is genuinely local to one item.
+
+**Confidence:** Extremely high. Merged master field/API cleanup authored by Guy Harris with the value, length, formatting, and leak rationale stated directly.

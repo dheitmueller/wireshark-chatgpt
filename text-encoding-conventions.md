@@ -164,3 +164,15 @@ Merged master MR !8199, authored by John Thacker, changes PFCP APN/FQDN handling
 **Implementation rule:** identify the exact field encoding and invoke its shared decoder. Do not infer a broader session encoding when the command/field has a stricter contract.
 
 **Confidence:** Extremely high. Two merged master changes authored by John Thacker.
+
+## Parse structural octets before applying character decoding
+
+A protocol-specific string encoding can contain non-character framing bytes such as label lengths. Those bytes must remain in the structural byte domain; passing the entire encoded region through a generic character decoder can transform framing values and make subsequent parsing incorrect.
+
+Merged master MR !3062, authored by Guy Harris, rewrites `ENC_APN_STR` handling so the APN/FQDN representation is parsed label by label. The one-octet label lengths are consumed as raw structure, only the label payload octets are treated as ASCII text, non-ASCII label bytes become the Unicode replacement character, and remaining length is checked while parsing. The implementation is centralized in the TVBuff encoding path rather than repeated in individual dissectors. The later reviewed !3111 then benefits from that abstraction by switching a dissector to the canonical `ENC_APN_STR` decoder.
+
+**Implementation rule:** when a text-like wire representation interleaves framing bytes with character data, decode in two stages: parse the framing in the raw-byte domain, then apply the character encoding only to the byte ranges that are semantically text. Do not make structural octets survive an unrelated text-decoder transformation.
+
+**Architecture rule:** if the structured text encoding is reused by multiple protocols, put its framing-plus-decoding semantics behind the shared `ENC_*`/TVBuff layer so callers select the encoding rather than reimplementing its parser.
+
+**Confidence:** Extremely high. Merged core text-decoding implementation authored by Guy Harris and independently exercised by a later accepted dissector conversion.
