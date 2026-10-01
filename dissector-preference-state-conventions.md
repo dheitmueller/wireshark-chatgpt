@@ -20,3 +20,11 @@ Merged master MR !9145 is the original TCP correction later carried by the alrea
 This provides direct master-branch provenance for the rule above: preference-controlled analysis may consume foundational state, but it must not be the only code path that creates state required for baseline protocol identity or stream numbering.
 
 **Confidence:** Very high. Merged master correctness fix, independently reinforced by two maintained-branch backports.
+
+## Optional analysis features may have semantic prerequisites
+
+Merged master MR !3255 fixes TCP out-of-order reassembly when Sequence Number Analysis is disabled. Out-of-order reassembly depends on sequence-analysis state to distinguish and order segments correctly, especially when ports are reused and a later conversation has lower sequence numbers. The accepted condition therefore enables the feature only when sequence analysis, TCP desegmentation, and out-of-order reassembly are all active.
+
+**Implementation rule:** if one analysis feature depends on state established by another, either establish the prerequisite state independently or make the dependent feature conditional on the prerequisite. A separately exposed preference does not imply semantic independence.
+
+**Confidence:** Very high. Merged master correctness fix with a concrete port-reuse/reassembly failure mode.

@@ -13,3 +13,13 @@ Merged master MR !15281 fixes dumpcap's pcapng pipe reader. `cap_pipe_max_pkt_si
 **Review rule:** for container formats with heterogeneous block types, test at least one large valid metadata/control block and one over-limit data block. The former should remain accepted while the latter is rejected according to the intended resource policy.
 
 **Confidence:** Very high. Merged master capture-path correctness fix with the mismatch between pcapng block semantics and the packet-size limit made explicit in the accepted implementation.
+
+## Bound each block parser to the block's declared data extent
+
+Merged master MR !3247, authored by Guy Harris, reworked the pcapng file dissector so each block-type parser receives a tvbuff restricted to that block's data portion. A `ReportedBoundsError` inside that bounded view then identifies a block whose declared length is too short, and the dissector reports the structural defect on the block-length item. The same change checks that the trailing block length matches the leading block length and updates file-format tests to validate both values.
+
+**Implementation rule:** give a nested/container parser a bounded view of the semantic object it owns rather than the remainder of the enclosing file. Let normal bounds handling detect attempts to cross the declared object boundary, then translate that failure into the format-specific structural diagnostic.
+
+**Testing rule:** when a container repeats or cross-checks length metadata, validate the redundant framing value as well as the decoded content.
+
+**Confidence:** Extremely high. Merged master parser architecture and tests authored by Guy Harris.

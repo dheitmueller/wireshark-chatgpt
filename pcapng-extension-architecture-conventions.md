@@ -92,3 +92,12 @@ Merged !3374 immediately removes per-handler rounding that became redundant afte
 
 **Confidence:** Extremely high. Three adjacent merged master changes authored by Guy Harris, and independently corroborated by the later pcapng architecture series in this notebook.
 
+## Early opaque custom-block round-trip semantics
+
+Merged master MR !3256 added first-class handling for pcapng Custom Blocks before the later generic extension-registration architecture recorded above. Unknown Custom Blocks were carried through Wiretap as opaque records with their PEN and payload intact, and the pcapng copy/no-copy block type was retained as an explicit copying policy. The writer omitted blocks whose format semantics said they must not be copied.
+
+The dispatch details in this early implementation were later generalized, so !3256 is not precedent for hard-coding vendor/PEN interpretation in common code. Its durable lesson is the separation between preservation policy and semantic interpretation.
+
+**Implementation rule:** preserve enough framing, identity, payload, and copying policy to round-trip unknown extension records when the format permits it. Semantic interpretation belongs in the current generic extension mechanism.
+
+**Confidence:** High. Merged master support with explicit copy/no-copy behavior; later generic registration supersedes the dispatch mechanism, not the preservation rule.

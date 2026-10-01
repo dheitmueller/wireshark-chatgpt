@@ -41,3 +41,13 @@ Merged master MR !13227, authored and merged by Gerald Combs, fixes Windows pack
 **Testing rule:** validate the installed/package artifact, not only the build tree. For Windows runtime dependencies, exercise a clean target without the developer environment's dependency paths so omitted DLLs cannot be accidentally satisfied by the build host.
 
 **Confidence:** Very high. The missing-runtime fix and immediate single-source cleanup were both merged master packaging changes authored and merged by Gerald Combs, with equivalent release-branch propagation.
+
+## Artifact-format migrations require an end-to-end integration sweep
+
+Merged master MR !3213, authored by Gerald Combs, replaced Windows CHM help with chunked HTML. The accepted change touched the documentation build, NSIS and WiX harvesting, installer directory layout, uninstall rules, runtime help URL selection, and build-system dependencies. Afterward Graham Bloice identified an obsolete Buildbot archiving step and Chuck Craft found stale website help links; Gerald removed or fixed both.
+
+**Packaging rule:** changing the format or location of a shipped artifact requires auditing its generators, packagers, installers, uninstallers, runtime locators, publication/archive jobs, and public links.
+
+**Testing rule:** validate the installed artifact and publication/documentation surface, not only the source-tree build.
+
+**Confidence:** Very high. Merged cross-layer packaging migration authored by Gerald Combs with concrete integration issues found in review.
