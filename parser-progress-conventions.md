@@ -86,3 +86,11 @@ Merged master MR !3207, authored by Guy Harris, fixes an IEEE 802.11 HE Trigger 
 **Assertion rule:** assertions are appropriate for a default case only after an outer validator guarantees arbitrary malformed packet values cannot reach it. Once that precondition holds, an unhandled enum member represents a programmer/invariant failure rather than malformed input.
 
 **Confidence:** Extremely high. The initial merged fix was authored by Guy Harris and the merged follow-up contains direct Guy review of the enum/default contract.
+
+## Unknown-but-valid extensions must still make bounded progress
+
+Merged master MR !2248 fixes a GQUIC regression caused by an earlier infinite-loop hardening change. Stopping at every unknown tag prevented the loop, but also stopped dissection at protocol-valid extension tags that Wireshark did not yet implement. The accepted fix validates the tag length, advances over the unknown value, continues parsing later tags, and separately retains an accumulated-offset overflow/progress check. Stable backports !2249 and !2257 preserve the same behavior.
+
+**Parser rule:** defend against malformed-input loops by proving bounded forward progress, not by treating every unknown extension as terminal. When an unknown extension has a valid bounded length, skip/preserve it and continue parsing subsequent structure.
+
+**Confidence:** Very high. Merged master correctness fix with stable-branch propagation and explicit regression/infinite-loop validation.

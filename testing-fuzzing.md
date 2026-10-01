@@ -96,3 +96,13 @@ Merged master MR !2264 contains direct João Valverde review of NetPerfMeter and
 Merged !2301 independently provides a focused MPEG-TS capture for a section/stuffing boundary regression.
 
 **Confidence:** Very high. Direct review on a merged test change plus a focused merged reproducer.
+
+## Keep the regression test even when a different implementation fix wins
+
+Merged master MR !2254 originally carried tests plus an implementation fix for incorrect search offsets in subsets of composite TVBuffs. Gerald Combs noted that merged !2556 had fixed the implementation by another approach and asked the contributor to drop the duplicate production change while retaining the tvbtest additions. The accepted MR therefore records the observable contract independently of the mechanism that now satisfies it.
+
+**Testing rule:** when a focused regression test captures a real behavioral contract, keep it even if a different patch supplies the implementation fix. Tests should encode the bug boundary and expected result, not the identity of the patch that happened to repair it.
+
+Closed MR !2250 offers lower-weight architectural guidance for future unit-test work: João Valverde considered generated-TVBuff plus proto-tree assertions promising, but objected to broadening production symbol linkage merely to make internal dissector routines callable from tests. White-box tests should avoid distorting the shipped library interface solely for test access.
+
+**Confidence:** Very high for the retained-regression-test rule because it merged with direct Gerald Combs guidance; medium for the white-box linkage caution because !2250 was closed.
