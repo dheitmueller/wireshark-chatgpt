@@ -15,3 +15,14 @@ Gerald also notes that this reduces fuzzing noise: a packet-reachable assertion 
 **Review rule:** when a reproducer reaches an assertion, first determine whether the predicate is truly an internal invariant. If normal malformed, truncated, or configuration-dependent input can violate it, convert the path to the semantic runtime error.
 
 **Confidence:** Very high. Merged master correctness change authored by Gerald Combs with explicit runtime rationale.
+
+
+## Build-optional assertions cannot carry runtime validation
+
+Merged master MR !2268, with review from Guy Harris and Pascal Quantin, documents that `ws_assert()` is for internal programming invariants, may be absent in selected release builds, and must have no side effects. Packet values must be handled through ordinary parser validation instead. The discussion also distinguishes optional diagnostic assertions from checks whose result is required for correct indexing or allocator state.
+
+Merged !2284 supplies the test-side complement by using GLib test assertions that remain active for test verification.
+
+**Implementation rule:** if normal program behavior depends on a predicate being checked, use an always-active validation path. Reserve build-optional assertions for internal invariants.
+
+**Confidence:** Very high. Merged implementation with direct maintainer review.

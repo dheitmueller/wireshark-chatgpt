@@ -51,3 +51,14 @@ Merged stable MR !4474 changes MPEG-TS continuity-counter loss from `PI_MALFORME
 **Diagnostic rule:** classify missing, duplicated, or out-of-order progression as a sequence condition when packet syntax is otherwise valid. Reserve `PI_MALFORMED` for invalid protocol structure; choose severity independently.
 
 **Confidence:** High. Merged maintained-branch correction consistent with the taxonomy above.
+
+
+## Validate group and severity independently
+
+Merged master MR !2295 adds registration-time checks after finding expert-info declarations where group and severity values were swapped or drawn from the wrong set. The change is useful evidence that these are separate semantic domains even when represented by similar integer constants.
+
+**Registration rule:** validate expert-info group and severity independently. Prefer APIs and naming that make the two domains difficult to interchange.
+
+Merged !2273 adds a presentation caveat: a normal preference-disabled state that applies broadly need not become expert info if that would colorize or populate the expert view for otherwise ordinary packets.
+
+**Confidence:** High. Merged changes with direct maintainer discussion.

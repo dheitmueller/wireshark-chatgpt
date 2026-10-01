@@ -163,3 +163,14 @@ Merged MR !2915 was followed by a legitimate Coverity uninitialized-variable rep
 **Submission rule:** after merge, open a new MR for a newly discovered correctness fix rather than trying to extend the merged MR. Link the follow-up when useful so reviewers can see the causal history.
 
 **Confidence:** Very high. Direct Pascal Quantin guidance followed by the separately merged corrective MR !2927.
+
+
+## Avoid unnecessary rebases during active review
+
+Merged master MR !2270 contains direct Anders Broman feedback that repeated rebases were unnecessary while review comments still needed attention and caused repeated CI runs. This independently supports the existing guidance to keep a reviewable topic branch stable until a real conflict or requested history cleanup requires a rebase.
+
+Merged !2273 adds Pascal Quantin guidance that changing the MR title does not change the commit message. Keep the component-prefixed subject and issue reference in the commit itself, then clean up incidental commits before merge.
+
+**Submission rule:** rebase for a concrete reason, not only because the target branch advanced.
+
+**Confidence:** Very high. Direct maintainer feedback on merged MRs.

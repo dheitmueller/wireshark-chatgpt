@@ -85,3 +85,14 @@ Merged MR !7099 later received substantive post-merge review from Stig Bjørlykk
 **Structural-check rule:** for indexed subtree identifiers, verify both maximum runtime index against array capacity and registration of every identifier before use. Representative captures for newly added repeated structures should exercise those indexed paths.
 
 **Confidence:** Very high for the CI rule and high for the subtree rule. The latter is strong negative evidence from Stig's post-merge review rather than an endorsement of the original implementation.
+
+
+## Prefer small semantic fixtures over snapshots of ordinary tshark prose
+
+Merged master MR !2264 contains direct João Valverde review of NetPerfMeter and Follow-DCCP tests. He favored reducing captures to the traffic actually needed by the tests and objected to treating large blocks of ordinary tshark display text as a long-lived interface, because that presentation is not guaranteed to remain stable.
+
+**Testing rule:** keep captures as small as practical while retaining the behavior under test. Prefer stable fields, counts, or machine-oriented output over large snapshots of human-readable formatting. Multiple transport variants are justified when they exercise distinct dispatch mechanisms, not merely to repeat the same decoder path.
+
+Merged !2301 independently provides a focused MPEG-TS capture for a section/stuffing boundary regression.
+
+**Confidence:** Very high. Direct review on a merged test change plus a focused merged reproducer.

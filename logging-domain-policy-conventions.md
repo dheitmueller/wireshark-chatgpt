@@ -9,3 +9,12 @@ Merged MR 3262 changes ws_debug so function names are supplied centrally by the 
 Rule: standardized provenance belongs in the common logger when it can derive it correctly. Avoid manually embedding boilerplate function names in message strings because they drift during refactors and produce inconsistent formatting.
 
 Confidence: very high. All cited changes are merged master logging work authored by João Valverde.
+
+
+## Preserve explicit GLib domain selection
+
+Merged master MR !2280 checks whether `G_MESSAGES_DEBUG` is already set before applying a default and uses GLib's domain-aware default handler on Unix. This preserves selective domain logging instead of replacing it with a broader application default.
+
+**Logging rule:** an application default may fill in absent logging configuration, but should not replace an explicit domain selection.
+
+**Confidence:** Very high. Merged logging behavior change.

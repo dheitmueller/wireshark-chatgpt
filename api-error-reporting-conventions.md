@@ -78,3 +78,12 @@ This is early high-authority corroboration of the helper-failure propagation rul
 
 **Confidence:** Extremely high. Master and stable-branch changes authored by Guy Harris.
 
+
+
+## Separate concise diagnosis from optional remediation detail
+
+Merged master MR !2281 changes capture-interface capability reporting from one combined string into primary and secondary messages. The primary reason can be logged repeatedly without including a long platform or permissions tutorial; interactive frontends can choose to show the secondary guidance.
+
+**API rule:** when an error has both a concise cause and substantial remediation text, keep them as separate result fields so each caller can present the appropriate level of detail.
+
+**Confidence:** Very high. Merged cross-frontend capture API change.
