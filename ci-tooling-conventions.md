@@ -138,3 +138,14 @@ Guy Harris-authored merged master MR 4273 updates `tools/validate-clang-check.sh
 **CI/checker rule:** source-analysis wrappers must model target eligibility. If a translation unit is platform-exclusive, either run its compiler-based checks in that target environment or exclude it from incompatible host checks; do not force it through a host compilation context that the build never uses.
 
 **Confidence:** Extremely high. Merged master checker fix authored by Guy Harris, with the concrete CI interaction visible in MR 4272.
+
+
+## Make local commit hooks thin adapters to the canonical validator
+
+A developer hook should invoke the same repository validation logic used elsewhere rather than reimplementing commit-message policy in a second script. This keeps local feedback and CI behavior aligned and gives the project one place to fix parsing or policy bugs.
+
+Merged MR !2378 adds a small `commit-msg` hook that calls `tools/validate-commit.py --commitmsg` and extends the existing validator to accept a message file. During review, Pascal Quantin reported that the original Python invocation/shebang approach did not work out of the box on Windows, highlighting that developer-tool entry points need cross-platform execution testing even when the validation logic itself is portable.
+
+**Implementation rule:** keep local hooks as adapters to canonical repository checkers. Test the hook's invocation path on supported developer platforms, especially Windows, instead of assuming a Unix shebang or shell environment behaves identically everywhere.
+
+**Confidence:** High. Merged tooling change with direct cross-platform maintainer feedback.

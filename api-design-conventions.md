@@ -170,3 +170,24 @@ Merged master MR 4341, authored by João Valverde, renames Wireshark's getopt co
 **Review rule:** when adding a public compatibility shim, inspect not just exported functions but every type/tag, macro, enum constant, and helper symbol exposed by its header for collision risk.
 
 **Confidence:** Very high. Merged master API cleanup by João Valverde with the collision concern stated directly in the accepted change.
+
+
+## Export semantic capability queries, not representation-conversion machinery
+
+If callers need to know whether an operation is supported, expose that semantic capability directly rather than making them infer it by calling a low-level representation conversion. This keeps file-format details inside the subsystem that owns them and prevents implementation-specific numeric domains from leaking into unrelated UI or application code.
+
+Merged MR !2404, authored and merged by Guy Harris, makes `wtap_wtap_encap_to_pcap_encap()` private to libwiretap and exports `wtap_dump_can_write_encap()` instead. The Import From Hex Dump UI needs to know whether the pcap writer accepts a given Wiretap encapsulation; it does not need the corresponding LINKTYPE value.
+
+**Implementation rule:** design public/internal cross-subsystem APIs around the stable question the caller is asking. Keep conversion helpers private when exposing them would require callers to understand another format's representation.
+
+**Confidence:** Extremely high. Merged architectural cleanup authored and merged by Guy Harris.
+
+## A shared-library symbol is public API only when external consumers are intentionally supported
+
+Do not include built-in compatibility helpers in the exported ABI merely because their implementation lives in a shared library. Public symbol lists are contracts for supported external consumers, not inventories of every non-static function.
+
+Merged MR !2387, authored and merged by Guy Harris, removes `wtap_register_backwards_compatibility_lua_name` from the Debian libwiretap symbol list. Guy explicitly notes that the function exists only for built-in file type/subtype modules supporting an old deprecated Lua mechanism and is not for plugins.
+
+**Implementation rule:** audit exported symbols by intended consumer. Internal/built-in compatibility scaffolding should stay outside the public ABI unless third-party callers are deliberately supported.
+
+**Confidence:** Extremely high. Merged API/ABI correction authored and merged by Guy Harris.

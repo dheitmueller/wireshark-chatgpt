@@ -69,3 +69,15 @@ Merged master MR !14394, authored and merged by Guy Harris, changes the candump 
 **Review rule:** when a reader synthesizes packets, compare its output record with the existing wiretap encapsulation catalog before adding a generic metadata wrapper. Verify that native encapsulation preserves the desired dissector selection and any byte-order contract.
 
 **Confidence:** Extremely high. Merged master wiretap cleanup authored and merged by Guy Harris, with the unnecessary metadata and naming mismatch both called out explicitly.
+
+## Keep Wiretap encapsulation identifiers in their native semantic domain
+
+`WTAP_ENCAP_*` values are Wiretap's internal encapsulation identifiers; pcap/pcapng LINKTYPE values are a file-format representation. Do not pass one where an API expects the other merely because both are integers. Keep record/interface state in the Wiretap domain and translate only in the format-specific boundary that owns LINKTYPE encoding.
+
+Merged master MR !2369, authored by John Thacker, fixes Export-PDU code that had converted `WTAP_ENCAP_WIRESHARK_UPPER_PDU` to a pcap LINKTYPE and then stored that result in `wtap_rec.packet_header.pkt_encap`, which expects a Wiretap encapsulation. Guy Harris explicitly questioned the affected path during review, and John documented why the double conversion happened to work for pcapng while breaking pcap output. Guy-authored stable fixes !2390 and !2391 independently carry the corrected domain usage.
+
+Guy-authored merged MR !2388, with stable counterparts !2392 and !2393, adds a complementary pcapng writer invariant: the packet record's encapsulation must match the referenced interface description's encapsulation. A mismatch is rejected as an internal caller error rather than serialized into an inconsistent capture.
+
+**Implementation rule:** preserve encapsulation-domain types conceptually even when C represents them as plain integers. Translate `WTAP_ENCAP_*` to LINKTYPE only inside the format implementation that requires it, and verify that pcapng packet/interface metadata agree before writing.
+
+**Confidence:** Extremely high. Merged master changes with direct Guy Harris architecture review and Guy-authored master/stable invariant fixes.

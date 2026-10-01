@@ -91,3 +91,14 @@ Merged master MRs !8895, !8896, and !8897, all authored by John Thacker, convert
 **Implementation rule:** when the wire representation is a masked subfield, encode that mask in the `hf_` registration and let the standard tree API perform the extraction. Review JSON/PDML and other machine-output semantics as part of field correctness, not only what the GUI tree happens to display.
 
 **Confidence:** Very high. Three adjacent merged master corrections by John Thacker across independently generated ASN.1 dissectors.
+
+
+## Model single-bit fields as booleans with the containing field width
+
+When a protocol defines a one-bit flag inside an 8-, 16-, or 32-bit container, register it as `FT_BOOLEAN` with the display-width argument matching that containing field and with the appropriate bitmask. Do not substitute an integer field or pass an integer display base such as `BASE_HEX` where the boolean API expects the container width.
+
+In merged MR !2405, Pascal Quantin reviewed the NVMe Identify Controller expansion and explicitly corrected this point, giving examples such as `FT_BOOLEAN, 16, ..., 0x1` and `FT_BOOLEAN, 32, ..., 0x2`. The accepted revision converted the one-bit fields accordingly. The same review sequence also moved custom post-add formatting toward standard `VALS()`, true/false strings, unit metadata, and `BASE_CUSTOM` where those standard field mechanisms expressed the semantics.
+
+**Implementation rule:** for a masked one-bit registered field, use `FT_BOOLEAN`, set the containing field width correctly, and attach the mask/TFS metadata at registration time. Prefer declarative field metadata and standard tree/bitmask APIs over bespoke post-processing when they can express the protocol.
+
+**Confidence:** Very high. Direct Pascal Quantin guidance incorporated into a merged master dissector change after extensive core-developer review.
