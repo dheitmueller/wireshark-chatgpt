@@ -41,3 +41,12 @@ Merged !3668 adds separate `can.id` and `can.extended_id` tables because standar
 **Compatibility rule:** when an older generic extension point is already in use, preserve it as a fallback unless there is a deliberate migration plan. New more-specific registrations may take precedence without silently invalidating existing Decode-As or plugin registrations.
 
 **Confidence:** Very high. Merged master API design with multiple immediate merged adopters.
+
+
+## Attempt explicit payload mappings before heuristic dissectors
+
+Merged MR !2681 fixes MQTT subdissector selection. UAT-configured payload mappings and media-type dispatch are attempted first, their return values determine whether the payload was actually handled, and heuristic dissectors run only if neither explicit path succeeds. This corrects the earlier !2670 placement where heuristics were tied only to absence of a UAT match and could bypass the media-type decision.
+
+**Dispatch rule:** order candidate decoders from strongest explicit configuration/protocol metadata to weaker heuristics. Track whether each dispatch path actually accepted the payload; do not equate “a lookup path existed” with “the payload was handled.”
+
+**Confidence:** High. Merged master correction of the immediately preceding heuristic extension.

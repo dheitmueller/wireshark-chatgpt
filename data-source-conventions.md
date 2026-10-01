@@ -15,3 +15,12 @@ Merged master MR !21931, authored and merged by John Thacker, changes PER BIT ST
 **Review check:** when a new data source is added, verify both halves of the contract: (1) its `ds_tvb` is genuinely distinct from an already registered source, and (2) selecting tree fields backed by that `ds_tvb` selects/highlights the intended Packet Bytes view without redundant tabs.
 
 **Confidence:** Very high. Merged master change authored and merged by John Thacker, with an accepted release backport and an explicit GUI/data-source-identity rationale.
+
+
+## Treat metadata-prefixed payload separation as a cross-encapsulation architecture problem
+
+Merged MR !2661 adds a distinct Packet Bytes view for the over-the-air IEEE 802.15.4 payload carried after the TAP metadata header. During review, Guy Harris explicitly says the problem is not unique to that link type and calls the patch an acceptable short-term prototype while arguing for a general solution. He sketches a normalized metadata representation that multiple encapsulations could share, with careful placement between libwiretap and libwireshark so tools such as editcap can translate capture metadata without depending on dissectors.
+
+**Architecture rule:** when several capture encapsulations carry metadata plus a logical packet payload, do not assume the permanent solution belongs independently in every dissector. Evaluate a normalized capture-metadata boundary in Wiretap and a reusable presentation/data-source mechanism in libwireshark.
+
+**Confidence:** Extremely high. Merged master change with direct architectural guidance from Guy Harris.

@@ -21,3 +21,12 @@ Merged MR !15468, authored and merged by John Thacker, const-qualifies the `pack
 **Review rule:** treat const-correctness as architecture rather than cosmetic style. Check whether pointer mutability reflects who owns the object and whether a query operation truly needs mutation; improving those contracts can prevent accidental writes and remove friction between otherwise compatible callbacks.
 
 **Confidence:** Very high. Two merged master API cleanups authored by John Thacker, one merged by Anders Broman and one authored/merged by John, each with an explicit ownership/composability rationale.
+
+
+## Do not cast away const when passing context to an unknown callback
+
+Merged MR !2670 adds MQTT heuristic subdissectors that receive the topic string through the generic dissector `data` pointer. Rather than cast away `const` on caller-owned topic storage, the accepted implementation duplicates the topic into packet-scope writable memory before passing it to an unknown subdissector.
+
+**Ownership rule:** if a callback API exposes mutable `void *` context but the source object is read-only, do not grant mutation rights by casting away `const`. When the callback contract cannot be tightened, pass a scoped mutable copy whose ownership and lifetime are appropriate for the callback.
+
+**Confidence:** High. Merged master code with the mutability concern explicitly discussed during the MR.

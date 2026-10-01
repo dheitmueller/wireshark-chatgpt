@@ -57,3 +57,12 @@ Guy Harris-authored merged !3675 and !3676 clean up `--capture-comment`. The opt
 **Semantics rule:** if repeated occurrences are additive, keep every value and describe the option as “add” rather than “set.”
 
 **Confidence:** Extremely high. Two consecutive merged changes authored by Guy Harris.
+
+
+## Keep frontend-specific options out of generic capture option state
+
+Merged MR !2692, authored by Guy Harris, removes `-k` from `capture_opts_add_opt()`. “Start capture immediately” is meaningful for Wireshark because its GUI can start without capturing; dumpcap always captures, while TShark's behavior is driven by whether capture interfaces were supplied. The generic capture-options layer therefore should not own this Wireshark-only state.
+
+**Architecture rule:** share command-line parsing only where the option has the same semantic owner across consumers. An option's spelling or proximity to other capture switches is not enough to justify placing it in shared capture state.
+
+**Confidence:** Extremely high. Merged master refactor authored by Guy Harris.

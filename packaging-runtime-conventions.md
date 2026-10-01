@@ -13,3 +13,12 @@ Merged master MR !23609 originally attempted to disable software updates for Por
 **Review rule:** trace the artifact pipeline from compilation through packaging and launch. A preprocessor check is only meaningful if the compiler invocation differs; packaging metadata or launcher-provided state belongs at packaging/runtime boundaries.
 
 **Confidence:** Very high. Merged master behavior after direct John Thacker review corrected the original compile-time assumption, with further maintainer participation during the accepted revision.
+
+
+## Test installed runtime data from the package, not only from the build tree
+
+Merged MR !2706 adds the SparkplugB dissector and a bundled protobuf schema, requiring installer changes on several platforms. Review explicitly distinguishes running Wireshark from the build directory from validating an installed package. Jim Young builds the macOS DMG, installs it on another system, and verifies SparkplugB there, confirming that the schema is actually shipped and found at runtime.
+
+**Testing rule:** when a feature depends on installed schemas, plugins, configuration, or other data files, validate the packaged installation on the target platform. Build-tree execution can succeed while packaging manifests, install destinations, or runtime search paths are wrong.
+
+**Confidence:** Very high. Merged feature with explicit installed-package verification during review.
