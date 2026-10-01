@@ -188,3 +188,12 @@ Merged master !8432, also authored by João, removes logging's dependency on the
 
 **Confidence:** Very high for the lifecycle rule. Both changes merged; João Valverde authored them, and the later !8482 correction usefully qualifies the initial platform-storage details.
 
+
+
+## Stop and join QObject worker threads before destroying their owner
+
+Merged master !2616 replaces the capture-filter syntax worker's endless condition-variable loop with a QObject moved to a QThread and queued signal/slot work. `CaptureFilterEdit` becomes the explicit owner of the thread lifecycle: its destructor calls `quit()`, waits for the thread to finish, and only then destroys the participating thread/worker objects.
+
+**Lifecycle rule:** an owning UI object must not disappear while queued worker code can still execute against its state. Give worker threads an explicit shutdown path, stop their event loop, join them, and only then release the thread/worker/owner resources.
+
+**Confidence:** High. Merged master lifecycle refactor; independently consistent with the notebook's broader teardown/ownership guidance.

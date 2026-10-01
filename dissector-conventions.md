@@ -113,3 +113,20 @@ Merged master MR !8435 adds CIP object-specific services using a two-part (class
 
 **Confidence:** High. Merged master protocol-architecture change with a focused sample capture.
 
+
+
+## Keep signedness consistent across field registration, extraction, storage, and formatting
+
+Merged master !2625 changed an RTPS locator port to unsigned after Pascal Quantin checked the protocol specification. The correction required the entire path to agree: `FT_UINT32`, `guint32`, `proto_tree_add_item_ret_uint()`, and `%u`. Martin Mathieson's `tools/check_typed_item_calls.py` then found a remaining `proto_tree_add_item_ret_int()` call against the now-unsigned field, fixed in !2629; !2630 completed the remaining local-variable/formatter correction.
+
+**Review rule:** a field signedness/type change is incomplete until every tree helper, returned C type, local variable, formatter, and dependent call site agrees with the registered field semantics. Run the typed-item checker after such changes; registration edits can expose stale call sites elsewhere in a large dissector.
+
+**Confidence:** Very high. Three consecutive merged master fixes, with direct Pascal Quantin review and a checker finding reported by Martin Mathieson.
+
+## Prefix internal dissector helpers with the protocol identity even when they are static
+
+During merged master !2640, Anders Broman requested `tiff_*` names for internal variables/helpers and the usual `dissect_tiff_*` spelling for dissection functions. The contributor initially noted that the symbols were static, then adopted the protocol-prefixed naming after Anders explained the expected form.
+
+**Naming rule:** translation-unit-local linkage is not a reason to drop the protocol/dissector prefix. Prefix internal helpers and data with the protocol abbreviation and use the `dissect_<protocol>_*` pattern for dissection helpers so large source files, review, and code search remain unambiguous.
+
+**Confidence:** Very high. Direct Anders Broman naming guidance incorporated before merge.

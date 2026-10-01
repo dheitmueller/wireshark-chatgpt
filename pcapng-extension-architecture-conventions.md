@@ -101,3 +101,14 @@ The dispatch details in this early implementation were later generalized, so !32
 **Implementation rule:** preserve enough framing, identity, payload, and copying policy to round-trip unknown extension records when the format permits it. Semantic interpretation belongs in the current generic extension mechanism.
 
 **Confidence:** High. Merged master support with explicit copy/no-copy behavior; later generic registration supersedes the dispatch mechanism, not the preservation rule.
+
+
+## Treat pcapng version numbers as compatibility contracts, not feature inventories
+
+Merged master MR !2631 received extensive Guy Harris review after Sysdig-generated pcapng files used SHB version 1.2 in connection with new Sysdig block types. Guy emphasized the pcapng rule that a minor-version change is for a compatibility change an older reader cannot safely consume; adding a new block type or option is specifically not such a change. Once the new Sysdig material was shown to be independently skippable by readers that did not know those blocks, the accepted path was to read deployed 1.2 files as equivalent to 1.0 while keeping writers on the canonical version. Guy-authored master !2646 and release backports !2649/!2651 then documented that rationale directly in the version check.
+
+**Format rule:** a container-format version field is a compatibility contract, not an inventory of optional extensions. Do not bump it merely because a file can contain a new ignorable block or option. A reader may explicitly tolerate a known deployed noncanonical version when its semantics are demonstrably compatible; writers should continue to emit the canonical version.
+
+**Parser rule:** for block families with multiple layouts, select the layout from the block identity first, derive one authoritative minimum/header size, validate that minimum before reading fields, and use the same selected size for remaining-length accounting.
+
+**Confidence:** Extremely high. Merged master implementation with extensive direct Guy Harris review, followed by a Guy-authored clarification and two release backports.
