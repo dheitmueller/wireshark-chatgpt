@@ -44,3 +44,12 @@ Merged master MR !3201, authored by Guy Harris, moves Wiretap helpers for new-fi
 **API rule:** a public header and exported symbol are long-lived compatibility promises. If a routine is only required inside the library implementation, keep it on the internal API surface rather than exporting it for convenience. When correcting an accidental export, update both declarations and platform/package symbol lists so the ABI contract matches the intended ownership boundary.
 
 **Confidence:** Extremely high. Merged master API cleanup authored by Guy Harris.
+
+
+## Preserve multivalue status domains instead of collapsing them to booleans
+
+Merged master MR !3127, authored by Guy Harris, cleans up ERF option handling by storing the result of `wtap_block_get_nth_string_option_value()` in its declared `wtap_opttype_return_val` type and testing it explicitly against `WTAP_OPTTYPE_SUCCESS`. The API result is a status code with multiple possible values, not a boolean, even though the success value happens to be zero.
+
+**API rule:** preserve a function's declared status domain in the receiving type and compare against named status constants. Do not rely on incidental numeric truthiness when the return type represents more than success/failure; doing so hides the contract and makes later status expansion easier to mishandle.
+
+**Confidence:** Extremely high. Merged master API cleanup authored by Guy Harris with the rationale stated directly in the MR.
