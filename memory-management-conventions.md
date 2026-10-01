@@ -61,3 +61,12 @@ Merged MR !8992, authored by John Thacker, changes `tvb_uncompress()` from alloc
 **Implementation rule:** for a single contiguous accumulation buffer, use a growth primitive such as `g_realloc()` or an appropriate dynamic buffer instead of manually reallocating and copying the entire prefix on every append. Keep separate resource ceilings for hostile expansion; better growth complexity does not replace decompression-bomb limits.
 
 **Confidence:** Very high. Merged core TVBuff decompression optimization authored by John Thacker with the complexity failure mode stated explicitly.
+
+
+## Historical ptvcursor corroboration: use realloc for same-scope growth and keep byte counts explicit
+
+Merged master MR !2724, authored by Guy Harris, simplifies ptvcursor's dynamically grown subtree stack to use `wmem_realloc()` directly. The immediately related Guy-authored supported-branch fixes !2725 and !2726 expose the failure mode in the earlier manual allocate-and-copy implementation: `memcpy()` had been passed an element count where it required a byte count; the correction computes `sizeof(subtree_lvl) * old_count` before increasing capacity.
+
+**Implementation rule:** when one contiguous allocation is merely growing within the same allocator scope, prefer the allocator's realloc primitive. If a manual copy is unavoidable, keep element count, capacity, and byte count distinct and calculate the copy size from the old populated extent before mutating the capacity.
+
+**Confidence:** Extremely high. Three merged fixes authored by Guy Harris, with the master change eliminating the class of bookkeeping error seen in the supported branches.
