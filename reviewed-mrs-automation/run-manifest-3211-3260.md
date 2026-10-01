@@ -1,6 +1,6 @@
 # Run manifest: 3211-3260
 
-Authoritative run branch: automation/mr-review-3211-3260-authoritative
+Authoritative run branch: automation/mr-review-3211-3260-complete
 Predecessor branch: automation/mr-review-3261-3310-complete
 Predecessor commit: 3f88bb9a66b4dde3780c503799a88df3c935130b
 Corpus repository: dheitmueller/wireshark-corpus-mrs
