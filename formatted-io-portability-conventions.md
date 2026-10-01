@@ -20,3 +20,12 @@ Merged master MR !4564 fixes BPSEC/BPv7/COSE macOS builds by replacing C99 PRI m
 **Validation rule:** compile format-heavy changes on representative macOS/Linux/Windows architectures because a type combination that is indistinguishable on one ABI can be diagnosed on another.
 
 **Confidence:** Very high. Merged master portability fix with direct Pascal Quantin and João Valverde review.
+
+
+## Early corroboration: match GLib integer types to GLib format macros
+
+Merged master MR !3159 adds DCCP relative sequence numbers. Anders Broman explicitly requested `G_GUINT64_FORMAT` for the `guint64` values, and the contributor corrected the call sites before merge.
+
+**Rule:** choose the format macro from the actual C/GLib typedef used by the argument, not only from its nominal width.
+
+**Confidence:** Very high. Direct Anders Broman review incorporated before merge.
