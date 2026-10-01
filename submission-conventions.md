@@ -133,3 +133,12 @@ During merged master MR !4577, Alexis La Goutte asked the contributor to separat
 **Submission rule:** when a feature uncovers independently useful fixes to existing behavior, submit the fixes separately when they can stand on their own. Keep the feature branch dedicated to the feature so reviewers can reason about new architecture separately from unrelated corrections and maintainers can backport fixes without taking the feature.
 
 **Confidence:** Very high for scope separation because the requested split occurred before a merged MR; the closed branch example is lower-weight corroboration of the existing topic-branch rule.
+
+
+## Amended commit messages do not update the merge-request description
+
+During merged master MR !3188, Guy Harris noticed that the MR description lacked rationale and a reference that were present in the amended commit message. The contributor had updated the commit after creating the MR; GitLab did not propagate those edits into the MR text.
+
+**Submission rule:** treat the commit message and merge-request description as separate review artifacts. When amending rationale, examples, references, or footnotes in the commit message, update the MR description manually if reviewers rely on the same context.
+
+**Confidence:** Very high. Direct Guy Harris review on a merged master MR.

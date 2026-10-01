@@ -35,3 +35,12 @@ Merged master MR !11860, authored and merged by Guy Harris, changes common captu
 **Architecture rule:** shared option/control logic may define *when* discovery is needed without owning *how* a particular frontend performs it. Prefer an explicit callback/interface over conditional calls into application-specific code or duplicate shared logic in each executable.
 
 **Confidence:** Extremely high. Merged master architecture cleanup authored and merged by Guy Harris.
+
+
+## Remove accidental public ABI for implementation-only helpers
+
+Merged master MR !3201, authored by Guy Harris, moves Wiretap helpers for new-file SHB/NRB handling and generated IDBs out of public `wtap.h` into `wtap-int.h`, and removes their exported package symbols.
+
+**API rule:** a public header and exported symbol are long-lived compatibility promises. If a routine is only required inside the library implementation, keep it on the internal API surface rather than exporting it for convenience. When correcting an accidental export, update both declarations and platform/package symbol lists so the ABI contract matches the intended ownership boundary.
+
+**Confidence:** Extremely high. Merged master API cleanup authored by Guy Harris.

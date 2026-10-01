@@ -33,3 +33,12 @@ Merged master MR !6447 then switches TLS desegmentation to these TCP reassembly-
 **Ownership rule:** temporary search keys may borrow storage that outlives the lookup, while persistent keys must own every component whose source lifetime would otherwise end.
 
 **Confidence:** Extremely high. Both are merged master changes authored by John Thacker and provide the original implementation evidence for the later stable-branch records above.
+
+
+## Include security or epoch context when fragment identifiers can be reused
+
+Merged master MR !3206 expands the Bluetooth Mesh upper-transport reassembly key from source + SeqZero to source + SeqZero + IV index + a network-key/IV-index hash. The shorter key could identify fragments from different mesh security/IV contexts as though they belonged to one reassembly instance.
+
+**Identity rule:** if a fragment sequence identifier can be reused across keys, IV epochs, interfaces, directions, or comparable protocol contexts, include that context in reassembly equality. A key is complete only when equal keys necessarily refer to the same logical PDU instance.
+
+**Confidence:** High. Merged master correctness change with no contrary maintainer discussion.

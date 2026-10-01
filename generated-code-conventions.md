@@ -148,3 +148,14 @@ Merged master MR !4202, authored by Guy Harris, fixes IEC 61850 SV trailer handl
 **Review rule:** a generated-file diff should be traceable to the authoritative source change that produces it. Treat generated output as evidence of regeneration, not as the primary maintenance surface.
 
 **Confidence:** Extremely high. Direct merged master implementation and rationale from Guy Harris; independently corroborates the later generated-source rules in this file.
+
+
+## Regeneration is part of resolving review and rebase conflicts
+
+Merged master MR !3205 adds MS-KILE Kerberos key-list support by changing the ASN.1 source, conformance configuration, template code, and regenerated dissector together. During review, the contributor was explicitly asked to rebase onto master and resolve conflicts by regenerating the ASN.1 output. The MR also attached a capture and keytab that exercised request/reply structures and decryption-dependent learned-key behavior.
+
+**Workflow rule:** when an ASN.1-generated dissector conflicts during rebase, resolve the authoritative ASN.1/template/configuration inputs and regenerate; do not hand-merge the derivative C as the durable source of truth.
+
+**Testing rule:** for protocol features whose semantic path requires decryption or other external context, provide the capture plus the minimal redistributable key/material needed for reviewers and tests to exercise that path.
+
+**Confidence:** Very high. Merged master feature with explicit regeneration workflow and complete review vectors.

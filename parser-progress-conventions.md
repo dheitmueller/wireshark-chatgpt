@@ -75,3 +75,14 @@ Merged master MR !4570, authored by Gerald Combs, fixes a BT-DHT bencoded-list l
 **Progress rule:** for repeated packet-derived structures, compare the cursor before and after each iteration. If the parser cannot prove strict forward progress, diagnose the malformed element and stop rather than re-entering the loop at the same or an earlier position. This complements helper-specific return-value rules: the loop boundary is the final authority on whether progress occurred.
 
 **Confidence:** Very high. Merged master malformed-input fix authored by Gerald Combs with a maintained-branch backport.
+
+
+## Unknown subtype handling must preserve parser progress
+
+Merged master MR !3207, authored by Guy Harris, fixes an IEEE 802.11 HE Trigger infinite loop. An unknown ranging subtype caused the variant parser to consume zero bytes while the caller remained in a repeated user-info loop. The accepted fix terminates that path when the returned range length is zero. Merged !3209 explicitly enumerates valid subtypes, filters invalid values before calling the helper, and makes the helper's remaining default case `DISSECTOR_ASSERT_NOT_REACHED()`.
+
+**Progress rule:** if a packet-controlled helper participates in a repeated parse, a zero or unchanged cursor result must terminate or otherwise leave the loop; it must never silently re-enter at the same offset.
+
+**Assertion rule:** assertions are appropriate for a default case only after an outer validator guarantees arbitrary malformed packet values cannot reach it. Once that precondition holds, an unhandled enum member represents a programmer/invariant failure rather than malformed input.
+
+**Confidence:** Extremely high. The initial merged fix was authored by Guy Harris and the merged follow-up contains direct Guy review of the enum/default contract.
