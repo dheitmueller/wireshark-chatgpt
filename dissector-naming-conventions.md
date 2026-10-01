@@ -76,3 +76,14 @@ During merged master MR !3845, Anders Broman objected to a local helper using th
 **Naming rule:** prefix file-local dissector helpers with the protocol/dissector namespace rather than borrowing a prefix associated with common Wireshark APIs. Use inline only for a demonstrated reason, not as routine micro-optimization.
 
 **Confidence:** High. Direct maintainer review from Anders Broman and Alexis La Goutte on a merged master MR, with the naming change applied before merge.
+
+
+## Namespace enterprise-specific fields beneath the protocol and enterprise
+
+Vendor-specific fields are still part of Wireshark's global display-filter API. A flat protocol namespace makes ownership ambiguous and increases the chance that unrelated enterprise extensions collide or become hard to discover.
+
+In merged master MR !2945, which adds Broadband Forum TR-459 PFCP information elements, Anders Broman asked the contributor to change enterprise-specific field abbreviations to a structure such as `pfcp.bbf.up_function_features_o7_b0_pppoe`. He explicitly said the same pattern should be applied to the Travelping fields. The contributor also corrected stale Diameter-oriented naming/comments before merge.
+
+**Naming rule:** for enterprise/vendor extensions, build the filter abbreviation from the base protocol plus a stable enterprise identifier plus the field name, e.g. `protocol.enterprise.field`. Do not inherit another dissector's namespace merely because code was used as a starting point.
+
+**Confidence:** Very high. Direct Anders Broman review on a merged master MR, with the requested namespace applied before merge.

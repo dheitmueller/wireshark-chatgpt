@@ -46,3 +46,14 @@ Merged master MR !8622 moves the varint test's exception/result locals outside t
 **Review rule:** compiler-specific warnings around `TRY`/`CATCH` are not merely cosmetic. Trace which variables cross the exceptional control-flow edge and fix the storage contract rather than suppressing the diagnostic.
 
 **Confidence:** High. Merged master compiler-portability correction with maintainer approval; the rule follows directly from the exception mechanism and the accepted storage changes.
+
+
+## Contain malformed embedded child structures at the parent boundary
+
+A parent protocol can embed a structure whose normal dissector is designed for a richer transport/session context. The parent should give the child a tvbuff bounded to the decoded structure, and when malformed child data is expected to be reportable without losing the surrounding parent dissection, the parent/child integration needs an explicit exception boundary.
+
+Merged master MR !2947 decodes the HTTP `HTTP2-Settings` header from base64url into a new child tvbuff and adds it as a data source. Anders Broman explicitly suggested wrapping use of the HTTP/2 decoder in `TRY/CATCH` while investigating malformed input, and the merged implementation does so. It also exposes an HTTP/2 settings entry point that passes no HTTP/2 session and guards session-state updates when that context is absent; Pascal Quantin requested the dedicated subtree used for the embedded settings.
+
+**Implementation rule:** construct a child tvbuff at the semantic boundary and isolate nested-dissection failures when the parent can still be meaningfully displayed. If the ordinary child path mutates transport/session state, provide an entry point whose context contract matches the embedded caller instead of fabricating or assuming state.
+
+**Confidence:** Very high. Merged master implementation with direct Anders Broman and Pascal Quantin review incorporated before merge.

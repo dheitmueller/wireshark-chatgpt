@@ -142,3 +142,24 @@ During merged master MR !3188, Guy Harris noticed that the MR description lacked
 **Submission rule:** treat the commit message and merge-request description as separate review artifacts. When amending rationale, examples, references, or footnotes in the commit message, update the MR description manually if reviewers rely on the same context.
 
 **Confidence:** Very high. Direct Guy Harris review on a merged master MR.
+
+
+## Do not carry Gerrit Change-Id trailers into GitLab-era submissions
+
+Contribution metadata should match the review system Wireshark currently uses. Obsolete review-system trailers add noise and can mislead contributors about which local hooks are authoritative.
+
+During merged master MR !2926, Pascal Quantin explicitly told the contributor that GitLab does not require the Gerrit `Change-Id` parameter formerly appended to commit messages and recommended updating the contributor's Git hooks from Wireshark's `tools/` directory. The contributor acknowledged the correction.
+
+**Submission rule:** use the current project-provided Git hooks and do not add a Gerrit `Change-Id` trailer to GitLab merge-request commits unless a current project workflow explicitly requires it.
+
+**Confidence:** Very high. Direct Pascal Quantin maintainer guidance on a merged master MR.
+
+## Put post-merge correctness fixes in a new merge request
+
+Once a merge request has merged, its review unit and resulting commit history are complete. A defect discovered afterward should be proposed as a separate change so it receives its own CI/review record.
+
+Merged MR !2915 was followed by a legitimate Coverity uninitialized-variable report. The author asked Pascal Quantin whether the fix should be added to the already-approved/merged MR; Pascal answered that a new merge request was required. The correction then merged separately as !2927.
+
+**Submission rule:** after merge, open a new MR for a newly discovered correctness fix rather than trying to extend the merged MR. Link the follow-up when useful so reviewers can see the causal history.
+
+**Confidence:** Very high. Direct Pascal Quantin guidance followed by the separately merged corrective MR !2927.

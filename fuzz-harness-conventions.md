@@ -46,3 +46,18 @@ Merged MR !8261, authored and merged by Gerald Combs on a maintained branch, exp
 **Testing rule:** treat every loop iteration as a fresh testcase configuration. Reset all selection/range/retention variables before computing the next input's policy so a previous large or special-case capture cannot influence a later one.
 
 **Confidence:** High. Merged fuzz-driver correctness fix by Gerald Combs; stable-branch evidence, so it is used as corroborating harness guidance rather than a broad architecture rule.
+
+
+## Preserve fuzz repro artifacts and scope scheduling locks to the contended resource
+
+Scheduled fuzzing is only useful if a failure can be reproduced after the job ends. Long-running fuzz jobs also need serialization where they contend for the same scarce runner/resource, but unrelated maintained branches should not be forced through one global lock.
+
+The merged Gerald Combs CI series !2923, !2934, !2938, !2942, !2943, !2956, !2957, and !2960 builds this pattern incrementally. In !2938, scheduled ASAN, randpkt, and Valgrind stages preserve the failing capture plus fuzz stderr and upload those artifacts on failure. The fuzz jobs use a resource group to avoid overlapping runs. Stable-branch follow-ups !2956/!2957 and especially !2960 give maintained branches branch-specific fuzz scheduling/resource identities rather than serializing them on the master resource group.
+
+**CI rule:** on fuzz failure, retain the exact input and enough harness diagnostics to reproduce the failing invocation. Treat those artifacts as part of the test result, not incidental logs.
+
+**Scheduling rule:** serialize jobs only at the scope of the resource they actually contend for. Distinct maintained branches should use distinct resource-group identities when their fuzz runs can safely proceed independently.
+
+**Coverage rule:** complementary fuzz modes can catch different classes of defects; sanitizer, generated/random inputs, and Valgrind-style checking are valid distinct CI stages when their cost is controlled.
+
+**Confidence:** Very high. Multi-MR merged CI series authored by Gerald Combs, including explicit failure-artifact and branch-resource-group behavior.
