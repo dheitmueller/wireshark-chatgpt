@@ -102,3 +102,10 @@ In merged MR !2405, Pascal Quantin reviewed the NVMe Identify Controller expansi
 **Implementation rule:** for a masked one-bit registered field, use `FT_BOOLEAN`, set the containing field width correctly, and attach the mask/TFS metadata at registration time. Prefer declarative field metadata and standard tree/bitmask APIs over bespoke post-processing when they can express the protocol.
 
 **Confidence:** Very high. Direct Pascal Quantin guidance incorporated into a merged master dissector change after extensive core-developer review.
+## Historical maintainer guidance confirms that return-value helpers apply the registered mask
+
+Merged master MR !2195 contains direct Anders Broman guidance on a two-octet MUX27010 length field. The initial change displayed the field and then manually fetched, masked, and shifted the same bytes. Anders recommended `proto_tree_add_item_ret_uint()` with the correct little-endian encoding and pointed out that the mask from the `hf_` registration is already applied by the helper. The accepted revision also changes the destination from `guint16` to `guint32`, matching the helper's output-pointer contract.
+
+**Corroborating rule:** when the registered mask/endian metadata already yields the logical field value, use one `proto_tree_add_item_ret_*` operation and consume that result. Do not duplicate the mask/shift, and give the helper storage of the width its API actually writes.
+
+**Confidence:** Very high. Direct Anders Broman review incorporated into a merged master dissector fix; it independently supports the newer return-helper rules above.

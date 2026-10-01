@@ -53,3 +53,10 @@ Merged master MR !15189 was authored by Gerald Combs and merged by Anders Broman
 **Submission rule:** a new or modified recursive dissector should make its termination/depth argument visible in the code and review. If recursion is inherently bounded by protocol structure, document or preserve that invariant; otherwise use the checked dissection-depth helpers. Do not treat silencing `misc-no-recursion` as the objective—the objective is bounded work and bounded stack use on malformed captures.
 
 **Confidence:** Extremely high. This is merged project developer documentation authored by Gerald Combs and accepted by Anders Broman, so it represents unusually direct evidence of intended Wireshark contributor policy.
+## Earlier clang-tidy review confirms that suppression follows the safety mechanism
+
+Merged master MR !2184 contains direct Gerald Combs guidance from the introduction of Wireshark's recursion warning checks. Gerald states that potentially unbounded recursion can be guarded with `increment_dissection_depth()` and `decrement_dissection_depth()`; only after the recursion is known to be safe should a local `NOLINTNEXTLINE(misc-no-recursion)` suppress the analyzer warning.
+
+**Corroborating review rule:** treat a recursion diagnostic as a request to establish the resource bound first. A suppression documents that the safety argument has already been made; it is not the safety mechanism.
+
+**Confidence:** Extremely high as historical project-policy evidence: direct Gerald Combs review on a merged master dissector change, consistent with the later developer-documentation rule already recorded above.

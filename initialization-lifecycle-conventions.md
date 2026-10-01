@@ -197,3 +197,12 @@ Merged master !2616 replaces the capture-filter syntax worker's endless conditio
 **Lifecycle rule:** an owning UI object must not disappear while queued worker code can still execute against its state. Give worker threads an explicit shutdown path, stop their event loop, join them, and only then release the thread/worker/owner resources.
 
 **Confidence:** High. Merged master lifecycle refactor; independently consistent with the notebook's broader teardown/ownership guidance.
+## Initialize registry providers before consumers bind runtime registry identities
+
+When a consumer's registration step needs an identity assigned by another subsystem's runtime registry, the registry-owning subsystem must be initialized first. This is a dependency edge between lifecycle phases, not an incidental ordering preference.
+
+Merged master MR !2164, authored by Guy Harris, moves ERF and systemd-journal file types to runtime Wiretap registration and adds the same explanatory comment to Wireshark, TShark, Sharkd, fuzzshark, dftest, and related entry points: libwiretap must be initialized before libwireshark/dissector registration so file-type-dependent dissector handlers can resolve the registered file type/subtype value. The registration code also checks name lookup failure before binding a dissector to the runtime subtype.
+
+**Architecture rule:** initialize the subsystem that assigns registry identities before any consumer resolves or binds those identities. Make the dependency explicit at process initialization entry points rather than relying on the old stability of compile-time constants.
+
+**Confidence:** Extremely high. Merged master lifecycle/registry refactor authored by Guy Harris across multiple frontends.

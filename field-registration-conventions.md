@@ -23,3 +23,13 @@ Merged master MR !16507, authored and merged by John Thacker, fixes 6LoWPAN fiel
 **Implementation rule:** treat field-registration and protocol-tree display parameters according to their declared semantic enum domain. Never substitute a size or width merely because the underlying C type accepts it; prefer named enum constants so the intended behavior is reviewable and resilient to API changes.
 
 **Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker and propagated to two stable branches.
+
+## Keep value_string_ext data ordered when indexed lookup is expected
+
+A `value_string_ext` can use faster indexed lookup only when its value table satisfies the ordering assumptions of that lookup. Adding a registry value in the wrong numerical position can silently degrade the table to linear search even though display strings remain correct.
+
+Merged master MR !2188 moved the SCTP PPID table into a reusable `value_string_ext`. During review Anders Broman surfaced the generated glossary warning that entry value 49 followed 50, forcing fallback to linear search. The accepted revision restores numerical order and explicitly represents unassigned holes needed to preserve the table structure.
+
+**Registration rule:** preserve numerical ordering in `value_string_ext` tables and treat glossary/startup warnings about linear-search fallback as a real table-invariant warning.
+
+**Confidence:** Very high. Merged master change corrected during direct Anders Broman review.

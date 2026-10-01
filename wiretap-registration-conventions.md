@@ -25,3 +25,24 @@ Merged master MR !2215, authored by Guy Harris, renames wtap_register_file_type_
 **Plugin/API rule:** name registration APIs after their actual cardinality and semantics. When a plugin-facing structure has materially changed, an intentional rebuild break can be safer than preserving a compatibility surface that lets stale plugins silently misdescribe their capabilities. Reject invalid plugin registrations with a diagnostic rather than terminating the application when continued operation is safe.
 
 **Confidence:** Extremely high. Direct merged master API and registration cleanup authored by Guy Harris.
+## Treat file type/subtype numbers as runtime registry identities
+
+A Wiretap file type/subtype is a registry identity, not a permanent protocol constant that unrelated code should bake in. Format modules should register themselves, retain their assigned runtime identity, and expose a semantic accessor only when callers genuinely need to name a well-known format.
+
+Merged master MR !2164, authored by Guy Harris, converts ERF and systemd-journal subtypes from fixed `WTAP_FILE_TYPE_SUBTYPE_*` constants to runtime registration. Merged Guy-authored !2201 does the same for pcap, nanosecond pcap, and pcapng, replacing direct constants with `wtap_pcap_file_type_subtype()`, `wtap_pcap_nsec_file_type_subtype()`, and `wtap_pcapng_file_type_subtype()`. Diagnostics on an already-open dumper query `wtap_dump_file_type_subtype()` instead of assuming the writer format.
+
+**Registry rule:** treat numeric subtype values as results of the format registry. Keep the identity inside Wiretap and expose the semantic query a caller needs rather than encouraging callers to depend on numeric layout.
+
+**Confidence:** Extremely high. Two merged master architectural refactors authored by Guy Harris.
+
+## Model format support as explicit block/option capabilities
+
+Generic save/export code should ask a file handler which abstract structures it supports rather than infer capabilities from format names or maintain parallel booleans for comments, name-resolution records, interface IDs, and similar features.
+
+Guy Harris's merged master MR !2183 replaces those coarse properties with `supported_block_type` and `supported_option_type` tables, including multiplicity. The Wiretap abstraction is deliberately semantic: a native format need not literally contain a pcapng-style block for Wiretap to expose the corresponding abstract information. In particular, `WTAP_BLOCK_IF_ID_AND_INFO` means packet records can be associated with an interface; a format that merely lists interfaces without packet-to-interface identity must not advertise that capability.
+
+Guy-authored follow-up !2192 immediately fixes the nested capability-table traversal, where the option loop accidentally incremented/indexed the block-loop variable. The accepted code uses distinct `block_idx` and `option_idx` variables.
+
+**Capability rule:** let each format owner declare the exact abstract block/option contract it implements and have generic code query that contract. In nested capability structures, keep index variables tied to their semantic domain so a block index cannot silently be reused as an option index.
+
+**Confidence:** Extremely high. Merged master architecture and immediate correctness follow-up authored by Guy Harris.

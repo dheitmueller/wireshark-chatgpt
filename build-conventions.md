@@ -186,4 +186,12 @@ Closed MRs !4227 and !4223 provide useful diagnostic history. Guy Harris reprodu
 **Review rule:** do not add source-level guards merely to accommodate contradictory generated configuration state until a clean configure reproduces the contradiction. A stale cache is build state, not an API contract source code should encode.
 
 **Confidence:** High for the workflow rule because it comes from detailed Guy Harris review and is corroborated by the later merged revert. The triggering !4227 and !4223 submissions were closed, so they are not implementation exemplars.
+## Generated outputs should depend on the exact source set consumed by the generator
 
+A CMake custom command's dependency list is part of incremental-build correctness. Name the files that actually determine the generated output rather than a broader, nearby, or historically related collection.
+
+Merged master MR !2187, authored and merged by Guy Harris, fixes generation of `wtap_modules.c`: the custom command had depended on `WIRETAP_NONGENERATED_FILES`, while the generator actually scans `WIRETAP_MODULE_FILES`. The accepted one-line correction makes regeneration track the input set that drives `make-regs.py`.
+
+**Build rule:** for generated source, trace the generator's real inputs and put those inputs in `DEPENDS`. A dependency that merely overlaps the input set can leave stale generated code or trigger unrelated rebuilds.
+
+**Confidence:** Extremely high. Focused merged master build-system fix authored and merged by Guy Harris.
