@@ -29,3 +29,6 @@ Durable material from this run is recorded in the exact ledger, all-50 findings,
 Next metadata-only frontier probe: !1960, `wslua: explain, in a comment, how .init routines work for a Proto.`, merged on `master`, authored by Guy Harris. It is not counted as reviewed.
 
 Corpus exhaustion: false. The scraping tool does not need to be restarted.
+
+
+Notebook promotion note: focused durable rules are preserved in `review-findings-1961-2010.md` and `review-synthesis-1961-2010.md`. Attempts to mutate or add root topical convention files were rejected by the repository write-safety layer, so no protected root notebook file was bypassed or altered in this run.
