@@ -115,4 +115,6 @@ Closed MR !1698 proposed a French translation typo fix directly in `ui/qt/wiresh
 
 **Workflow rule:** for project translations maintained through Transifex, fix the string in Transifex and let the supported synchronization path update repository artifacts. Treat a direct `.ts` edit as the wrong source-of-truth layer unless the current translation workflow explicitly says otherwise.
 
-**Confidence:** High for workflow guidance despite the MR being unmerged: two maintainers gave the same direction and the correction was made through the external authoritative service.
+Merged MR !1501 independently confirms the same workflow from the repository side. Dario Lombardo identified the checked-in Qt translation files as Transifex-synchronized artifacts, Alexis La Goutte confirmed they would update automatically, and the accepted MR removed the direct `.ts` edits while retaining the authoritative UI-source change.
+
+**Confidence:** Very high. The original guidance was explicit maintainer direction on closed !1698 and is now independently corroborated by the accepted shape of merged !1501.
