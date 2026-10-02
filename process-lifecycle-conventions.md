@@ -27,3 +27,13 @@ Merged master MR !7558, authored by Tomasz Moń, has tshark actually run the GLi
 **Rule:** once a frontend participates in the common event-loop model, express readiness and lifecycle events through that model. Do not retain redundant locking or hand-written polling whose only purpose was to emulate event-driven behavior.
 
 **Confidence:** High. Merged master capture/process architecture change.
+
+## Prefer an explicit common extcap shutdown protocol over platform GUI discovery
+
+Closed MR !2063 proposed graceful Windows extcap shutdown by enumerating top-level windows and posting `WM_CLOSE`. The implementation did not merge, so it is not an accepted code exemplar. Its review discussion is nevertheless useful architectural evidence: Guy Harris suggested a new controller/extcap mechanism using control pipes, Tomasz Moń also favored control-pipe shutdown, Gerald Combs said lifecycle handling should live behind a common extcap API, and reviewers objected to blocking waits and process-wide window enumeration.
+
+**Architecture rule:** when a cooperating child needs graceful finalization, define shutdown in the child-process protocol and common lifecycle layer rather than inferring process control from GUI/window-system artifacts. Keep shutdown/event handling nonblocking with respect to the UI/event loop.
+
+**Weighting note:** treat this as high-authority negative/design guidance, not as proof that one exact control-pipe protocol is current upstream policy, because !2063 was closed unmerged.
+
+**Confidence:** Moderate-to-high. Unmerged implementation, but unusually strong cross-maintainer architectural convergence from Guy Harris, Tomasz Moń, Gerald Combs, and Graham Bloice, later consistent with event-loop work recorded above.
