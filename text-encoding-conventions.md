@@ -25,3 +25,14 @@ Merged master MR !1709 fixes SOME/IP UTF-16 strings that were decoded with the w
 **Presentation rule:** when an item's true extent is known only after parsing variable-length content, update the item end so tree highlighting reflects the bytes actually consumed.
 
 **Confidence:** High. Merged master correctness fix, approved/merged by Anders Broman.
+
+## Do not apply source-byte precision after converting text to UTF-8
+
+A byte count in the original packet is not a character or byte count in Wireshark's normalized UTF-8 string. Encoding conversion can expand one source byte into several UTF-8 bytes, so applying a printf-style byte precision copied from the wire length can split a multibyte character and create invalid output.
+
+Merged MR !1467 fixes NTP reference-ID formatting after an invalid four-byte ASCII value such as `0xff 0xff 0xff 0xff` is converted by `tvb_get_string_enc(..., ENC_ASCII)`. Each invalid source byte becomes a Unicode replacement character, which occupies three UTF-8 bytes. Formatting that normalized string with `%.4s` truncated in the middle of the second replacement character and produced malformed PDML; removing the byte precision preserves all four replacement characters and valid UTF-8. Jaap Keuter identified the encoding/formatting interaction during review.
+
+**Implementation rule:** after a `tvb_get_string_*` or other conversion routine has normalized packet text to UTF-8, treat the result as UTF-8 rather than as a same-length byte mirror of the source field. If presentation truly requires truncation, use a UTF-8-aware boundary and a semantic display limit; do not reuse the on-wire byte length as a printf precision.
+
+**Confidence:** Very high. Merged correctness fix with the malformed UTF-8 failure reproduced and explained directly in review.
+
