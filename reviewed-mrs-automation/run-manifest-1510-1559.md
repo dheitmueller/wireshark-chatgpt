@@ -1,6 +1,6 @@
 # Run manifest: Wireshark MR review !1510-!1559
 
-- Notebook branch: `automation/mr-review-1510-1559-authoritative`
+- Notebook branch: `automation/mr-review-1510-1559-complete-final`
 - Predecessor branch: `automation/mr-review-1560-1609-authoritative`
 - Predecessor commit: `e0af986e14e61fb6348953ac92330f35abad2cbd`
 - Corpus repository: `dheitmueller/wireshark-corpus-mrs`
