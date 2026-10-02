@@ -17,5 +17,5 @@ No SMPTE ST 291/VANC packet type was encountered.
 
 Durable material is recorded in `reviewed-mrs-automation/review-findings-2011-2060.md`, `reviewed-mrs-automation/review-synthesis-2011-2060.md`, and focused root convention files created by this run.
 
-Next metadata-only frontier probe is recorded separately after the review and is not counted as reviewed.
-Corpus exhaustion: false.
+Next metadata-only frontier probe: !2010, `dumpcap: improve some secondary error emssages.`, merged on `release-3.4`, authored by Guy Harris. It is not counted as reviewed.
+Corpus exhaustion: false. The corpus still contains previously unreviewed older MRs.
