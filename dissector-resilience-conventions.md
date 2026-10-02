@@ -41,3 +41,16 @@ Merged master MR !4104 adds partial-schema support to Thrift subdissectors. Jaap
 **Implementation rule:** if a specialized decoder intentionally delegates part of a structure to a generic decoder, encode that intent explicitly in its schema/API. Do not overload malformed or out-of-order input as a control signal for fallback.
 
 **Confidence:** Very high. Merged master design revised directly in response to Jaap Keuter and Anders Broman review.
+
+
+## Let TVB bounds exceptions represent fields that run past captured data
+
+Dissectors do not need to preflight every ordinary field read solely to replace the standard TVB exception path with local malformed handling. If a declared field runs beyond the packet or captured bytes, allowing the tree/TVB accessor to throw is the normal Wireshark behavior.
+
+In merged master MR !1836, which fixed D-Bus fuzzing issues, Simon Holesch asked whether an `FT_UINT_STRING` whose declared length exceeds the packet should be handled specially because `ptvcursor_add_ret_string()` raises the generic malformed-packet exception. Guy Harris explicitly said to let the accessor throw: that is how dissectors normally handle a field extending beyond the packet. He separately noted that core exception reporting could eventually become more informative by identifying the field and distinguishing packet length from sliced captured-data length.
+
+**Implementation rule:** use normal TVB/proto-tree bounds semantics for straightforward truncation rather than duplicating length guards around every access. Add protocol-specific validation where the protocol imposes a distinct semantic constraint, not merely to avoid the standard truncation exception.
+
+**Architecture rule:** richer diagnostics for generic out-of-bounds field access belong in the shared exception/reporting machinery when possible, so all dissectors benefit consistently.
+
+**Confidence:** Extremely high. Direct Guy Harris guidance on a merged fuzz-hardening MR.

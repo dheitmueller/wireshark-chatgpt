@@ -75,3 +75,16 @@ Merged master MR !3977, authored by John Thacker, fixes AMQP PDUs split across T
 This is early master-origin evidence for the broader save/restore rule above: nested dissectors must preserve the caller-owned desegmentation capability rather than treating `packet_info` reassembly fields as private scratch state.
 
 **Confidence:** Extremely high. Merged master correctness fix authored by John Thacker plus stable-branch backports.
+
+
+## Prefer tcp_dissect_pdus() over hand-rolled length/desegmentation loops
+
+For a TCP-carried protocol with a deterministic PDU length function, use Wireshark's standard `tcp_dissect_pdus()` framework instead of manually tracking offsets, setting `desegment_offset/desegment_len`, and looping over PDUs.
+
+Merged master MR !1831 replaces ZVT's custom TCP segmentation loop with a small `get_zvt_message_len()` callback plus `tcp_dissect_pdus()`. Maintained-branch backports !1834 and !1835 carry the same change.
+
+**Implementation rule:** express the protocol-specific minimum header size and PDU-length calculation, then delegate ordinary TCP stream framing/desegmentation to the shared helper. Hand-written loops should be reserved for framing semantics the helper genuinely cannot represent.
+
+**Review benefit:** using the common helper centralizes multi-PDU, short-segment, and desegmentation behavior and reduces protocol-specific return-value conventions that are easy to get subtly wrong.
+
+**Confidence:** Very high. Merged master refactor with two stable backports.

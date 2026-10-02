@@ -96,3 +96,16 @@ Closed MR !1876 proposed making `get_udp_conversation_data()` private because no
 **Weighting note:** !1876 itself was closed after branch problems, so the proposed implementation is not precedent. The durable evidence is Pascal Quantin's API rationale plus the fact that the merged successor !1893 preserved the public symbol.
 
 **Confidence:** High. Direct maintainer guidance from Pascal Quantin, followed by the merged successor retaining the API.
+
+
+## Keep the symbol manifest synchronized with an intentional public-symbol removal
+
+Once a public symbol has deliberately been removed from the library interface, remove the corresponding packaging/symbol-manifest entry in the same change. Leaving the manifest behind causes ABI checks to report a missing exported symbol even when the source removal itself is intentional.
+
+Merged master MR !1856 removes two unused RTP dynamic-payload helpers. During review, Martin Mathieson noticed that the Debian symbol check failed because `rtp_dyn_payload_remove` and `rtp_dyn_payload_replace` remained in `debian/libwireshark0.symbols`; Pascal Quantin explicitly said that removed functions must also be removed from that symbols file.
+
+**Packaging rule:** source declarations/definitions and the library's exported-symbol metadata are one compatibility surface. If an exported symbol is intentionally removed, update the symbol manifest in the same MR.
+
+**Review caveat:** this is a bookkeeping rule after the API-removal decision has been made. It does not weaken the separate rule above that absence of in-tree callers is insufficient evidence that a plugin-facing public API is safe to remove.
+
+**Confidence:** High for symbol-manifest synchronization. Merged master change with direct Pascal Quantin review; the broader policy question of when an exported API may be removed was not fully resolved in this MR.

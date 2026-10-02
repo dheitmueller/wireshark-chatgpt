@@ -32,3 +32,16 @@ Merged master MR !8302, authored and merged by Gerald Combs after a Coverity ove
 **Implementation rule:** determine the maximum output bytes produced by one input unit, include fixed suffix/terminator requirements, and prove that capacity before performing the write. For fixed buffers, flush before the next expansion can cross the bound; for growable buffers, grow before writing.
 
 **Confidence:** Very high. Merged master memory-safety fix by Gerald Combs motivated by a concrete static-analysis overrun.
+
+
+## Reserve terminator capacity separately from logical payload length
+
+When a capture block stores a byte sequence plus an implementation-added NUL terminator, ensure capacity for `payload_length + 1` without accidentally changing the logical payload length, and index trailing-byte checks from the last valid payload byte.
+
+Merged master MR !1822, authored by Gerald Combs, fixes pcapng systemd-journal block handling by replacing a logical buffer-length increase with `ws_buffer_assure_space(..., entry_length + 1)`, checking trailing NULs at `entry_length - 1`, and then writing the terminator at `entry_length`. Guy Harris-authored stable backports !1825 and !1826 carry the identical correction.
+
+**Capacity rule:** spare storage for a terminator is capacity, not protocol data. Grow/assure the backing allocation without inflating the externally meaningful record length unless the format actually includes that terminator.
+
+**Indexing rule:** if `length` counts payload bytes, the final payload byte is `length - 1`; `buffer[length]` is the first byte beyond the logical payload and is appropriate for a separately reserved terminator only after capacity has been proven.
+
+**Confidence:** Extremely high. Merged master fix plus Guy Harris-authored stable backports.

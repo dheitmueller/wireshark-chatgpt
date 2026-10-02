@@ -15,3 +15,18 @@ A sequence of merged master MRs authored and approved by Guy Harris establishes 
 **Testing rule:** exercise intermediate precisions as well as the endpoints and common 3/6/9-digit cases. A test matrix that only covers milliseconds, microseconds, and nanoseconds can miss exactly the inconsistencies this design removes.
 
 **Confidence:** Extremely high. This is a coherent series of merged master changes authored and approved by Guy Harris, spanning shared APIs, call-site migration, UI/CLI precision handling, and removal of hard-coded resolution cases.
+
+
+## Treat calendar conversion as fallible and suppress fractional output when the base time is unavailable
+
+Platform calendar-conversion APIs can reject timestamps that the capture data type itself can represent. Formatting code must check the conversion result and must not print fractional nanoseconds as though a complete timestamp had been produced when the seconds component could not be represented.
+
+Guy Harris's merged master sequence !1837, !1838, and !1843 fixes timestamp printing for negative/out-of-range values. The initial change stopped assuming `gmtime_s()` / `gmtime_r()` success; the follow-up avoided Windows `gmtime_s()` because its invalid-parameter behavior can invoke an exception handler; and !1843 prevents the nanosecond suffix from being emitted if conversion of the seconds failed. Stable backports !1839-!1845 carry the same fixes.
+
+**Portability rule:** check the return contract of platform time-conversion routines even when the input type is wider than the platform calendar implementation.
+
+**Presentation rule:** a fractional-second suffix is subordinate to a successfully formatted base timestamp. If the seconds cannot be represented, report/fallback coherently rather than displaying an orphaned fractional component.
+
+**Platform rule:** avoid CRT APIs whose invalid-input contract can terminate or invoke process-level handlers when a non-terminating alternative is sufficient for Wireshark's use.
+
+**Confidence:** Extremely high. Coherent merged master and stable-branch series authored by Guy Harris.

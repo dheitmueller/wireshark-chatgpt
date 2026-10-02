@@ -114,3 +114,16 @@ Guy Harris's merged release-3.4 MR !5656 changes Kafka decompression from an arb
 
 **Confidence:** Very high. Merged maintained-branch fix authored by Guy Harris with the source of the limit stated directly.
 
+
+
+## Validate attacker-controlled range expansion before growing a container
+
+A syntactically valid minimum/maximum pair can still imply an unreasonable number of generated entries. Validate the interval and the resulting container size before calling a grow/allocation API.
+
+Merged master MR !1810, authored by Gerald Combs, adds an explicit ceiling before growing the USB HID usage array after earlier underflow hardening proved insufficient. Release-3.4 backport !1849 carries the same fix. Companion merged !1848 clarifies that HID Usage Minimum/Maximum form an inclusive interval, so valid expansion is `max - min + 1` after first rejecting `min > max`.
+
+**Implementation rule:** for wire-controlled closed ranges, validate ordering, include both endpoints in the count, account for the container's existing element count, and enforce a resource ceiling *before* growth. Arithmetic-underflow checks alone do not bound a huge but otherwise well-formed request.
+
+**Review rule:** when a first hardening patch prevents wrap/underflow, also ask whether the now-valid arithmetic can still request an impractically large allocation.
+
+**Confidence:** Very high. Merged master hardening by Gerald Combs with maintained-branch backport and adjacent merged fencepost correction.
