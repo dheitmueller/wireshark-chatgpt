@@ -25,3 +25,15 @@ Merged master MR !14616 moves Windows builds to Lua 5.3. During review, John Tha
 **Review/testing rule:** dependency-upgrade MRs should run or reason about shared tests under both the newly selected version and the oldest still-supported version. Pay special attention to parser-level syntax changes: a runtime cannot execute a compatibility branch if it cannot parse the file in the first place.
 
 **Confidence:** High. Merged dependency transition authored by Anders Broman with a concrete cross-version syntax problem caught by John Thacker during review and corrected before merge.
+
+## Raise minimum dependency versions from the supported-platform floor
+
+The useful feature level of a dependency and the minimum version Wireshark can require are different questions. A minimum-version bump should be justified by the versions guaranteed across the project's supported platform/distribution matrix; requiring a newer release merely because it is more capable can drop an otherwise supported environment.
+
+Merged master MR !1543, authored by John Thacker, raises the libgcrypt minimum from 1.4.2 to 1.5.0 after RHEL/CentOS 6 became unsupported. The MR explicitly stops short of 1.6.0 despite its significant improvements because RHEL/CentOS 7 supplied libgcrypt 1.5.3. Once 1.5.0 became the supported floor, the accepted change removed Wireshark's fallback AES key-unwrapping implementation that was only needed for older libgcrypt.
+
+**Compatibility rule:** choose a dependency minimum no higher than the version guaranteed by every platform the project still supports, unless dropping a platform is itself an intentional project decision. Re-evaluate that floor when the support matrix changes.
+
+**Cleanup rule:** when a higher minimum makes compatibility code unreachable, remove the obsolete fallback in the same transition when practical so the new dependency contract is explicit in both build configuration and source.
+
+**Confidence:** Extremely high. Merged master dependency-policy cleanup authored by John Thacker with the supported-distribution boundary and deliberate refusal to require 1.6 stated directly in the MR.
