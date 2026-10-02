@@ -83,3 +83,16 @@ Merged master MR !4569 changes Wireshark's fallback implementation of `g_memdup2
 **ABI rule:** when Wireshark provides a local fallback for a newer dependency function, keep that helper private unless Wireshark intentionally defines its own public API. Otherwise a compatibility helper can accidentally expand the shared-library ABI and collide with the dependency's real symbol.
 
 **Confidence:** Very high. Merged master ABI correction with a maintained-branch backport.
+
+
+## Do not infer that an exported plugin API is unused from in-tree call sites alone
+
+An exported helper can be intentionally public for third-party dissectors or plugins even after the main Wireshark tree stops calling it. Removing it merely because a source search finds no internal users can break external consumers and can also destroy useful symmetry with a related public API.
+
+Closed MR !1876 proposed making `get_udp_conversation_data()` private because no in-tree caller remained. Pascal Quantin, who had originally exported it for parity with the TCP conversation helper, objected that this was the kind of function that could be useful to plugins. Martin Mathieson agreed to keep it public. The replacement cleanup MR !1893 merged without removing that exported UDP helper.
+
+**API-review rule:** before making an exported symbol private, check its documented/public role, package symbol metadata, analogous APIs, and plausible external-plugin use; an empty in-tree reference search is not sufficient evidence that the interface is disposable.
+
+**Weighting note:** !1876 itself was closed after branch problems, so the proposed implementation is not precedent. The durable evidence is Pascal Quantin's API rationale plus the fact that the merged successor !1893 preserved the public symbol.
+
+**Confidence:** High. Direct maintainer guidance from Pascal Quantin, followed by the merged successor retaining the API.

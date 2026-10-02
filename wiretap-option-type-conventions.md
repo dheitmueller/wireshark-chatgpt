@@ -35,3 +35,18 @@ Merged master MR !7239, authored by Guy Harris, fixes a crash after pcapng packe
 **Architecture rule:** once Wiretap has normalized capture-format bytes into a semantic typed option, EPAN and other consumers should use that typed representation. Do not duplicate format parsing or retain assumptions about an obsolete storage representation above the Wiretap boundary.
 
 **Confidence:** Extremely high. Merged master fix authored by Guy Harris.
+
+
+## Prefer semantic typed option APIs over generic structured blobs
+
+A capture option whose payload has known semantic variants should expose those variants in its API instead of requiring callers to exchange an untyped blob and reinterpret it themselves.
+
+Merged master MR !1895, authored and merged by Guy Harris, replaces generic structured-option handling for pcapng IDB `if_filter` with a dedicated `if_filter_opt_t`. The type records whether the option contains a pcap filter string or a BPF program and stores the corresponding representation in a discriminated union. Dedicated add, set, and get functions replace the generic `void *` API, increasing compile-time type checking. Readers and writers switch on the semantic variant instead of assuming every filter is a string.
+
+The same change checks whether each variant can fit in the 16-bit pcapng option-length field instead of making an oversized value appear valid by masking or truncating its length.
+
+**API rule:** when the option schema is known, model it with a named semantic type and variant discriminator, and provide option-specific accessors.
+
+**Serialization rule:** prove that a semantic option fits the on-disk representation before narrowing its length or writing it.
+
+**Confidence:** Extremely high. The merged master redesign was authored and merged by Guy Harris.

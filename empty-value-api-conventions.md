@@ -23,3 +23,15 @@ Merged master MR !12720, authored and merged by John Thacker, changes `wmem_strj
 **Review rule:** when changing a compatibility helper, compare the behavior matrix—not just the main algorithm—against the API it models: invalid pointer, valid empty input, singleton input, separator/default behavior, ownership, and allocation lifetime are all potential compatibility surfaces.
 
 **Confidence:** Extremely high. Both examples are merged master fixes authored and merged by John Thacker with stable-branch backports; !12720 also contains accepted maintainer review on the project's standard invalid-input guard idiom.
+
+## Let the semantic value type decide whether an empty command-line value is valid
+
+A command-line parser should not reject an empty value before it knows the preference type when empty is legitimate for some preference classes. An explicit empty value is also distinct from an operation that resets a preference to its built-in default.
+
+Merged master MR !1900, authored by John Thacker with substantive review from João Valverde, removes the blanket rejection of `-o pref:` with an empty value. Empty strings are valid for string-like preferences and for range preferences, and are often the actual default; this lets a command-line override clear a non-empty value loaded from the preferences file. Numeric and other preference handlers remain free to reject empty input according to their own syntax. João also explicitly distinguished “set this preference to empty” from the separate semantic operation “restore the default value.”
+
+**Parsing rule:** preserve syntactically empty input until the semantic type handler can decide whether it is legal. Do not collapse explicit empty, missing value, and reset-to-default into one state.
+
+**Configuration rule:** when command-line settings override persisted configuration, preserve legitimate empty values so a user can override a non-empty saved value back to empty through normal preference handling.
+
+**Confidence:** Very high. Merged master change authored by John Thacker, with the edge-case semantics discussed and accepted by João Valverde.

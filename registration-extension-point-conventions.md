@@ -59,3 +59,16 @@ Merged master MR !9259, authored by John Thacker, extends Follow Stream registra
 **Review rule:** when common code branches on specific registered protocol names, ask whether the differing behavior belongs in registration metadata or a callback owned by the protocol. Avoid moving protocol-specific assumptions into the generic layer merely because the first two implementations happened to share them.
 
 **Confidence:** Extremely high. Merged master extension-point refactor authored by John Thacker, with a concrete protocol-assumption bug found during review.
+
+
+## Keep registration orchestration in the library that owns the extension mechanism
+
+Applications using a library should not each replicate the library's internal ordering and plugin-registration choreography. Give frontends one registration entry point and keep the knowledge of built-in versus plugin registration, ordering, and future extension changes inside the owning library.
+
+Merged master MR !1879, authored and merged by Guy Harris, introduces `register_all_tap_listeners()` in libwireshark. TShark, tfshark, and the Qt application stop separately registering plugin taps and then iterating the built-in tap-registration array; each calls the library routine instead. Guy's stated rationale is that libwireshark, not every program using it, should know how all tap listeners are registered.
+
+**Architecture rule:** put extension-registration orchestration at the semantic owner. Frontends should pass any frontend-specific registration list or callbacks to one library API rather than duplicating internal/plugin registration order themselves.
+
+**Review rule:** if multiple executables contain the same registration loop plus special cases for plugins or generated registries, move that policy into the library that owns the registry before adding another caller.
+
+**Confidence:** Extremely high. The merged master architecture change was authored and merged by Guy Harris.
