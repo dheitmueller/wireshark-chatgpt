@@ -43,3 +43,14 @@ Merged master MR !13900 added RSVP SESSION_ATTRIBUTE support. During review Alex
 **Review rule:** when a feature MR contains an incidental bug fix, do not judge only whether the combined diff is correct on master. Check whether the correction should be independently backportable; if it should, request a split before the history makes that distinction harder to preserve.
 
 **Confidence:** Very high. Direct maintainer review in a merged feature MR, followed by exactly the requested split-out master fix and accepted backports to both maintained stable branches.
+
+
+## Preserve independently meaningful backports in release-branch history
+
+When several upstream changes are suitable for a maintained branch, keep independently meaningful changes as separate backport units where practical. The release-branch history should make it clear which changes were carried and let each change be reviewed or reverted independently.
+
+Merged release-3.4 MR !1570 contains direct Guy Harris guidance to cherry-pick the component changes individually so the branch history reflects what was actually changed. The contributor then separated the TPNCP data refresh and spelling correction into merged !1571 and !1572.
+
+**Submission rule:** do not bundle unrelated stable maintenance merely because the changes affect the same component. Preserve distinct purpose and provenance in the backport history, without inventing commit granularity that did not exist upstream.
+
+**Confidence:** Extremely high. Direct Guy Harris guidance followed by merged split backports.
