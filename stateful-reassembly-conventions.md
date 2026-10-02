@@ -10,7 +10,9 @@ Merged MR !26223 fixes MCTP request/response collisions by including the tag-own
 
 **Implementation rule:** enumerate the protocol identity tuple first. If it does not map collision-free into the API's simple scalar ID, use the API's data/key hooks and a structure with explicit hash/equality semantics rather than lossy bit packing.
 
-**Confidence:** Very high. One merged correctness fix plus explicit architectural follow-up from a long-standing maintainer.
+Merged master MR !9996 independently reinforces the complete-identity rule for SOME/IP-TP. Its accepted reassembly key combines the SOME/IP service, method, client, session, message-type, and major-version fields with the source/destination addresses and ports. The review discussion specifically catches the risk of omitting transport endpoints because separate service instances are not guaranteed to be distinguished by the higher-level identifiers alone. This is a useful reminder that the complete key may span both protocol-local identity and the transport context that disambiguates concurrent instances.
+
+**Confidence:** Extremely high. Multiple merged correctness fixes now demonstrate the same rule across unrelated protocol families, including an accepted SOME/IP implementation reviewed for endpoint-collision risk.
 
 ## Reassembly state transitions must remain consumable under loss, reordering, duplicate ACK mechanisms, and retransmission
 
