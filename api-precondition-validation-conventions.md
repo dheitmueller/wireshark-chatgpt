@@ -15,3 +15,16 @@ Merged master MR !13242 fixes a crash reachable through `tshark -U`: an arbitrar
 **Testing rule:** exercise the shared failure path through each frontend that can reach it, and verify that invalid-but-well-formed inputs fail cleanly before any operation-specific side effect occurs.
 
 **Confidence:** Very high. The placement was proposed explicitly by John Thacker during review of a merged master crash fix and then preserved in two merged stable-branch backports.
+
+## Reject invalid signed sizes before normalization can hide them
+
+Length validation must happen on the value in the domain supplied by the caller. Arithmetic that rounds, shifts, widens, or converts a signed size can turn an invalid negative value into an apparently harmless zero or small positive length and thereby bypass later bounds checks.
+
+Merged master MR !9925, authored by John Thacker, fixes the bit-item APIs after negative bit counts from -1 through -7 could be rounded to zero octets by `(no_of_bits + 7) >> 3` before the normal TVB length check. The accepted implementation checks `no_of_bits < 0` first and throws `ReportedBoundsError`; a zero bit width remains a separate dissector-programming error.
+
+**Implementation rule:** validate signed length/count preconditions before rounding, shifting, unit conversion, or signed-to-unsigned conversion. Keep malformed-input/bounds failures distinct from programmer-contract failures when the API already makes that distinction.
+
+**Review rule:** for a size expression derived from packet data, test negative values immediately around zero as well as large values. Those near-zero negatives are especially likely to be normalized into a valid-looking zero by alignment arithmetic.
+
+**Confidence:** Very high. Merged core API hardening authored by John Thacker and motivated by a concrete edge case that escaped the later length checks.
+

@@ -21,3 +21,16 @@ Merged master MR !15434 adds an optional sharkd `interval_units` parameter for I
 **Implementation rule:** when extending a stable machine-facing request schema, make refinements optional when practical and define omission to mean the pre-existing behavior. Test both omitted/default behavior and each new accepted form.
 
 **Confidence:** Very high. Merged master API extension approved and merged by John Thacker with explicit backward-compatibility design and tests.
+
+## Make machine identifiers round-trip through producer and consumer APIs
+
+When one structured API emits an identifier that another API expects callers to feed back, both sides must agree on representation as well as numeric value. A producer that serializes an ID differently from the token/parser consumed by a follow-up request creates a machine-facing compatibility bug even if both displays look understandable to a human.
+
+Merged master MR !9919 fixes Sharkd RTP handling where `rtp-streams` and `rtp-analyse` emitted SSRC as an unsigned decimal number while analysis/download tokens parse the SSRC as a hexadecimal string using `ws_hexstrtou32()`. The accepted API emits values such as `"0xd2bd4e3e"` consistently and adds regression coverage that takes the RTP identity through stream listing, analysis, and download, including the no-data error path.
+
+**API rule:** define a canonical external representation for identifiers that cross method boundaries and use it everywhere the value is emitted or consumed. Treat output intended for subsequent machine input as part of the protocol contract, not merely presentation.
+
+**Testing rule:** exercise the round trip, not only each method independently. A listing/search response should be usable directly to construct the related follow/analyse/download request without representation-specific client guesswork.
+
+**Confidence:** Very high. Merged master Sharkd API correction with end-to-end regression tests; the mismatch and expected token syntax are stated directly in the MR.
+

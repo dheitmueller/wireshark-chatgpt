@@ -43,3 +43,14 @@ Merged master MR !13900 added RSVP SESSION_ATTRIBUTE support. During review Alex
 **Review rule:** when a feature MR contains an incidental bug fix, do not judge only whether the combined diff is correct on master. Check whether the correction should be independently backportable; if it should, request a split before the history makes that distinction harder to preserve.
 
 **Confidence:** Very high. Direct maintainer review in a merged feature MR, followed by exactly the requested split-out master fix and accepted backports to both maintained stable branches.
+
+## Keep automated stable-branch refreshes from importing master-only functionality
+
+Automation that refreshes generated registries, vendor data, or similar content across several branches must respect the same release policy as hand-written submissions. A mechanically generated diff is still a feature change if it extends protocol behavior, and stable branches should not receive that merely because the update script selected it automatically.
+
+Closed release-4.0 MR !9907 was an automatic numbers update that also extended the ASTERIX dissector. Jaap Keuter explicitly flagged that the dissector extension did not fit release policy. Gerald Combs closed the MR, changed the update tooling so ASTERIX dissector updates occur only on `master`, and replaced the stable refresh with merged !9915.
+
+**Automation rule:** branch-aware update tooling must classify outputs by release eligibility. Data-only maintenance appropriate for a stable branch may be propagated there, while generated or protocol-code changes that constitute new functionality should remain on `master` unless explicitly approved as a backport.
+
+**Confidence:** High. The problematic MR was closed rather than accepted, but the policy objection came directly from Jaap Keuter and the automation was changed accordingly before the replacement stable update merged.
+

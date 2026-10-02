@@ -59,3 +59,16 @@ Merged master MR !13243, authored and merged by John Thacker, changes 802.11 dec
 **Testing rule:** cover representative distinct rejection classes and verify that each produces the intended actionable reason, not only that parsing returns failure.
 
 **Confidence:** Very high. Merged master API/diagnostic improvement authored and merged by John Thacker, with the need for richer parser errors stated in the preceding related change.
+
+## Every request path must return a protocol-level response
+
+For a request/response service, printing a useful failure to stderr is not a substitute for completing the request. If an operation fails after a request has been accepted, the machine-facing protocol still needs a terminal result or error so the client does not wait indefinitely.
+
+Merged master MR !9918 fixes Sharkd file loading when `load_cap_file()` returned a nonzero Wiretap error. The previous path printed the read failure on the console but sent no JSON-RPC response, leaving the client hanging. The accepted code returns a result containing both the human-readable `wtap_strerror(err)` text and the numeric error value, with a truncated-capture regression test.
+
+**Implementation rule:** audit every post-dispatch exit from a request handler and ensure it emits exactly one terminal protocol response. Preserve a stable/structured error value when available and pair it with useful human-readable text; logging can supplement that response but must not replace it.
+
+**Testing rule:** include failures that occur after successful request parsing/open dispatch, not only malformed requests. Verify that the client receives a response and can distinguish the failure class without scraping server logs.
+
+**Confidence:** Very high. Merged master Sharkd correctness fix with a concrete client-hang failure mode and regression test.
+
