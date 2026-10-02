@@ -62,3 +62,23 @@ Merged work is stronger evidence than closed/superseded work. Maintainer-authore
 Promote: individual-cherry-pick history for stable backports (!1570); complete shared PHY metadata propagation and standards provenance (!1582); explicit context state for shared generated handlers (!1588); full-lifecycle dynamic-analysis validation of memory fixes (!1581); support-matrix-driven dependency floors (!1562, !1586, !1609); and actionable configuration validation (!1565).
 
 Generated-source findings in !1608-!1602, !1599, and !1585 corroborate existing source-of-truth guidance.
+
+## Detailed convention synthesis
+
+### Release maintenance history
+Merged !1570 contains direct Guy Harris guidance that independently meaningful changes carried to a stable branch should remain independently visible. Merged !1571 and !1572 then separate the data refresh and spelling correction. Preserve distinct backport units when they have separate purpose or provenance.
+
+### Shared generated-handler context
+In merged !1588, Pascal Quantin required a shared ASN.1 handler to know which enclosing DRB configuration context was active before updating persistent mapping state. A common generated handler reachable from multiple semantic contexts should carry explicit context and mutate only the active owner. The same review caught an AND-assignment where setting a flag required OR-assignment.
+
+### Wireless PHY metadata and provenance
+In merged !1582, Guy Harris required S1G PHY identity to propagate through wiretap metadata, radiotap dissection, and radio-information presentation. He also challenged proposed radiotap channel-bit assignments that lacked clear standards provenance. New PHY semantics should be represented consistently through shared metadata and presentation layers, and claimed registry assignments should be verified against an authoritative source.
+
+### Memory-fix validation
+Merged !1581 fixed a Decode-As leak, but Valgrind on the same workflow exposed a teardown use-after-free introduced by the ownership change. The author reproduced and fixed the second issue. Rerun dynamic analysis through the complete lifecycle after memory-management changes; reducing leaks is not sufficient if destruction ordering becomes unsafe.
+
+### Dependency support floors
+Merged !1562, authored by John Thacker, raises the GnuTLS minimum only to the version guaranteed by every supported distribution and removes compatibility conditionals that became dead at that floor. Merged !1586 and Guy Harris's !1609 similarly choose CMake versions from actual macOS and Apple-Silicon support boundaries. Dependency floors should follow the supported-platform matrix, not merely the newest convenient API.
+
+### Configuration validation
+Merged !1565 rejects malformed PDCP-LTE configuration text at update time with useful diagnostics rather than accepting known-invalid state. Validate user configuration at the boundary and return actionable errors.
