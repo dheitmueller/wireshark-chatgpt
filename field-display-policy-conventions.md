@@ -13,3 +13,14 @@ Merged master MR !12536, authored by John Thacker and approved/merged by Anders 
 **Review rule:** when code adds a field and immediately calls `proto_item_set_text()` merely to suppress or replace its normal rendered value, check whether a field display flag already expresses the intended policy. Manual text replacement is still appropriate when the label itself is dynamically enriched; it should not substitute for an existing declarative display contract.
 
 **Confidence:** High. The generic field validator and a real SIP consumer were changed together in a merged master MR, demonstrating both API intent and accepted use.
+
+
+## Prefer one truthful field identity with declarative printable-byte presentation
+
+Do not create parallel fields with the same filter identity merely to switch between raw bytes and a printable-string presentation at runtime. If the wire object is semantically bytes but ASCII presentation is useful when possible, keep one bytes field and use the field-registration display policy that can render printable content.
+
+Merged master MR !1706, authored and merged by Anders Broman, removes PFCP's paired `FT_BYTES` / `FT_STRING` registrations and the runtime `tvb_ascii_isprint()` branch. The accepted replacement keeps the fields as `FT_BYTES` and uses `BASE_SHOW_ASCII_PRINTABLE`, while also correcting duplicate filter abbreviations.
+
+**Field rule:** choose the registered field type from the wire value's semantics; use supported display modifiers to improve human presentation without inventing a second semantic field. Filter abbreviations must remain unique and stable identifiers, not presentation variants.
+
+**Confidence:** Very high. Merged master cleanup authored and merged by Anders Broman.

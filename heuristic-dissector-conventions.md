@@ -77,3 +77,18 @@ Merged master MR !14463 adds an LTP heuristic while extending cancel/cancel-ack 
 **Review rule:** assess both selectivity and cost. Positive sample captures demonstrate correctness after a match, but they do not measure the aggregate overhead of running the heuristic on unrelated traffic; benchmark or reason about the no-match path when registration is broad.
 
 **Confidence:** High. Direct Anders Broman review, author agreement/change, and merged result. The evidence establishes the default-policy principle even though exact acceptable cost remains protocol- and dispatch-context dependent.
+
+
+## Default-disable heuristics when the protocol's nominal identifiers are reusable outside its domain
+
+A protocol can need heuristic dispatch because a parent table cannot bind narrowly enough, yet still have identifiers that are not globally unique. In that case, heuristic availability does not imply that automatic claiming is safe.
+
+Merged master MR !1690 adds OBD-II heuristic dispatch over CAN because CAN's Decode As path applies too broadly for deployments carrying several upper-layer protocols. The accepted registration is deliberately `HEURISTIC_DISABLE`: the standardized CAN IDs can be reused outside automotive systems, so enabling the heuristic globally would create false-positive risk.
+
+**Registration rule:** when an identifier is standardized only within a deployment domain rather than globally unique on the parent transport, keep the heuristic opt-in unless packet-local evidence makes recognition sufficiently selective. A limitation in Decode As can justify providing a heuristic, but it does not justify enabling an ambiguous heuristic by default.
+
+Merged master MR !1689 supplies complementary composition guidance for a parent such as TECMP that can dispatch the same payload through explicit/Decode-As tables or heuristic lists. The accepted code permits a user-selected precedence, tries the second mechanism if the first declines, and exposes raw payload only when neither claims it.
+
+**Dispatch rule:** when explicit and heuristic subdissector mechanisms coexist, preserve a deterministic precedence and fallback chain. Do not hide the payload merely because one dispatch mechanism failed to claim it.
+
+**Confidence:** High. Both changes merged on master; !1690 states the false-positive rationale directly in the accepted code.

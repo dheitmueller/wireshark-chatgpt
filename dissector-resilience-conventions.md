@@ -33,3 +33,13 @@ Merged MR !20646, authored and merged by Guy Harris, handles LDANeo picosecond t
 **Implementation rule:** optional numeric decoding should degrade explicitly. If an exact result cannot be computed on a supported build target, omit that derived value and report the limitation; never present an approximation as though it were the protocol value unless the protocol/API explicitly defines that approximation.
 
 **Confidence:** Extremely high. Merged master change authored and merged by Guy Harris, with the graceful-degradation behavior stated directly in the MR description.
+
+## Bound child TVBs to captured data when a declared length exceeds what is available
+
+A wire-declared subobject length can be semantically valid yet exceed the bytes present in a truncated capture. When useful partial decoding is possible, construct the child view from the captured remainder, report the declared-vs-available mismatch with Expert Info, and carry the bounded effective length into downstream parsing.
+
+Merged master MR !1669 updates PER open-type dissection accordingly. Before creating the octet-aligned child TVB, it calculates the captured bytes available from the open-type offset. If that amount is shorter than the declared PDU length, the accepted implementation creates the child from the captured amount, adds an expert error, and replaces the downstream length with that bounded amount rather than asking later code to operate on the unavailable declared size.
+
+**Resilience rule:** distinguish declared length from available/effective length after truncation has been detected. Once the parser chooses partial decoding, all child views and subsequent bounds must use the effective captured length while the expert item preserves the original protocol discrepancy for the user.
+
+**Confidence:** High. Merged master core PER change authored and merged by Anders Broman.

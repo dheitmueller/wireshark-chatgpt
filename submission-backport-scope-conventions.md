@@ -17,3 +17,14 @@ Merged master MR !12635 (`BLF: Fix CAN parsing`) provides explicit maintainer gu
 ## Stable branches normally take fixes rather than enhancements
 
 Merged MR 10474 and its release backports 10489 and 10490 provide direct maintainer evidence for the existing scope rule. Alexis La Goutte explained that fixes are candidates for backport while enhancements generally are not, with judgment required for borderline cases. Keep correctness changes separable so release branches can take the fix without unrelated feature work.
+
+
+## Separate an incidental bug fix from feature work when their backport policies differ
+
+A correctness issue discovered while implementing a feature should not automatically remain buried in the feature MR. If the fix is independently useful on supported releases while the feature is not, split it so stable maintainers can take the correction without importing the enhancement.
+
+Merged master MR !1679 adds MP-QUIC draft support. During review, Ivan Nardi identified an unrelated correctness change in the diff and explicitly asked that it be submitted separately because the fix was clear backport material while the multipath feature might not be. The contributor removed the unrelated change from the feature series.
+
+**Submission rule:** review feature diffs for opportunistic fixes and split any correction whose release-branch applicability differs from the feature. Backportability is a concrete reason to separate otherwise nearby edits.
+
+**Confidence:** Very high. Direct maintainer review in a merged master feature MR, with the requested scope separation applied.

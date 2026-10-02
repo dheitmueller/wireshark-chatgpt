@@ -105,3 +105,14 @@ Merged !22054 also updated the Wireshark Developer's Guide around the triangular
 **Submission rule:** develop an MR on a dedicated topic branch and keep its commits focused and reviewable. Prefer one coherent MR for a small related series; split work when changes are independently reviewable or have genuinely distinct purposes, not simply because every edit can be isolated mechanically. For stable-branch cherry-picks, explicitly target the intended release branch.
 
 **Confidence:** High. Direct Jaap Keuter and Michael Mann review guidance, supported by a merged Developer's Guide workflow update; the branch-specific example in !22090 itself was closed rather than merged.
+
+
+## Make translation corrections in the authoritative translation service
+
+Checked-in translation files can be synchronized artifacts rather than the authoritative editing surface. A direct repository patch may therefore be overwritten by the project's translation workflow even when the wording correction itself is right.
+
+Closed MR !1698 proposed a French translation typo fix directly in `ui/qt/wireshark_fr.ts`. Dario Lombardo explained that translation fixes must be made in Transifex because its changes are reflected back into the repository; Alexis La Goutte then applied the correction there for the maintained branches. The MR was closed unmerged.
+
+**Workflow rule:** for project translations maintained through Transifex, fix the string in Transifex and let the supported synchronization path update repository artifacts. Treat a direct `.ts` edit as the wrong source-of-truth layer unless the current translation workflow explicitly says otherwise.
+
+**Confidence:** High for workflow guidance despite the MR being unmerged: two maintainers gave the same direction and the correction was made through the external authoritative service.

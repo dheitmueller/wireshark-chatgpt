@@ -95,3 +95,15 @@ Merged master MR !13419, authored and merged by John Thacker, fixes single-inter
 **Testing rule:** include identifiers containing backslashes, quotes, and other escaped characters, plus malformed and wrong-shaped JSON. Verify both the success value and the caller-visible diagnostic on failure.
 
 **Confidence:** Very high. Merged master Windows correctness fix authored and merged by John Thacker, with both the escaping-domain bug and the required TShark error-output behavior stated directly.
+
+## Blocking request/response modes need one terminal response for every request
+
+When an asynchronous helper protocol is also used synchronously, the blocking caller needs a completion record for every request, including misses and errors. Silently dropping a negative result that was harmless in asynchronous mode can make a synchronous waiter block forever.
+
+Merged master MR !1660 adds optional synchronous MaxMind resolution. The initial implementation exposed a deadlock; the corrected merged version preserves a one-request/one-response contract by enqueueing a not-found response when the resolver cannot produce an address result, then consuming exactly one response in the synchronous lookup path. Common response processing is factored into one helper so blocking and nonblocking consumers install/free results identically. The public synchrony setter is also added to the Debian symbols manifest in the same MR.
+
+**IPC rule:** if a caller waits for one completion, every submitted request must produce one terminal response even when the semantic result is “not found”. Do not encode failure by absence of a queue record in a blocking protocol.
+
+**Architecture rule:** share terminal-response processing between synchronous and asynchronous paths so ownership, cache insertion, and cleanup do not diverge. If a new control is public API, update the platform/export symbol bookkeeping in the same change.
+
+**Confidence:** High. Merged master implementation; the contributor explicitly identified and fixed the deadlock before merge, with Gerald Combs reviewing the final series.
