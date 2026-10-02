@@ -15,3 +15,12 @@ Merged master MR !11092 adds two checks to the SAP HANA SQL Command Network Prot
 **Review rule:** for each proposed heuristic check, ask two questions separately: (1) how much does this reduce plausible false positives, and (2) what malformed-but-recognizable protocol traffic would it hide? The appropriate boundary is recognition, not full conformance validation.
 
 **Confidence:** High. Merged master heuristic correction approved/merged by Alexis La Goutte, with the false-positive/debuggability tradeoff stated directly in the accepted MR rationale.
+
+## Require the minimum structural size before an ambiguous heuristic probe
+
+Merged MR !1499 adds a minimum-length gate before BGP Add-Path prefix detection. An Add-Path prefix needs at least five bytes, so shorter NLRI data must not be handed to the heuristic and misclassified merely because ordinary prefix bytes happen to resemble its pattern.
+
+**Recognition rule:** before running a heuristic for a richer framing variant, first prove that the candidate contains enough bytes for that variant's smallest legal structure.
+
+**Confidence:** High. Merged correctness fix with the minimum-size rationale stated directly in the change.
+
