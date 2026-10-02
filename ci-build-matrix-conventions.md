@@ -13,3 +13,12 @@ Merged master MR !15730 fixes a Windows `ws80211_utils` build broken by the prec
 **Submission rule:** if a large mechanical refactor moves a widely used definition to a new header or otherwise changes transitive include dependencies, call that dependency-shape change out separately from the textual replacements. Build failures in optional/platform-specific consumers are not evidence that the mechanical source transformation itself was wrong, but they are part of the refactor's compatibility surface and should be anticipated.
 
 **Confidence:** Very high. Merged master repair approved and merged by John Thacker, with direct discussion of multiple real breakages and the limits of the normal CI matrix.
+
+## CI-matrix membership is not by itself a platform-support declaration
+
+Merged master MR !1346 removes FreeBSD 11.4 from the Cirrus matrix because required binary packages were no longer readily available and rebuilding them from ports was impractical for the CI service. The MR explicitly states that this does not mean Wireshark is no longer compilable on FreeBSD 11.4.
+
+**Interpretation rule:** distinguish platforms that are buildable or supported from environments continuously exercised by a particular CI provider. When a lane is removed for package availability, image availability, or execution-budget reasons, document that operational reason so CI-matrix membership is not mistaken for the project's support policy.
+
+**Confidence:** High. Merged master CI change whose description explicitly separates CI feasibility from source buildability.
+
