@@ -1,5 +1,14 @@
 # Current Session State
 
+## Current DTSDI patch series (2026-10-02)
+
+- Upstream Wireshark master at `b9c42e6480` now contains the merged full-width 10-bit VANC handoff (`3cfc16fa83`) and ST 2038 series (`50928df8d5`, `0888eedd55`).
+- Local branch `djh-dtsdi-support` is based directly on that master and contains one unpushed commit, `31e8e46284` (`DTSDI: Add DekTec SDI capture support`).
+- `git range-diff` confirms that commit is patch-equivalent to the previously reviewed DTSDI commit `864b64d977`; the rebase required no conflict resolution.
+- Validation passed: a warning-as-error TShark build, all 8 focused DTSDI dissector/file-format tests, both ST 2038 tests, and all 3 ST 2110-40 tests. The typed-item and API checkers reported zero warnings; optional spelling/URL checks could not run locally because Python modules `spellchecker` and `aiohttp` are absent.
+- Exported single-patch series: `/Users/dheitmueller/Downloads/djh-dtsdi-support-20261002/0001-DTSDI-Add-DekTec-SDI-capture-support.patch`. It was applied with `git am` to a detached worktree at the exact master base and reproduced the branch tree exactly. SHA-256: `ca0d9b04f0b6d885c5daef7eb9def53824380c7b83bf13b6a9c550f20dbb372f`.
+- Neither the Wireshark branch nor patch was pushed by Codex.
+
 ## Active objectives
 
 1. Build a persistent Wireshark engineering notebook that improves future code generation and review quality across conversations.
