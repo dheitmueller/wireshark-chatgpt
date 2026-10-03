@@ -13,3 +13,11 @@ Merged master MR !15611, authored and merged by John Thacker, fixes a WSLua cras
 **Review/testing rule:** exercise invalid plugin/script input that raises during registration and reload, not just during ordinary packet callbacks. Tests should verify that the error is reported with enough object identity to diagnose the script and that the Wireshark process remains alive.
 
 **Confidence:** Very high. Merged master fix authored and merged by John Thacker and subsequently backported across maintained branches.
+
+## Handle error-handler failure as a protected-call result
+
+Merged MR !782 fixes WSLua Listener callbacks that could reach an assertion when `lua_pcall()` returned `LUA_ERRERR`, meaning the Lua error handler itself failed. Peter Wu explicitly noted that failure in the message callback should not crash Wireshark, and review tightened the callback's error-handler stack usage.
+
+**Implementation rule:** handle the documented protected-call result domain, including error-handler failure. A nested script failure during error reporting is still a recoverable scripting-boundary condition, not an impossible native state.
+
+**Confidence:** High. Merged WSLua correctness fix with direct Peter Wu review.
