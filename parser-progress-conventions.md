@@ -47,3 +47,14 @@ Merged release-3.2 MR !783 fixes an infinite loop in GQUIC tag parsing. When a t
 **Progress rule:** every recoverable path through a repeated structure must either advance the externally visible input cursor or terminate that repetition. Validate packet-derived next-offset arithmetic before exposing it to the enclosing parser; a malformed length that wraps or produces no progress is a control-flow hazard, not merely a display error.
 
 **Confidence:** High. Merged maintained-branch correctness fix for a concrete infinite-loop failure mode.
+
+
+## Historical corroboration: stop when malformed framing destroys the next boundary
+
+Merged master MRs !467 and !484 form a useful FBZERO sequence. !467 ensures that an undecoded or inconsistent tag cannot leave the parser in a non-advancing loop and validates the aggregate next offset before returning it. Guy Harris's follow-up !484 validates a tag's end offset before deriving its value length: the end must not precede the value start or extend beyond the packet, and fixed/minimum-size values must satisfy their size contract. When that framing is invalid enough that the next tag's location is no longer trustworthy, the accepted parser reports the error and stops the tag sequence instead of inventing recovery state.
+
+Merged master MR !463 independently adds the same liveness condition to LBMSRS: a repeated batch parser exits if its helper consumes less than one byte.
+
+**Progress rule:** a repeated parser step must either advance the externally visible cursor or terminate. If a structural boundary is invalid and later boundaries are derived from it, diagnose the current element and stop that repetition rather than guessing a next offset.
+
+**Confidence:** Extremely high. Two merged master fixes from Gerald Combs plus a merged Guy Harris hardening follow-up establish the same invariant independently.

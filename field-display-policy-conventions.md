@@ -45,3 +45,16 @@ Merged MR !1037 initially skipped the two XDR alignment bytes following each six
 
 **Confidence:** High. The change was requested in review and incorporated into the merged implementation.
 
+
+
+## Treat display-filter abbreviations as compatibility identifiers, and name fields for their semantic value
+
+Field presentation has two separate naming surfaces: the human-facing label and the display-filter abbreviation used by saved filters, scripts, profiles, command lines, and external tooling. A cleanup that merely aligns wording with a specification can therefore have very different compatibility consequences depending on which surface is changed.
+
+Merged master MR !483 prompted explicit review on this point. Alexis La Goutte raised the risk to external tools, Graham Bloice objected to arbitrary filter renames without a functional reason, and Christopher Maynard suggested aliases as a possible compatibility bridge. João Valverde also clarified that the IPv4/TCP value shown as `Header Length` is a computed byte length, not just the raw IHL/Data Offset bitfield from the RFC diagram; copying the raw field name would misdescribe the value Wireshark actually exposes.
+
+**Compatibility rule:** avoid gratuitous display-filter abbreviation renames, especially in core protocols. If a rename is necessary, consider an alias/migration path where the current API supports one.
+
+**Semantic-label rule:** choose the tree label for the semantic value registered by Wireshark. A decoded or transformed value need not reuse the specification's raw-bitfield name when that would imply different units or semantics.
+
+**Confidence:** Very high. Merged master change with direct review from Gerald Combs, Alexis La Goutte, Graham Bloice, Christopher Maynard, Anders Broman, and João Valverde.

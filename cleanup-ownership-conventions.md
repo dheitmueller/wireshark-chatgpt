@@ -15,3 +15,16 @@ Merged master MR !11546, authored and merged by Guy Harris, fixes Wiretap dump-p
 **Review rule:** when fixing a leak or adding cleanup, inspect the implementation/contract of existing higher-level cleanup functions before adding member-level destructors. “Free everything visible” is not safe when ownership is nested.
 
 **Confidence:** Extremely high. Merged master memory-safety fix authored and merged by Guy Harris, with the duplicate ownership and correct cleanup decomposition stated directly in the change.
+
+
+## A function's return ownership must be uniform across all successful paths
+
+Callers need one ownership rule for one API. Returning a static string for some enum values and heap-allocated strings for others is unsafe when callers follow a single documented/observed cleanup convention.
+
+Merged master MR !494, authored and merged by Guy Harris, fixes `topic_action_url()`: callers assume the returned string is allocated and free it, so every switch arm is changed to return duplicated/allocated storage even when the source URL is a compile-time constant. Stable-branch MRs !495 and !496 carry the same fix.
+
+**Ownership rule:** if callers own and free a returned object, all successful return paths must provide the same ownership. Do not make ownership depend on which enum arm, protocol subtype, cache hit, or special case produced the value.
+
+**Review rule:** when a function can return either borrowed/static or owned storage, encode that distinction in separate APIs/types if both behaviors are really required; otherwise normalize the implementation to one contract.
+
+**Confidence:** Extremely high. Merged Guy Harris master fix plus two stable backports.
