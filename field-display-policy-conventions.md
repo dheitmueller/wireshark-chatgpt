@@ -24,3 +24,24 @@ Merged master MR !1706, authored and merged by Anders Broman, removes PFCP's pai
 **Field rule:** choose the registered field type from the wire value's semantics; use supported display modifiers to improve human presentation without inventing a second semantic field. Filter abbreviations must remain unique and stable identifiers, not presentation variants.
 
 **Confidence:** Very high. Merged master cleanup authored and merged by Anders Broman.
+
+## Prefer declarative numeric display bases over hand-built table formatting
+
+Protocol-tree fields should use the display policy encoded by their registration whenever the standard bases already express the intended numeric representation. Hand-building labels to align columns or repeat hexadecimal and decimal values makes one dissector visually idiosyncratic and bypasses common rendering behavior.
+
+In merged MR !1048, Anders Broman, Alexis La Goutte, and Jaap Keuter steer MQ integer presentation toward `BASE_HEX_DEC` and `BASE_DEC_HEX` rather than custom spacing and format strings. Jaap explicitly points out that those bases exist to keep representation consistent among protocols; the final field registration adopts `BASE_HEX_DEC | BASE_EXT_STRING`.
+
+**Field rule:** use registered display bases, value-string tables, and other field metadata before custom formatted labels. Do not make packet-tree text imitate a fixed-width table when ordinary field rendering already carries the information.
+
+**Confidence:** Very high. Direct review from Anders Broman, Alexis La Goutte, and Jaap Keuter was incorporated before the MR merged.
+
+## Keep captured alignment and padding bytes visible when they explain wire layout
+
+Bytes that exist on the wire solely for alignment are still useful evidence when validating offsets. Silently advancing over them can make a correct parser look mysterious and malformed alignment harder to diagnose.
+
+Merged MR !1037 initially skipped the two XDR alignment bytes following each six-byte sFlow LAG system ID. Anders Broman questioned the invisible gap and Alexis La Goutte explicitly asked that all bytes be displayed. The accepted implementation adds a `Padding` `FT_BYTES` field.
+
+**Tree rule:** when padding or alignment bytes are physically captured and showing them clarifies the serialized structure, represent them explicitly rather than only incrementing the offset.
+
+**Confidence:** High. The change was requested in review and incorporated into the merged implementation.
+
