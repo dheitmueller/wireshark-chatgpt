@@ -35,3 +35,14 @@ Merged master MR !217 fixes Q.933 PVC Status by correcting both the registered m
 This independently corroborates the !458 BSSAP rule above: review a nonzero mask and its value table together, and write table keys in the logical post-mask/post-shift domain that Wireshark exposes.
 
 **Confidence:** Very high. Merged master correctness fix with direct Pascal Quantin review and three accepted release backports.
+## When supplying a masked boolean value manually, preserve the mask's bit position
+
+A registered Boolean mask describes the bit position that the field occupies in its containing value. If code first reduces that bit to a logical 0/1 and then calls a value-taking tree API associated with the masked field, the field machinery can apply the mask to the already-normalized value and turn a true value into false.
+
+Merged master MR !169 fixes QUIC Key Phase display. The dissector computed `key_phase = (first_byte & SH_KP) != 0`, but `hf_quic_key_phase` is a masked Boolean whose bit is not bit zero. Passing 0/1 directly to `proto_tree_add_boolean()` therefore did not preserve the registered bit position; the accepted correction passes the true value aligned to the field mask.
+
+**Implementation rule:** when a masked field is added from bytes, prefer a tree API that consumes the raw containing value/bytes and lets the registered mask extract the field. If a value-taking API is required, pass a value in the domain that API and the registered mask expect; do not normalize to 0/1 or shift to bit zero and then apply the same mask again.
+
+**Review rule:** audit manually computed values passed to masked `proto_tree_add_uint*()` and `proto_tree_add_boolean*()` calls for double normalization or lost bit position. The display value and the API input domain are not always the same thing.
+
+**Confidence:** Very high. Merged master correctness fix; it independently reinforces the broader rule that registered masks should own extraction exactly once.

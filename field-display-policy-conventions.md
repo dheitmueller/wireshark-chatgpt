@@ -58,3 +58,14 @@ Merged master MR !483 prompted explicit review on this point. Alexis La Goutte r
 **Semantic-label rule:** choose the tree label for the semantic value registered by Wireshark. A decoded or transformed value need not reuse the specification's raw-bitfield name when that would imply different units or semantics.
 
 **Confidence:** Very high. Merged master change with direct review from Gerald Combs, Alexis La Goutte, Graham Bloice, Christopher Maynard, Anders Broman, and João Valverde.
+## BASE_SPECIAL_VALS means unmatched values remain numeric, including for 64-bit fields
+
+`BASE_SPECIAL_VALS` is a display policy for tables whose named entries are exceptional values, not a request to label every unmatched number as unknown. A match should use the special descriptive string; an unmatched value should retain its ordinary numeric rendering.
+
+Merged master MR !203, authored by Pascal Quantin, brings `fill_label_number64()` into parity with the existing 32-bit behavior. Before the fix, 64-bit fields with a value table could fall back to the literal string `Unknown`; with `BASE_SPECIAL_VALS`, the accepted implementation uses the table string only when a match exists and otherwise renders the number.
+
+**Field rule:** use `BASE_SPECIAL_VALS` when a value table names special cases while the rest of the numeric domain remains meaningful. Do not convert an ordinary unmatched number into an “Unknown” semantic value merely because the display table has no entry.
+
+**API rule:** when extending field rendering to a new integer width, preserve the established display modifiers and fallback semantics of the corresponding existing-width implementation.
+
+**Confidence:** Very high. Merged master core-proto change authored by Pascal Quantin and accepted for backport.

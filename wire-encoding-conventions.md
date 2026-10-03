@@ -49,3 +49,14 @@ Merged master MR !14362, authored and merged by Guy Harris, stops applying Socke
 **Review rule:** for every byte-swap preference, identify the precise encapsulation, field set, producer/library behavior, and versions it represents. Make the preference label/help text expose that scope, and verify that newer header formats are not accidentally controlled by it.
 
 **Confidence:** Extremely high. The master change and stable backport were authored and merged by Guy Harris, and the MR rationale explicitly separates the classic/CAN FD and CAN XL byte-order contracts.
+## Decode the real wire endianness first; format semantic notation separately
+
+Byte-order flags are part of the wire contract, not a formatting trick. If a little-endian encoded value is displayed in a human notation that happens to look convenient after a big-endian read, using the wrong endianness merely because current examples produce the desired label is a latent decoding bug.
+
+Merged master MR !177 adds MBIM extended-version fields. During review, the contributor argued that `ENC_BIG_ENDIAN` made the currently observed little-endian bytes display as convenient integers. Pascal Quantin rejected that approach: the field is specified little-endian and includes an implied decimal version notation, so it must be decoded with `ENC_LITTLE_ENDIAN` and then rendered with the appropriate custom display. Pascal explicitly noted that the big-endian shortcut only worked by chance for current values and would fail for a future version such as 3.1.
+
+**Implementation rule:** decode bytes according to the specification even when the resulting integer needs a second presentation transform. Put implied decimal points, units, ranges, or other semantic notation in the field/display layer; never falsify byte order to obtain a prettier number.
+
+**Review rule:** challenge any encoding flag justified by “it gives the right displayed value.” Verify the raw wire representation independently, then verify the semantic/display conversion with values that would distinguish a genuine decoder from an accidental current-value shortcut.
+
+**Confidence:** Extremely high. Merged master feature with repeated direct Pascal Quantin review and an explicit future-value counterexample.
