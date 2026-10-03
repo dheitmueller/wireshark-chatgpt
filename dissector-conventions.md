@@ -96,6 +96,7 @@ Before implementing new functionality, locate several analogous dissectors in th
 
 - Wireshark builds commonly treat warnings as errors. Do not leave parsed-but-unused variables such as temporary bitfields unless they are actually consumed.
 - When adding parser scaffolding, either expose the parsed value, use it in validation/control flow, or defer parsing until needed.
+- When a helper returns success/failure and initializes an out-parameter only on success, check the return value before consuming that output. Do this even when surrounding bounds checks appear to make failure unreachable; GCC can legitimately report `-Wmaybe-uninitialized` when it cannot prove the helper contract across the call. A DTSDI CI failure exposed this after Clang's warning-as-error build passed.
 
 ## Source of truth
 
