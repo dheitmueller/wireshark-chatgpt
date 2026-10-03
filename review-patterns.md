@@ -31,6 +31,7 @@ Before submitting one of our Wireshark MRs, check and, where useful, state in th
 - The change is on a named topic branch, not the fork's `master` branch.
 - Commits are clean and focused; squash fixup/development-history commits when the MR represents one logical change.
 - Commit messages follow Wireshark's checked format: a short `component: brief summary` subject, then a blank line before any longer description. Wrap commit-message body text to 72 columns for every patch prepared for submission. Merged MR !25803 was held by the pipeline/reviewer until a missing blank line after the subject was fixed; treat commit-message checks as part of submission readiness, not cosmetic cleanup.
+- Disclose AI assistance in each applicable commit message and in the merge request using an `Assisted-by: [tool(s)]` trailer. Current upstream `CONTRIBUTING.md`, the Developer's Guide, the commit template, and the shipped `commit-msg` hook all establish this expectation; the hook warns when the trailer is missing.
 - Unrelated cleanup or prerequisite work is split into a separate MR where appropriate.
 - The code builds cleanly with warnings treated as errors.
 - Relevant Wireshark validation/static-analysis scripts have been run. For dissector work, merged MR !26218 explicitly reported clean `tools/check_dissector.py` and `tools/fuzz-test.sh` runs; use the current tree to determine the applicable commands rather than blindly copying an old command list. Merged !25766 also shows `check_dissector.py --commits <N>` being used to focus warning checks on recent changes.
