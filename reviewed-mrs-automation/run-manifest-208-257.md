@@ -12,10 +12,6 @@
 - Historical !17571-!17620 batch: revalidated as 50 unique reviewed MRs and preserved
 - VANC/ST 291 types encountered: none
 
-## Tracking reconciliation
+Before selection, the run consulted `reviewed-mrs.md`, the aggregate automation tracker, the per-run tracking directory, the automation review-branch inventory, and the predecessor exact ledger. The candidate set was checked against aggregate tracking content rather than inferred from a numeric-range assumption; no completed-review hit was found for !257-!208.
 
-Before selection, the run consulted the persistent `reviewed-mrs.md`, the aggregate automation tracker, the per-run tracking directory, the automation review-branch inventory, and the predecessor exact ledger. The candidate set was also checked against the aggregate tracking content rather than inferred from a numeric-range assumption; no completed-review hit was found for !257-!208.
-
-## Evidence weighting
-
-Merged master changes are primary evidence. Stable-branch cherry-picks/backports are corroborative unless their review discussion adds independent guidance. Closed/superseded work is not treated as implementation precedent. Maintainer-authored or maintainer-reviewed changes receive greater weight, particularly Guy Harris's protocol/core API work.
+Merged master changes are primary evidence. Stable-branch cherry-picks/backports are corroborative unless their discussion adds independent guidance. Closed/superseded work is not implementation precedent. Maintainer-authored or maintainer-reviewed changes receive greater weight, particularly Guy Harris's protocol/core API work.

@@ -13,3 +13,14 @@ Merged MR !13002, authored by João Valverde, reverts an attempted Clang Analyze
 **Review rule:** when a warning fix changes control-flow shape, ask what diagnostics the previous shape enabled. A `default`, assertion, cast, or initialization may suppress useful future warnings even if it makes the current report disappear.
 
 **Confidence:** High. The accepted merged correction explicitly restores the compiler's ability to diagnose unhandled enum values, reinforced by merged Clang Analyzer cleanup work in adjacent MRs.
+
+
+## Do not hide missing meaningful assignments with speculative initialization
+
+Merged master MR !222, authored by Guy Harris, fixes an NCP dataflow bug where a local was initialized to zero and later consumed even though the parser had never assigned the decoded field value it needed. Guy explicitly notes that preemptive initialization can prevent compilers and static analyzers from diagnosing that a variable was not set to a useful value.
+
+**Implementation rule:** if a local is required to be assigned on every valid path before use, do not give it an arbitrary default solely to suppress an uninitialized-variable diagnostic. Structure control flow so the meaningful assignment is provable, or use an explicit validity/status representation when “not available” is genuinely a state.
+
+**Review rule:** when cleanup adds initialization to satisfy a warning, ask whether the default is semantically legitimate. Inventing a value can convert a detectable control-flow defect into a deterministic but wrong decode.
+
+**Confidence:** Extremely high. Merged master correction authored by Guy Harris with the static-analysis rationale stated directly in the commit message.

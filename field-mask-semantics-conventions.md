@@ -26,3 +26,12 @@ Merged master MR !458 fixes BSSAP's DLCI Control Channel field. The field mask i
 **Review rule:** audit the mask, declared field width, add-item API, and value table together. A table that looks correct against the specification's byte diagram can still be wrong for the registered field's normalized value domain.
 
 **Confidence:** Very high. Merged master correctness fix, approved after maintainer review.
+
+
+## Q.933 independently confirms normalized value-table semantics
+
+Merged master MR !217 fixes Q.933 PVC Status by correcting both the registered mask and the `value_string`. The old mapping used bit-position values while the masked field exposed normalized values, and its mask also omitted the Active bit. Stable MRs !218-!220 carry the same correction.
+
+This independently corroborates the !458 BSSAP rule above: review a nonzero mask and its value table together, and write table keys in the logical post-mask/post-shift domain that Wireshark exposes.
+
+**Confidence:** Very high. Merged master correctness fix with direct Pascal Quantin review and three accepted release backports.

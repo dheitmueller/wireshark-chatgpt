@@ -59,3 +59,12 @@ Merged master MR !11819, authored and merged by John Thacker, fixes CAMEL time/t
 **Review rule:** for string-producing numeric/BCD helpers, test malformed/sentinel nibbles and shortened output, not only well-formed examples. Confirm that every subsequent index or substring operation is guarded by the post-decode length/format actually guaranteed by the API.
 
 **Confidence:** Very high. Merged master malformed-input correctness fix authored and merged by John Thacker, with direct Guy Harris review of the resulting timezone presentation.
+
+
+## Reuse a displayed field's decoded value instead of fetching it twice
+
+Merged master MR !222, authored by Guy Harris, fixes NCP code that inserted the NDS syntax field into the protocol tree but failed to retrieve that syntax for downstream parsing. The accepted change uses `proto_tree_add_item_ret_uint()` and passes the returned value to `print_nds_values()`. Merged !238 independently follows the same pattern after Alexis La Goutte explicitly requested it for the 802.11 Beacon Timing element.
+
+**Implementation rule:** when the same wire field is both displayed and needed immediately by parser/presentation logic, prefer the appropriate `proto_tree_add_item_ret_*()` helper so the registered field definition performs extraction once. Avoid a separate `tvb_get_*()` unless the control value's semantics genuinely differ from the registered field value.
+
+**Confidence:** Extremely high. Guy Harris-authored merged master correction plus independent maintainer review in another merged dissector.

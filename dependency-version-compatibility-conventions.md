@@ -37,3 +37,14 @@ Merged master MR !1543, authored by John Thacker, raises the libgcrypt minimum f
 **Cleanup rule:** when a higher minimum makes compatibility code unreachable, remove the obsolete fallback in the same transition when practical so the new dependency contract is explicit in both build configuration and source.
 
 **Confidence:** Extremely high. Merged master dependency-policy cleanup authored by John Thacker with the supported-distribution boundary and deliberate refusal to require 1.6 stated directly in the MR.
+
+
+## Probe dependency header layout instead of assuming one version's file organization
+
+Merged master MR !228 fixes libssh version detection after libssh 0.9.5 moved version macros from `libssh.h` to `libssh_version.h`. Wireshark checks for the newer header and falls back to the older header when it is absent; merged !229-!231 carry the same fix to release branches.
+
+**Detection rule:** when a supported dependency moves equivalent API or version metadata between headers, probe the installed layout and select the appropriate source rather than hard-coding the newest location.
+
+**Compatibility rule:** preserve a known working legacy fallback while the project still supports releases using it. The build check should answer the concrete capability or layout question that determines how to proceed.
+
+**Confidence:** Very high. Merged master build fix with three accepted release-branch backports.
