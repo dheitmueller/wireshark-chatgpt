@@ -3,10 +3,10 @@
 ## Current DTSDI patch series (2026-10-02)
 
 - Upstream Wireshark master at `b9c42e6480` now contains the merged full-width 10-bit VANC handoff (`3cfc16fa83`) and ST 2038 series (`50928df8d5`, `0888eedd55`).
-- Local branch `djh-dtsdi-support` is based directly on that master and contains one unpushed commit, `848459dc54` (`DTSDI: Add DekTec SDI capture support`).
+- Local branch `djh-dtsdi-support` is based directly on that master and contains one unpushed commit, `c7324c6ca5` (`DTSDI: Add DekTec SDI capture support`).
 - `git range-diff` confirms that commit is patch-equivalent to the previously reviewed DTSDI commit `864b64d977`; the rebase required no conflict resolution.
 - Validation passed: a warning-as-error TShark build, all 8 focused DTSDI dissector/file-format tests, both ST 2038 tests, and all 3 ST 2110-40 tests. The typed-item and API checkers reported zero warnings; optional spelling/URL checks could not run locally because Python modules `spellchecker` and `aiohttp` are absent.
-- Exported single-patch series: `/Users/dheitmueller/Downloads/djh-dtsdi-support-20261002/0001-DTSDI-Add-DekTec-SDI-capture-support.patch`. It was applied with `git am` to a detached worktree at the exact master base and reproduced the branch tree exactly. SHA-256: `1146acb8eb5cf0d7fd3f2263af485e7e52467cfcae9c0d74b7c916a40cbc96d6`.
+- Exported single-patch series: `/Users/dheitmueller/Downloads/djh-dtsdi-support-20261002/0001-DTSDI-Add-DekTec-SDI-capture-support.patch`. It was applied with `git am` to a detached worktree at the exact master base and reproduced the branch tree exactly. SHA-256: `1a2640894dcee2a306f9a72aaa7a706c870223bf8bb7c467510c1cf67db57f86`.
 - Neither the Wireshark branch nor patch was pushed by Codex.
 
 ## Active objectives
