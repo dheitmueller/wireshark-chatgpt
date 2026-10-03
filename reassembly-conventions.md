@@ -107,3 +107,16 @@ Merged master MR !11184 improves the documentation around `reassemble_streaming_
 **API/documentation rule:** helpers that wrap desegmentation should document how sentinel values propagate and what their return values mean, so callers do not accidentally treat a control value as an ordinary byte count.
 
 **Confidence:** High. Merged master reassembly API/documentation change that clarifies the intended sentinel semantics used by common streaming reassembly.
+## Do not carry a completed prior PDU into the next stream PDU
+
+A streaming reassembly lookup for the nearest earlier multisegment PDU is valid only while the current sequence number can still belong to that unresolved PDU. Once a prior PDU is known complete and the current sequence is at or beyond its end, reusing that state prevents the next PDU from starting correctly.
+
+Merged master MR !416 fixes QUIC reassembly for SMB2 and similar protocols. The old path fell back to the PDU covering `seq-1` when no PDU matched the current segment; after one PDU completed, the next PDU could therefore be attached to already-finished state. The accepted fix drops that prior state when `MSP_FLAGS_GOT_ALL_SEGMENTS` is set and `seq >= msp->nxtpdu`. During review Peter Wu also pointed out the complementary case from TCP: if a subdissector asks for more data after apparent completion, the completion flag must be cleared so reassembly can continue.
+
+**Implementation rule:** constrain predecessor-state fallback by the predecessor's unresolved extent. A completed PDU does not own later sequence space merely because it is the nearest earlier entry.
+
+**State-transition rule:** completion is not irrevocable if downstream dissection can legitimately request additional bytes. Keep completion flags synchronized with the subdissector's current desegmentation request.
+
+**Testing rule:** cover at least two consecutive multi-segment PDUs in each direction, not only one fragmented PDU. Also cover the case where the subdissector revises its required length after an initially complete-looking aggregate.
+
+**Confidence:** Very high. Merged correctness fix with direct Peter Wu review and comparison to established TCP behavior.

@@ -55,3 +55,12 @@ Merged master MR !15806 adds RTPS pre-shared-key decryption. Decrypted secure co
 **Review rule:** a suppression is not evidence of correctness. Review the semantic bound independently—for recursion, prove depth/progress or enforce a guard; for aliasing, lifetime, or arithmetic warnings, establish the corresponding invariant—then ensure the suppression covers no more code than necessary.
 
 **Confidence:** Very high. Merged master feature with an explicit safety argument from the contributor and direct Gerald Combs guidance on the accepted localized clang-tidy suppression.
+## Consecutive duplicate filter names are a high-value copy/paste signal, not proof of equivalence
+
+Adjacent `hf_` registrations with the same display-filter abbreviation but different labels are often accidental copy/paste errors and are cheap to flag mechanically. The warning itself, however, does not prove which identifier is correct or that the fields should be unified.
+
+Merged master MR !419 adds `check_typed_item_calls.py --consecutive`; merged !420 and !432 then fix many real duplicate-filter mistakes it exposed. Closed !448 is the necessary counterexample: attempting to consolidate an FST action-code field onto `wlan.fixed.action_code` was abandoned after Alexis La Goutte noted that the value-string domain differed.
+
+**Checker rule:** flag adjacent same-filter/different-label registrations because they have high bug yield, but resolve each warning against protocol semantics, field width, value table, and intended compatibility. The checker identifies suspicious sameness; it does not authorize semantic consolidation.
+
+**Confidence:** Very high for the checker behavior and merged cleanup evidence; closed !448 is used only as negative corroboration.

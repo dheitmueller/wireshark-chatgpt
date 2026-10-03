@@ -33,3 +33,22 @@ Merged master MR !13202, authored and merged by John Thacker, fixes decade-old I
 **Review rule:** treat compiler or static-analyzer "unreachable code" diagnostics in long-lived registration loops as possible evidence that the controlling predicate refers to the wrong table element, rather than dismissing them as warning noise.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with Clang 17 exposing a decade-old semantic bug.
+## Keep registered dissector identity distinct from display/protocol names
+
+A protocol short name is not necessarily the same identifier used to register and redispatch a dissector. APIs that serialize or later resolve a dissector by name must preserve the registered dissector identity rather than substituting a more human-readable protocol name.
+
+Closed MR !455 attempted to fix anonymous dissector handles in Export PDUs by replacing `dissector_handle_get_dissector_name()` with `dissector_handle_get_short_name()`. Pascal Quantin rejected this because `EXP_PDU_TAG_PROTO_NAME` is consumed as a registered dissector name; substituting the protocol short name could make exported PDUs impossible to redispatch. He instead pointed toward registering relevant dissectors by name or adding a distinct tag/criterion for other dispatch modes. The patch did not merge, so only the contract guidance is retained.
+
+**Registration/API rule:** distinguish display name, protocol/filter identity, and registered dissector lookup name. When an API promises one of those namespaces, do not silently substitute another to avoid a NULL or awkward corner case; fix the registration/dispatch contract explicitly.
+
+**Confidence:** High for the contract. Direct Pascal Quantin review; implementation proposal was closed and is not treated as precedent.
+
+## Treat registered names as compatibility-facing identifiers
+
+Dissector registration names can be consumed by Lua and other programmatic callers. Cosmetic renaming to make them match field-prefix spelling can therefore break existing automation even when packet dissection is unchanged.
+
+Closed MRs !445 and !446 proposed renaming NAS EPS/5GS registered names. Pascal Quantin explicitly rejected an unconditional rename because tools may look up the old dissector name and suggested compatibility aliases where supported. Both MRs were later superseded, so their exact patches are not precedent.
+
+**Compatibility rule:** before renaming a registered dissector/protocol identifier, search for programmatic lookup contracts and provide an alias or migration path if the old name can be observed externally. Do not treat naming normalization as internal-only cleanup.
+
+**Confidence:** High for the review rule. Direct Pascal Quantin review on superseded proposals.

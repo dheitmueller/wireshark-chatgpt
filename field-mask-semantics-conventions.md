@@ -15,3 +15,14 @@ Merged master MR !11053, authored by Martin Mathieson, adds checking for all-set
 **Testing rule:** run `tools/check_typed_item_calls.py` with `--check-bitmask-fields` before submission so suspicious masks are caught mechanically rather than relying only on manual review.
 
 **Confidence:** Very high. Merged master checker/cleanup work from Martin Mathieson, consistent with the later checker refinement in !11698.
+## Value tables for masked fields use the normalized post-mask value
+
+An `hf_register_info` mask does not merely control highlighting. For integer fields, Wireshark extracts and shifts the selected bits before applying a `value_string`. A value table therefore must be written in the domain of the normalized field value, not the raw on-wire bit positions.
+
+Merged master MR !458 fixes BSSAP's DLCI Control Channel field. The field mask is `0xc0`, so raw patterns `0x80` and `0xc0` become normalized values `0x02` and `0x03`. The old table used the raw patterns and therefore failed after normal field extraction; the accepted table uses the normalized values. Anders Broman also suggested `proto_tree_add_bitmask_list()` as a cleaner way to represent the grouped bitfield.
+
+**Field-definition rule:** when a numeric field has a nonzero mask and a value table, derive the table keys from the value Wireshark exposes after masking/shifting. Do not copy the raw bit patterns from a packet diagram into the table without accounting for the field mask.
+
+**Review rule:** audit the mask, declared field width, add-item API, and value table together. A table that looks correct against the specification's byte diagram can still be wrong for the registered field's normalized value domain.
+
+**Confidence:** Very high. Merged master correctness fix, approved after maintainer review.
