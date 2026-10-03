@@ -6,3 +6,5 @@
 - Keep raw wire values distinct from display normalization and derived presentation (!317, !314, !316).
 - Prefer registered `ENC_TIME_*` decoding when the wire layout directly matches it (!315).
 - Keep commit validation independently rerunnable and support maintainer rebasing/minor fixes in the submission workflow (!309, !350).
+- Bound packet-derived persistent objects at construction and propagate construction failure before later use (!351).
+- If a supported source language exposes a gap in an analysis tool, update the toolchain rather than weakening the source choice (!319).
