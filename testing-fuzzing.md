@@ -70,3 +70,14 @@ Reviewer Jaap Keuter additionally challenged the initial UDX heuristic as too we
 ## Future curation
 
 Add exact upstream-recommended fuzz commands and test-suite integration patterns after correlating them with current Wireshark source and maintainer review feedback.
+
+
+## Project documentation: sample captures are part of new-dissector acceptance
+
+Merged MR !2 is unusually direct historical evidence from Wireshark's own developer documentation. The updated `README.dissector` instructs contributors to test dissectors with `fuzz-test.sh` and/or `randpkt`, states that a new dissector normally will not be accepted without a sample capture, and explains that sample captures are used by the automated build/fuzzing system.
+
+This predates and strongly corroborates the later maintainer-review pattern recorded above: representative captures are not merely convenient attachments for a reviewer. They are part of the project's validation inputs and can continue to provide fuzzing value after the MR is merged.
+
+**Submission/testing rule:** for a new dissector, provide a small representative capture unless there is a concrete reason one cannot be shared, run the repository's relevant fuzzing/random-packet validation, and describe that validation in the MR.
+
+**Confidence:** Extremely high for the sample-capture expectation. It appears in merged project developer documentation and is repeatedly corroborated by later maintainer review.

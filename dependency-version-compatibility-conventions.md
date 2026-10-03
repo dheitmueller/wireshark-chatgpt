@@ -48,3 +48,16 @@ Merged master MR !228 fixes libssh version detection after libssh 0.9.5 moved ve
 **Compatibility rule:** preserve a known working legacy fallback while the project still supports releases using it. The build check should answer the concrete capability or layout question that determines how to proceed.
 
 **Confidence:** Very high. Merged master build fix with three accepted release-branch backports.
+
+
+## Align optional-dependency declarations with the version/capability guards around their users
+
+A dependency guard that removes every use of a static object can still leave a build failure if the declaration remains unconditional and the project's strict warning configuration treats the resulting unused object as an error.
+
+Merged master MR !5 fixes this for old-libgcrypt builds by moving Bluetooth Mesh reassembly descriptors inside the matching libgcrypt version guard and QUIC stream-fragment descriptors inside `HAVE_LIBGCRYPT_AEAD`. The functional code was already guarded; the missing part was the declaration boundary.
+
+**Compatibility rule:** when supporting multiple dependency versions or optional capabilities, audit the whole translation unit under both sides of each guard. Static constants, helper tables, and functions whose only consumers are feature-gated should normally be gated with those consumers.
+
+**Testing rule:** build representative supported dependency configurations with strict warnings enabled. Feature-enabled success does not cover the feature-disabled source shape.
+
+**Confidence:** High. Merged master build-portability fix motivated by a real supported old-libgcrypt configuration.
