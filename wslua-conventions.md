@@ -11,3 +11,14 @@ Merged MR !24348, authored and merged by John Thacker, changes WSLua test-librar
 **Implementation rule:** decide whether a Lua table is an opaque reference store or a sequence. If Wireshark code relies on length/order/contiguity, maintain consecutive integer keys directly; do not infer sequence properties from `luaL_ref()` allocation behavior.
 
 **Confidence:** Very high. Merged compatibility fix authored and merged by John Thacker, with the semantic mismatch identified explicitly in the change rationale.
+
+
+## Preference mutation from Lua must preserve preference-system bookkeeping
+
+Merged MR !792 adds WSLua preference read and mutation helpers. Peter Wu challenged the global-state mutation capability and asked for a concrete use case and tests; Stig Bjørlykke supplied both. The accepted implementation uses the preference subsystem's typed setters, propagates module change flags, handles missing and unsupported preferences through defined Lua results or errors, and adds Lua tests for the new API.
+
+**Implementation rule:** when Lua can mutate application-wide state, route the change through the owning subsystem's canonical setters and change/effect bookkeeping rather than writing underlying storage directly.
+
+**Review/testing rule:** require a concrete extension use case and tests across supported value classes and error cases before broadening a scripting API that can change global application behavior.
+
+**Confidence:** High. Merged API addition with direct Peter Wu design review and tests added during review.
