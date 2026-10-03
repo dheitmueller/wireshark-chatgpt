@@ -73,3 +73,31 @@ Merged master MR !13559, authored and merged by John Thacker, fixes display and 
 **Review rule:** test captures with at least two sections whose interface numbering overlaps, including repeated interface ID zero with different IDBs. Verify both user-visible interface names/descriptions and rewritten packet interface IDs after save/export/merge.
 
 **Confidence:** Very high. Merged master architecture/correctness fix authored and merged by John Thacker; the section-scoped mapping and single-SHB dump behavior are stated directly in the MR description.
+
+## Propagate interface metadata as it is discovered during streaming conversion
+
+Capture-file metadata such as Interface Description Blocks is not necessarily confined to the beginning of an input file. A converter that snapshots interface metadata only when it opens the file can therefore emit records referring to interfaces that were discovered later without first carrying the corresponding metadata into the output.
+
+Merged master MR !669, authored and merged by Guy Harris, changes editcap and tshark to consume newly discovered IDBs as the input stream is read. The change introduces an explicit `wtap_dump_add_idb()` path, lets pcapng write an IDB when it is encountered, and initializes dump parameters without eagerly copying the whole initial IDB set. Callers then ask Wiretap for each as-yet-unfetched interface description and add it before continuing output. The code also checks `wtap_uses_interface_ids()` before attempting to emit IDBs.
+
+Merged master MR !677, also authored and merged by Guy Harris, independently replaces a pcapng-specific output test with `wtap_uses_interface_ids(file_type)`. Together the two changes make the intended abstraction explicit: the writer should query the file format capability it needs, not special-case the format that first exposed the requirement.
+
+**Implementation rule:** if an input format permits metadata records to appear after ordinary records have begun, propagate that metadata incrementally as it is discovered. Do not assume that the metadata visible at file-open time is complete.
+
+**Capability rule:** gate metadata emission using the semantic Wiretap capability that describes the output format. Prefer `wtap_uses_interface_ids()` to tests against a particular file subtype when the real question is whether the destination has interface-ID semantics.
+
+**Review/testing rule:** exercise conversions where a later record introduces or references an interface that was not in the initial metadata set. Verify that the output contains the necessary interface description before any packet refers to it.
+
+**Confidence:** Extremely high. Both MRs were authored and merged by Guy Harris; !669 is the substantive architecture change and !677 directly reinforces the capability-query rule.
+
+## Centralize typed Wiretap block allocation-and-copy semantics
+
+When copying a Wiretap block requires both allocating the correct destination block type and copying its contents, callers should use a semantic helper that performs both steps rather than reproducing the allocation contract at each call site.
+
+Merged master MR !667, authored and merged by Guy Harris, adds `wtap_block_make_copy()`. The helper determines the source block type, creates the corresponding destination block, copies the block contents, and returns the newly allocated object. Existing section, interface, name-resolution, and interface-statistics copy sites are converted to use it.
+
+**Implementation rule:** when object copying has type-aware allocation semantics, expose one helper whose contract is “return a newly allocated copy” instead of requiring each caller to pair a create operation with a separate copy operation correctly.
+
+**Ownership rule:** make allocation ownership explicit in the helper contract. A “make copy” API should return an independently owned object whose lifetime is not tied to the source object.
+
+**Confidence:** Extremely high. The helper and its migrated call sites were authored and merged by Guy Harris.

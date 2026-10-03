@@ -92,3 +92,28 @@ Merged master MR !1689 supplies complementary composition guidance for a parent 
 **Dispatch rule:** when explicit and heuristic subdissector mechanisms coexist, preserve a deterministic precedence and fallback chain. Do not hide the payload merely because one dispatch mechanism failed to claim it.
 
 **Confidence:** High. Both changes merged on master; !1690 states the false-positive rationale directly in the accepted code.
+
+
+## Build default-enabled heuristics from several independent structural invariants
+
+A heuristic that is enabled by default should reject unrelated traffic using multiple independent properties of the protocol, not one convenient field or nominal port. The validation should happen before invoking the full dissector, and the default policy should be revisited if real captures show false positives.
+
+Merged master MR !696, authored and merged by Peter Wu, adds DNS-over-UDP heuristic detection for test and deployment traffic using non-standard ports. Before claiming a datagram, the heuristic requires more than a DNS header, a standard-query opcode, query/response-specific question and answer-count constraints, and bounded authority/additional counts. The MR description explicitly discusses false-positive risk, why default enablement was considered acceptable, and possible future strengthening through QNAME/QTYPE checks.
+
+**Recognition rule:** for a broadly registered, default-enabled heuristic, combine several cheap protocol invariants before handing the packet to the full dissector. Prefer checks that are independently unlikely to hold for unrelated payloads.
+
+**Policy rule:** document why the heuristic is selective enough for its chosen default. If later evidence widens the accepted space or reveals false positives, strengthen the discriminator or change the default rather than preserving automatic claiming uncritically.
+
+**Confidence:** Very high. Merged master heuristic authored and merged by Peter Wu with the selectivity/default rationale recorded in the MR itself.
+
+## Raw-data fallback must come after protocol-discovery opportunities
+
+Showing undecoded payload as Data is a useful terminal fallback, but installing that fallback too early can prevent heuristic or other dynamic dispatch from ever seeing the payload.
+
+Merged master MR !675 adds a Data fallback to TLS application-data processing when no application dissector is found. During review, Peter Wu pointed out that simply setting a Data application handle at the earlier decision point would break heuristics that intentionally run when no `app_handle` is set. The accepted implementation calls the Data dissector only in the branch reached after there is no heuristic match and no port-based application protocol.
+
+**Dispatch rule:** preserve the established protocol-discovery chain. A generic raw-data fallback belongs after explicit, negotiated, Decode-As, and heuristic dispatch mechanisms that are supposed to get a chance to claim the payload.
+
+**Review rule:** when adding a fallback dissector, inspect the conditions downstream dispatch uses to determine whether it should run. A fallback that appears presentation-only can change behavior if its mere presence suppresses heuristic probing.
+
+**Confidence:** Very high. Direct Peter Wu review changed the merged implementation to preserve the heuristic-dispatch contract.
