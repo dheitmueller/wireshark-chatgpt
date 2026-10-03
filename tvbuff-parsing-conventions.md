@@ -103,3 +103,14 @@ Merged master MR !11196, authored by John Thacker, fixes iSCSI `TargetAddress` p
 **Review rule:** distinguish a string's logical syntax from its storage guarantee. A protocol token may look like a C string while the packet only promises a length-delimited byte range; parsing code must honor the latter.
 
 **Confidence:** Very high. Merged master safety fix authored by John Thacker with an accepted stable backport and a concrete out-of-bounds failure mode.
+
+## Prefer native TVBuff transformations to manual scratch-buffer reconstruction
+
+When a protocol needs a shifted, aligned, decoded, or otherwise transformed view of packet bytes, first look for a TVBuff or encoding helper that expresses that transformation directly. Reconstructing a child buffer with raw pointers and local copy or bit-shift loops duplicates bounds and lifetime logic that the TVBuff layer already owns.
+
+Merged master MR !1059, authored by John Thacker and merged by Anders Broman, replaces `tvb_get_ptr()`, a manual four-bit shift loop, and `tvb_new_real_data()` with `tvb_new_octet_aligned()`. Merged !1042, also authored by John Thacker, independently replaces a local GSM TBCD digit loop with `tvb_get_string_enc(..., ENC_KEYPAD_ABC_TBCD | ENC_NA)`. Merged !1035 adds a shared Base64-to-child-TVBuff helper rather than having consumers reproduce that extraction and ownership sequence.
+
+**Implementation rule:** prefer the common TVBuff or encoding API when it captures the protocol transformation you need. Use raw-pointer reconstruction only when no suitable API exists and the code explicitly preserves captured/reported-length and ownership semantics.
+
+**Confidence:** Very high. Two merged master cleanups authored by John Thacker plus an accepted common helper provide independent evidence for the same API direction.
+
