@@ -38,3 +38,12 @@ Merged master MR !10756, authored and merged by Gerald Combs, fixes an XRA disse
 
 **Confidence:** High. Merged master infinite-loop fix with a concrete overflow-to-no-progress failure mode.
 
+
+
+## Historical corroboration: malformed tag recovery must preserve cursor progress
+
+Merged release-3.2 MR !783 fixes an infinite loop in GQUIC tag parsing. When a tag cannot be decoded, the accepted implementation terminates the local tag loop rather than continuing with ambiguous state. Before returning the aggregate advance, it also rejects length arithmetic that would fail to move beyond the starting offset and reports the invalid total length.
+
+**Progress rule:** every recoverable path through a repeated structure must either advance the externally visible input cursor or terminate that repetition. Validate packet-derived next-offset arithmetic before exposing it to the enclosing parser; a malformed length that wraps or produces no progress is a control-flow hazard, not merely a display error.
+
+**Confidence:** High. Merged maintained-branch correctness fix for a concrete infinite-loop failure mode.
