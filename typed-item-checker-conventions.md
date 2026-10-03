@@ -44,3 +44,18 @@ Merged MR 10493 made broad typed-item checker driven corrections, but Lars Volke
 **Review rule:** after checker-driven metadata changes, verify the protocol semantics and all affected call sites, and run representative behavior tests where practical.
 
 **Confidence:** High. This is a concrete regression report attached to a merged checker-cleanup MR and directly corroborates the stronger MR 10605 rule above.
+
+
+## Checker findings must be resolved against the wire specification, not mechanically
+
+A typed-item checker can prove that a call-site width and registered field type disagree, but it cannot decide which side is semantically wrong. Before widening or narrowing a field, verify the protocol's actual wire width and audit every use of the shared `hf_` entry.
+
+Merged MR !975, authored by Martin Mathieson, fixes three `proto_tree_add_item()` width mismatches after checking the corresponding protocol definitions. Martin explicitly noted that the A21 value table happened to use only the first byte while the specification still defined the field as two bytes; the accepted fix therefore widens the field metadata rather than preserving the accidental current value range. In the same discussion he regenerated the whole-tree `tools/check_typed_item_calls.py` output, finding many additional candidates for separate review.
+
+Closed WIP !1005 is lower-weight corroboration. When a MySQL field was used with a four-byte call site, Martin questioned whether the registered field should be widened instead of adding an exception, while also noting that legitimate multi-width use patterns must be modeled carefully.
+
+**Review rule:** treat each checker report as a request to reconcile the API call, the registered field contract, every use of that field, and the normative wire definition. Do not edit metadata solely to silence the checker.
+
+**Testing rule:** after targeted fixes, rerun the checker over the relevant commits/tree to expose remaining instances; then validate representative packet behavior where a field's interpretation changed.
+
+**Confidence:** Very high for the merged !975 behavior and Martin Mathieson's explicit reasoning; !1005 is supporting discussion only because it closed unmerged.
