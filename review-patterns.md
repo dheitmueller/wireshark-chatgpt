@@ -186,3 +186,11 @@ Before submitting one of our Wireshark MRs, check and, where useful, state in th
 ## Review-access note
 
 Use the local JSON corpus in `dheitmueller/wireshark-corpus-mrs` as the preferred source for MR mining. It contains MR metadata, full discussions (including DiffNote `position` objects), changes/diffs, commits, and diff-version metadata, avoiding dependence on GitLab web indexing while preserving review context.
+
+### Treat an exploded MR diff as a branch-ancestry failure
+
+**Evidence:** Closed MR !1956 was intended to be a small ARPHRD update, but its submitted history appeared as 733 commits and 665 changed files. The immediate successor !1957 contained the intended change as one commit touching two files and merged.
+
+**Lesson:** If a narrowly scoped change suddenly appears as hundreds of unrelated commits or files, verify the source branch base and upstream ancestry before reviewing the diff. Rebase or recreate the MR from the correct target rather than attempting to salvage the exploded history.
+
+**Confidence:** High as submission-workflow guidance. The malformed MR was closed and immediately replaced by a clean merged successor.
