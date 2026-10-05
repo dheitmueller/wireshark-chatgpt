@@ -105,3 +105,14 @@ Merged !22054 also updated the Wireshark Developer's Guide around the triangular
 **Submission rule:** develop an MR on a dedicated topic branch and keep its commits focused and reviewable. Prefer one coherent MR for a small related series; split work when changes are independently reviewable or have genuinely distinct purposes, not simply because every edit can be isolated mechanically. For stable-branch cherry-picks, explicitly target the intended release branch.
 
 **Confidence:** High. Direct Jaap Keuter and Michael Mann review guidance, supported by a merged Developer's Guide workflow update; the branch-specific example in !22090 itself was closed rather than merged.
+
+## Treat grossly exploded MR history as a branch/base ancestry failure
+
+A narrowly scoped change that suddenly appears as hundreds of unrelated commits and hundreds of changed files should not be reviewed as though that giant diff were intentional. First verify the source branch, target branch, and ancestry.
+
+Three closed MRs provide consistent evidence. !261, authored by Guy Harris, was intended to backport a one-commit NCP indentation fix but appeared as 810 commits and 580 changed files; Guy closed it immediately and explicitly rejected reopening or merging it, while clean successor !262 merged as one commit touching one file. !701, also authored by Guy Harris, was intended as a backport of the accepted macOS dumpcap-message change from !700 but appeared as 574 commits and 593 changed files; Guy immediately closed it and rejected reopening it. !15376 attempted another backport of recursion-check work already accepted in !14643 and release backports !14645-!14647, but appeared as 581 commits and 848 changed files and was closed less than two minutes after creation; the accepted MRs are each one commit touching five files.
+
+Submission/review rule: when MR scope is wildly inconsistent with the stated change, stop substantive code review and inspect branch ancestry first. Recreate, reset, rebase, or cherry-pick onto the correct target branch rather than trying to salvage the exploded history. Treat the malformed closed MR as workflow evidence, not implementation precedent; use the clean successor or original merged change for technical guidance.
+
+Confidence: very high. The same failure mode recurs across 2020 and 2024, two examples are authored and explicitly rejected by Guy Harris, and each has a clean accepted counterpart demonstrating the intended scope.
+
