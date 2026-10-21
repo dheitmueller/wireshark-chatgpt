@@ -15,3 +15,58 @@ Tracking reconciliation:
 - Revalidated !17571-!17620 as 50 unique reviewed MRs with no omissions; it remains preserved and counted.
 
 Next frontier (metadata probe only, not reviewed): !6460, `http: Pass data relative to the original offset to follow tap` (merged).
+
+## Explicit numeric membership (2026-10-21)
+
+The following is a machine-readable expansion of the *previously completed* review declared above; no MRs were newly reviewed or re-reviewed in this normalization. Corpus commit: `ddcaa22b51c68f594e425a23388c3a2086813054`.
+
+- !6510
+- !6509
+- !6508
+- !6507
+- !6506
+- !6505
+- !6504
+- !6503
+- !6502
+- !6501
+- !6500
+- !6499
+- !6498
+- !6497
+- !6496
+- !6495
+- !6494
+- !6493
+- !6492
+- !6491
+- !6490
+- !6489
+- !6488
+- !6487
+- !6486
+- !6485
+- !6484
+- !6483
+- !6482
+- !6481
+- !6480
+- !6479
+- !6478
+- !6477
+- !6476
+- !6475
+- !6474
+- !6473
+- !6472
+- !6471
+- !6470
+- !6469
+- !6468
+- !6467
+- !6466
+- !6465
+- !6464
+- !6463
+- !6462
+- !6461

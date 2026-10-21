@@ -1,0 +1,14 @@
+# Conventions from Wireshark MRs !710-!759
+
+- Wiretap record semantics should be independent of capture-container identity when the same logical record can appear in multiple file formats. Merged Guy Harris MR !750 is the exemplar; !751 is its release-3.4 backport.
+- When behavior depends on a file-format capability, query the capability API instead of testing for one known format. Guy Harris's !742 uses `wtap_uses_interface_ids()` instead of checking specifically for pcapng.
+- Split protocol state objects when their lifecycles differ. In merged QUIC MR !730, Header Protection and Packet Protection state are separated because Key Update rotates only the latter.
+- Repeated parsing should be bounded by structural length/count rather than a payload sentinel. Register fields with types matching their wire width and mark calculated-only tree items generated. These points were enforced during review of merged !752.
+- Column updates must not depend on whether a protocol tree was requested. Prefer `pinfo->pool` for packet-lifetime dissector allocation and reuse common helpers instead of local duplicate implementations. These are review lessons from open !736, so treat them as guidance rather than accepted implementation precedent.
+- Public capture encapsulations require a real link-layer contract and matching Wiretap mapping. Review of open !736 strongly favored a documented standard link type and metadata format over inventing private `WTAP_ENCAP_*` values.
+- Enforce real representation and frontend limits before failure. Guy Harris's !734, !737, and !740 bound the record count by frame-number representation and, on older Qt, by the packet-list container's practical limit, with an explicit warning when records are discarded.
+- If a special protocol message declares an ordinary field undefined or unused, represent the special state explicitly rather than assigning meaning to incidental bits. Merged !748 does this for QUIC Version Negotiation.
+- Pin CI distribution images when reproducibility matters. !747 shows an unversioned Fedora image changing RPM/CMake macro behavior when Fedora 33 became current.
+- Diagnose translation-unit contract failures before replacing a shared API globally. The !710 / !719 / !721 sequence shows a broad `WS_WIKI_URL()` workaround being replaced by the actual fix: including the header that defines the shared macro.
+- Protocol items whose final range is unknown should initially cover the remaining TVB and be shortened once the endpoint is known; a zero-length placeholder harms diagnostics and downstream consumers such as MATE (!757).
+- Submission review in this batch reinforces component-prefixed commit subjects, focused sample captures for review, and enabling maintainer commits on the source branch (!752, !713). Backport validators also need to account for deterministic cherry-pick provenance text (!712).
