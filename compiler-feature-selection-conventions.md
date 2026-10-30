@@ -13,3 +13,13 @@ Merged master MR !12820 fixes attribute selection for Clang, including clang-cl.
 **Review rule:** exercise alternate front ends/modes such as clang-cl separately from ordinary Clang or GCC builds. A condition that works under one compatibility personality may select a different and unsupported pragma/attribute path under another.
 
 **Confidence:** High. Merged master portability fix with a concrete clang-cl failure mode and an explicit rationale for the compiler test.
+
+## Gate compiler diagnostic pragmas by real vendor and introduction version
+
+A compiler's generic `__GNUC__` compatibility macro is insufficient evidence that it recognizes a GCC-specific diagnostic name; using an unknown name under `-Werror=pragmas` itself breaks the build. Merged !10318 restricted `stringop-overflow=` diagnostic control to GCC at least 7.1, using the project's version helper instead of a hand-written check that might accidentally exclude all later major versions.
+
+Merged !10329 then tightened that contract: the accepted `WS_GCC_VERSION` classification excludes Clang (`__clang__`) and both Intel Classic (`__INTEL_COMPILER`) and Intel LLVM (`__INTEL_LLVM_COMPILER`), before gating the pragma on `WS_GCC_VERSION >= 70100`. John Thacker specifically called out the second Intel compiler family and the correct spelling of the Clang macro in review.
+
+**Implementation rule:** identify the actual compiler family and the first version supporting a diagnostic before emitting a pragma, reusing Wireshark's central compiler-test macros. Do not equate GNU dialect compatibility with GCC-only pragma support, or write ad hoc major-version expressions that fail for later versions.
+
+**Confidence:** Very high — two merged fixes with concrete GCC/Clang/Intel portability risks and explicit John Thacker review.

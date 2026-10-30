@@ -15,3 +15,13 @@ Merged master MR !11053, authored by Martin Mathieson, adds checking for all-set
 **Testing rule:** run `tools/check_typed_item_calls.py` with `--check-bitmask-fields` before submission so suspicious masks are caught mechanically rather than relying only on manual review.
 
 **Confidence:** Very high. Merged master checker/cleanup work from Martin Mathieson, consistent with the later checker refinement in !11698.
+
+## Model genuine one-bit masked flags as boolean fields with the right label polarity
+
+When a protocol element is a **masked one-bit flag**, prefer `FT_BOOLEAN` with its containing width (8, 16, 32, etc.), its nonzero bit mask, and an appropriate shared `true_false_string` via `TFS(...)`. A separately defined two-value `value_string` applied to `FT_UINT*` obscures the boolean contract and duplicates translations. Confirm that true/false labels preserve the protocol's actual 1/0 meaning; some flags use inverted labels such as No/Yes.
+
+Merged John Thacker MR !10347 converts the current/next indicator across MPEG/DVB dissectors to shared `tfs_current_not_yet`. Merged Martin Mathieson MR !10359 extends the same cleanup to C/R, enable, acknowledgment, and related flags after running `tools/check_tfs.py --check-value-strings`; the author explicitly limits safe conversion to entries with a nonzero mask.
+
+**Review rule:** only apply this transformation to real masked binary flags, preserving their mask width, filter semantics, and label polarity. A whole-value integer with a zero mask is not automatically interchangeable with `FT_BOOLEAN` merely because its observed values happen to be 0 or 1.
+
+**Confidence:** High — merged broad cleanups by two experienced contributors, reinforced by a project checker and explicit scope caveat.

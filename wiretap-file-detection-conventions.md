@@ -33,3 +33,15 @@ Merged master MR !20434, authored and merged by Guy Harris, deliberately passes 
 **Implementation rule:** separate speculative parsing from committed side effects. If one parsing helper serves both phases, make the ownership/context argument explicitly optional and gate persistent mutations on it, or split probing from committed parsing when that is clearer. Document intentional sentinel/NULL context where it protects a subtle lifecycle boundary.
 
 **Confidence:** Extremely high. The convention comes directly from a merged master change authored and merged by Guy Harris whose sole purpose was documenting this intentional probe/commit distinction.
+
+## Carry detected file-family identity into the record framer
+
+When a wiretap opener accepts more than one related byte-stream family, a successful recognition should establish which **record grammar** the reader will use. Repeatedly trying alternate unrelated packet framing rules at every record can misclassify valid padding or ordinary payload bytes as another container type.
+
+Merged John Thacker MR !10342 separates MPEG audio from MPEG PES reading and stores the detected `is_audio` mode in the wiretap private context. The PES path then allows zero-byte stuffing before the next start code without treating it as an audio packet. Earlier merged !10322 makes the MPEG `program_end_code` a four-byte terminator without a payload-length field, illustrating that terminal markers need their own framing case.
+
+Companion merged !10331 documents that MPEG's short magic numbers are weak enough to keep the opener in `OPEN_INFO_HEURISTIC` despite recognizable bytes, and !10327 synchronizes extensions across both open-dialog filtering and heuristic registration.
+
+**Implementation rule:** make the opener's format decision explicit in per-file state and use it consistently for subsequent record framing; handle format-defined stuffing and terminators separately from record payloads. Treat recognizer confidence and filename extensions as supporting discovery signals, not as interchangeable parsers.
+
+**Confidence:** High — merged John Thacker wiretap changes with explicit failure modes, plus a compatible registration correction.

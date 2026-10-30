@@ -21,3 +21,13 @@ Merged master MR !20587, authored and merged by John Thacker, converts OID/MIB d
 **Implementation rule:** prefer the project logging subsystem over private debug knobs/output paths, and treat diagnostic argument construction as real runtime work. Keep cheap scalar arguments inline, but guard allocations, string assembly, or expensive calculations whose only consumer is an inactive debug/trace message.
 
 **Confidence:** Extremely high. Merged master cleanup authored and merged by John Thacker, with both the logging unification and avoided construction stated in the change.
+
+## Distinguish recoverable API misuse from a fatal fuzzer finding
+
+A precondition check that deliberately returns a safe value can indicate a programmer error without necessarily leaving the program in an inconsistent state. Making every such event fatal under generic `critical` logging can turn benign/recoverable argument handling into repetitive fuzzer aborts, obscuring actionable crashes.
+
+Merged master MR !10332 changes the `ws_return.h` warning helpers from generic critical logging to informational events in the dedicated `InvalidArg` domain. Developers can still choose to make that domain fatal when investigating invalid calls, while normal fuzzing avoids unconditional termination for a helper that is explicitly documented as recoverable.
+
+**Implementation rule:** assign severity according to whether the failed precondition leaves the state unsafe. Keep recoverable early-return diagnostics identifiable by a dedicated logging domain, and permit targeted fatal configuration for debugging instead of promoting all argument warnings to globally fatal errors.
+
+**Confidence:** High — merged wsutil logging contract change with its explicit fuzzing/debugging rationale.
