@@ -83,3 +83,13 @@ Merged master MR !14929, authored and merged by Guy Harris, introduces `PI_DISSE
 **Diagnostic rule:** choose the expert group/protocol owner according to the failed semantic contract. Use packet-malformation diagnostics only when the packet representation itself is malformed; use dissector-bug diagnostics for internal implementation failures, and unreassembled/incomplete-data diagnostics when missing reconstruction is the actual cause. Do not make the packet carry blame for a Wireshark implementation or processing-state failure.
 
 **Confidence:** Extremely high. Two merged master corrections authored and merged by Guy Harris, with the unreassembled correction also accepted on supported release branches.
+
+## Keep expert reports anchored to the field causing the violation, even across parsing branches
+
+A protocol constraint may be violated by a header field even when the consequence becomes visible only later in the dissector. The expert-info item should identify that offending field, not a generic parent tree or an unrelated packet byte range.
+
+Merged master MR !10301, authored by Guy Harris, retains the `proto_item` representing NHRP's extension-offset field and attaches both invalid-range and forbidden-extension diagnostics to it. The same refactor replaces ambiguous flag-based mandatory-part dispatch with explicit packet-type branches and saves/restores `pinfo->flags.in_error_pkt` around nested dissection of a quoted error-indication packet.
+
+**Implementation rule:** preserve the field item needed for precise expert attribution, use semantic packet types to choose variant layouts, and restore temporary contextual `packet_info` flags after nested dispatch rather than leaking error-packet state into subsequent dissection.
+
+**Confidence:** Extremely high. Merged master parser correction authored by Guy Harris with field attribution and nested-state handling visible in the accepted diff.

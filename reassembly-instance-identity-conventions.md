@@ -23,3 +23,15 @@ Merged release-4.0 MR !11114, authored and merged by John Thacker, fixes TCP out
 **Testing rule:** for a stateful reassembly change involving reordering, retained fragment state, or derived sequence boundaries, include a representative out-of-order capture and exercise both the normal first pass and second-pass/redissection path. Treat a stable-branch backport as corroboration when the master MR is available separately.
 
 **Confidence:** High for the testing pattern, with primary architectural weight deferred to the not-yet-reviewed master MR !11063.
+
+## Include transport endpoints and protocol transaction dimensions in custom fragment keys
+
+A transport-level conversation is not necessarily a unique fragmented message. If multiple service instances or transactions reuse session-like identifiers, a key built only from a message ID can accidentally combine segments from unrelated reassemblies.
+
+Merged master MR !9996 replaces a SOME/IP-TP XOR-derived integer fragment key with a structured key carrying service, method, client, session, message type, interface major version, source/destination addresses, and ports. Dr. Lars Völker explicitly warned in review that service instances may differ only by address/port, even if other deployments may reuse those endpoints; the merged implementation retains both protocol and transport dimensions. Its custom reassembly table uses shallow address references for **temporary lookup keys** and deep copies for **persistent stored keys**, with matching deallocation paths.
+
+**Implementation rule:** define identity by every field needed to distinguish simultaneously active fragment streams. A hash may omit some equality dimensions (collisions are legal), but equality must compare the full discriminator and hash/equality must agree whenever keys are equal. Keep key-lifetime ownership explicit: never retain a shallow address reference beyond its valid packet lifetime.
+
+**Testing rule:** interleave segmented messages that share a service/method yet differ by client/session or endpoint; check that their reconstructed data remain separate.
+
+**Confidence:** High. Merged master change with direct protocol-maintainer review and a concrete preexisting key-collision defect.

@@ -77,3 +77,13 @@ Merged master MR !14463 adds an LTP heuristic while extending cancel/cancel-ack 
 **Review rule:** assess both selectivity and cost. Positive sample captures demonstrate correctness after a match, but they do not measure the aggregate overhead of running the heuristic on unrelated traffic; benchmark or reason about the no-match path when registration is broad.
 
 **Confidence:** High. Direct Anders Broman review, author agreement/change, and merged result. The evidence establishes the default-policy principle even though exact acceptable cost remains protocol- and dispatch-context dependent.
+
+## Return the actual recognition result from a UDP PDU helper
+
+A heuristic dissector's Boolean return is a claim on the packet. Successfully *calling* a helper is not the same as recognizing the bytes. Returning TRUE unconditionally can prevent other heuristics or fallback dissectors from inspecting traffic that does not match this protocol.
+
+Merged master MR !9991 fixes SOME/IP's UDP heuristic to return `udp_dissect_pdus(...) != 0` instead of invoking the helper and always returning TRUE. Its `test_someip` still performs the protocol checks; the wrapper propagates the helper's decision. The discussion also identifies older stable branches needing the same fix.
+
+**Implementation/review rule:** when wrapping a packet/PDU dispatcher in a heuristic entry point, propagate its documented accept/decline result. Test both a valid protocol packet and unrelated UDP payload that previously would have been incorrectly claimed.
+
+**Confidence:** High. Merged bug fix by a protocol maintainer, independently reviewed, with a direct accept/decline code change.

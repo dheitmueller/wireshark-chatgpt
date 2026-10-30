@@ -89,3 +89,13 @@ Merged master MR !12020, authored and approved by Guy Harris, changes the captur
 **Review rule:** if code is matching or heuristically parsing an error sentence emitted by another process in order to decide behavior, treat that as evidence that the IPC protocol is missing a structured status field.
 
 **Confidence:** Extremely high. Merged master capture-process error-contract change authored and approved by Guy Harris, with the permission-denied use case stated explicitly in the MR rationale.
+
+## Share process-launch plumbing without weakening platform-specific descriptor ownership
+
+Several dumpcap callers share the same child-process creation and stdout/stderr pipe setup, even when they select different command-line arguments or request different capture interfaces. Duplicated launch code risks inconsistent process status and resource cleanup across Windows/POSIX implementations.
+
+Merged master MR !9994, authored by John Thacker, refactors `sync_pipe_start()` to construct capture arguments and delegate launching to the shared `sync_pipe_open_command()` helper. The helper documents separate data and message descriptors, process handles, and the success/failure ownership of the allocated error message. The diff retains platform-specific pipe/handle setup and close paths rather than hiding their differing lifetimes.
+
+**Refactoring rule:** deduplicate at a boundary with an explicit contract for which descriptors, process handles, and error strings the caller owns on success and failure. Audit *each* platform's partial-initialization and spawn-failure cleanup when consolidating process IPC plumbing. Such refactoring should preserve message-pipe framing as well as data-pipe behavior.
+
+**Confidence:** High. Merged master cross-platform capture refactor by John Thacker. This complements the existing error-propagation and IPC-framing rules in this file.
