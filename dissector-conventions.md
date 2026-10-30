@@ -101,3 +101,27 @@ Before implementing new functionality, locate several analogous dissectors in th
 ## Source of truth
 
 Review comments from upstream maintainers should be captured here only when they establish a reusable convention. One-off preferences belong in `review-patterns.md` until corroborated.
+
+## Expose honestly decoded protocol subsets without inventing transport bindings
+
+A useful initial dissector can be accepted without full protocol coverage when its limitations are explicit and undecoded data is still inspectable. Merged Matter MR !9865 begins with UDP message/payload headers, not TLV application interpretation or encrypted content. It uses Decode As rather than forcing a port match for a protocol whose UDP port is advertised dynamically via mDNS. Jaap Keuter asked that the remainder of the PDU not be left as invisible, unexplained bytes; the author changed the dissector to represent encrypted data as an opaque bytes field. The MR supplied a sample capture and documented its missing features.
+
+**Implementation rule:** register only dispatch paths that can positively identify the protocol. When encryption or an unsupported payload prevents deeper decoding, show the actual remaining byte range (as an opaque bytes field or data dissector) rather than silently consuming it. Do not present a partial dissector as protocol-complete.
+
+**Confidence:** High. Maintainer-requested changes accepted in the merged Matter implementation.
+
+## Let field APIs return decoded values and expose reserved flag bits
+
+In merged RPKI-RTR v2/ASPA MR !9875, Alexis La Goutte asked the contributor not to perform unnecessary TVB alignment, to use `proto_tree_add_item_ret_uint` for a registered integer field whose decoded value is needed, to use `NULL` rather than an empty field blurb, and to show the unused/reserved portions of flags. The author also provided a representative `aspa.pcapng` and a screenshot.
+
+**Implementation rule:** prefer the standard registered-field extraction API when it supplies both tree display and the value needed for control flow. Register/dissect reserved flags so unexpected wire values remain visible rather than disappearing in masks; avoid unnecessary copying/alignment operations. Include a capture that exercises new protocol forms.
+
+**Confidence:** High. Direct Alexis review on a merged master dissector extension.
+
+## Document unresolved specification ambiguities rather than hiding them behind unexplained magic values
+
+Merged release backports !9864 and !9863, both authored by Guy Harris, expand a terse GMR-1 RR “add 0x100” mapping workaround into a detailed code comment citing the exact ETSI specification editions and conflicting message-type assignments. They explain the legacy context while explicitly leaving the hack unresolved pending better protocol interpretation; the comments do **not** make the artificial 0x100 value a legitimate on-wire type.
+
+**Implementation rule:** if specifications reuse a numeric code or contradict one another, document the precise editions, tables, protocol context, and current workaround. Keep the distinction between actual wire values and internal disambiguation keys clear, and do not silently claim a speculative protocol interpretation is standard behavior.
+
+**Confidence:** Very high for the evidence-documentation practice, because Guy Harris authored both merged backports; the unresolved historical mapping is not a recommendation to introduce similar hacks.

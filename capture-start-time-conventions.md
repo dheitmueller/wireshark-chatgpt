@@ -35,3 +35,13 @@ Merged master MR !16179, authored and merged by Guy Harris, corrects BLF metadat
 **Review rule:** if preserving the absence state exposes a bug in a downstream writer, reader, or UI path, fix that layer rather than corrupting the producer's data model to accommodate it.
 
 **Confidence:** Extremely high. Merged master change authored and merged by Guy Harris, with the absence-vs-sentinel distinction stated explicitly in review.
+
+## Carry capture-start-relative record time as a distinct, validity-guarded field
+
+The time since the beginning of a capture is not necessarily the time since its first packet. A capture format can provide its own relative-to-capture-start timestamp, and that information must not be inferred from the first observed packet when the distinction matters.
+
+Merged master MR !9870 propagates BLF record metadata through Wiretap's `ts_rel_cap_valid` / `ts_rel_cap` into packet information, with a presence flag, and exposes a generated `frame.time_relative_capture_start` field **only when the record supplies that value**. The change is additive to the existing relative-time context rather than silently redefining it.
+
+**Implementation rule:** retain capture-start-relative time as optional source-backed metadata separate from first-frame-relative time; preserve its explicit validity/presence all the way from file reader to packet view. Do not synthesize a capture boundary when the file format provides no evidence for one.
+
+**Confidence:** High. Merged Wiretap/EPAN/packet-frame propagation; consistent with the stronger later Guy Harris guidance recorded above concerning absence versus a zero timestamp.

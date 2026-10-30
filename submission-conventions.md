@@ -105,3 +105,19 @@ Merged !22054 also updated the Wireshark Developer's Guide around the triangular
 **Submission rule:** develop an MR on a dedicated topic branch and keep its commits focused and reviewable. Prefer one coherent MR for a small related series; split work when changes are independently reviewable or have genuinely distinct purposes, not simply because every edit can be isolated mechanically. For stable-branch cherry-picks, explicitly target the intended release branch.
 
 **Confidence:** High. Direct Jaap Keuter and Michael Mann review guidance, supported by a merged Developer's Guide workflow update; the branch-specific example in !22090 itself was closed rather than merged.
+
+## New protocol skeletons can be reviewable with explicit limitations and reproducible examples
+
+The initial Matter dissector in merged master MR !9865 was incomplete by design (encrypted content, application TLVs, and TCP transport were not yet supported). The author stated those limits and supplied `matter.pcapng`, allowing maintainers to review a bounded implementation. Alexis La Goutte explicitly requested an entry in `docbook/release-notes.adoc` and a squash before merge. Roland Knall, Stig Bjørlykke, and Jaap Keuter reviewed field naming, generated-data notation, and representation of remaining opaque bytes.
+
+**Submission rule:** for a new dissector, explain what its initial version does *and does not* decode, provide a usable capture, update build registration and release notes, incorporate naming/readability review, and squash exploratory history to a coherent accepted commit when requested.
+
+**Confidence:** Very high. Direct multi-maintainer discussion with revisions in a merged master MR.
+
+## Automated update scope must still respect stable-branch policy
+
+Closed/unmerged automation MR !9907 tried to update several registries and a generated ASTERIX dissector on a stable branch. Jaap Keuter objected that extending ASTERIX there violates the project's release policy. Gerald Combs acknowledged the issue, changed the update generator to update ASTERIX **only on master**, and closed the MR in favor of corrected !9915.
+
+**Submission rule:** automated source/data maintenance must apply the same branch-scope restrictions as hand-written changes. When an updater emits generated protocol additions, restrict master-only feature growth before producing stable-branch cherry-picks. Treat !9907 as an authoritative review-policy rejection, **not** an accepted implementation.
+
+**Confidence:** High for the branch-policy instruction: direct Jaap Keuter review and explicit Gerald Combs remediation. No implementation authority is assigned to the closed proposal.

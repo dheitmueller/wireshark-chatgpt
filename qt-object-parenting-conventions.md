@@ -22,3 +22,11 @@ Merged master MR !9923, authored by John Thacker, changes `RtpAudioGraph` constr
 **Implementation rule:** for QObject helpers whose semantic lifetime is strictly subordinate to a plot, dialog, or other QObject, establish Qt parentage explicitly when creating the helper. Keep ownership consistent with any manual deletion paths, and do not assume C++ pointer membership alone communicates destruction responsibility.
 
 **Confidence:** High. Merged maintainer-authored leak/lifecycle correction; use current Qt code as authority for the precise class relationship.
+
+## Parent button-owned QActions to the buttons that expose them
+
+A dynamically allocated `QAction` does not automatically become owned by a `QToolButton` just because it is installed as the default action. Merged master MR !9902 fixes leaks in RTP Analysis and RTP Player windows by constructing each dynamically created action with the associated tool button as its QObject parent.
+
+**Implementation rule:** when a dynamically constructed action exists solely to serve a button or menu, give it an explicit QObject parent whose lifetime dominates that action. Audit copied GUI helpers for parentless actions, and prefer ownership by the actual UI component rather than manual cleanups in unrelated window code.
+
+**Confidence:** High. Merged master lifecycle fix; corroborates the established Qt-parentage conventions.

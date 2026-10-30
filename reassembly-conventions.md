@@ -107,3 +107,13 @@ Merged master MR !11184 improves the documentation around `reassemble_streaming_
 **API/documentation rule:** helpers that wrap desegmentation should document how sentinel values propagate and what their return values mean, so callers do not accidentally treat a control value as an ordinary byte count.
 
 **Confidence:** High. Merged master reassembly API/documentation change that clarifies the intended sentinel semantics used by common streaming reassembly.
+
+## Keep filtered-save dependency graphs with the frame and retain transitive ancestors
+
+The dependency graph for a displayed packet must outlive the transient `packet_info` used in one dissection pass. When a frame depends on a reassembled frame that itself depends on other fragments, exporting only displayed packets must include the entire *transitive* dependency chain, not merely its immediate parents.
+
+Merged release-3.6 MR !9904 (Sake Blok; merged by John Thacker) moves dependency tracking from `packet_info` to persistent `frame_data`, adjusts all callers (SCTP, reassembly, ERF, the GUI and the TShark/sharkd frontends), and recursively marks dependencies before filtered saves. Related merged release-4.0 changes !9894 and !9895, authored and merged by John Thacker, suppress repeated dependency insertion and replace the order-insensitive list with a hash table. These changes also release the data in frame reset/destroy paths. A recursion guard avoids re-traversing frames already marked or selected; the historical implementation assumes dependencies refer to earlier frames.
+
+**Implementation rule:** record dependencies on the persistent owning frame; compute their transitive closure when deciding which packets to retain; make traversal duplicate-safe; prefer a set/hash table over an O(n) search through an unordered list for repeated membership checks; reset/destroy the graph with the frame. Exercise nested reassembly and long captures, not just one-level dependencies.
+
+**Confidence:** Very high for the accepted design. Multiple merged fixes, including John Thacker-authored follow-ups; verify the current API before copying these historical signatures.

@@ -161,3 +161,13 @@ Merged MR !26191, authored, approved, and merged by John Thacker, hardens the TT
 **Implementation rule:** validate global structural minima as soon as the file header is available; assert or rely on those postconditions later rather than rediscovering them per record. Recovery loops must have an explicit bounded-progress condition independent of EOF when an iteration can advance without a read.
 
 **Confidence:** Very high. Merged master wiretap robustness fix authored and merged by John Thacker and accepted on the stable 4.6 branch.
+
+## Do not call byte-string formatting and subset helpers with an empty protocol payload
+
+Some TVB formatting/subset helpers enforce preconditions stronger than “offset is in bounds.” A legal zero-length protocol record can still trigger an assertion when passed to such helpers.
+
+Merged UDS master fixes !9905 and !9897 guard `record_length > 0` before `tvb_new_subset_length`, heuristic payload dispatch, and `tvb_bytes_to_str_punct` calls; release-4.0 backports !9910 and !9900 carry the same protection. The service ID/record header and info-column context are still displayed when the record data is empty.
+
+**Implementation rule:** distinguish the presence of a record from the presence of a nonempty payload. Parse/label a valid zero-length record normally, but skip helpers that require positive lengths and avoid dispatching empty child TVBs unless their contract explicitly permits it. Include zero-length cases in regression captures.
+
+**Confidence:** High. Two merged master corrections and matching backports for explicit assertion bugs.

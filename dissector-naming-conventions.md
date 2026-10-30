@@ -31,3 +31,13 @@ Merged master MR !16122, authored and merged by John Thacker, removes duplicate 
 **Implementation rule:** choose one canonical registered dissector name, normally following the prevailing lowercase identifier convention. Use protocol descriptions/short names for presentation rather than creating duplicate registered aliases solely to preserve capitalization.
 
 **Confidence:** Very high. Merged master cleanup authored and merged by John Thacker with the canonicalization rationale stated in the MR.
+
+## Prefer normative specification terms over implementation-specific SDK aliases
+
+Reviewers and display-filter users should be able to map protocol fields to the protocol specification without knowing the naming choices of one vendor's SDK. Keep field abbreviations consistent; avoid multiplying redundant `.flag.` / `flag_` naming segments merely because a value is a single bit.
+
+In merged Matter dissector MR !9865, Roland Knall asked the author to make flag names consistent and explicitly favored the specification's *Reliability* terminology over the official SDK's `NeedsAck` alias. The author revised the registered names. Roland also asked for named flag-mask constants instead of unexplained literal mask values. Stig Bjørlykke separately pointed out that square-bracket display notation denotes *generated* fields; the author removed it for packet-sourced opaque data.
+
+**Implementation rule:** ground field names, descriptions, and flag masks in the protocol standard, not just sample SDK code. Review the entire new `hf_` namespace for consistency before submission. Preserve the UI distinction between generated information and bytes genuinely carried by a packet.
+
+**Confidence:** Very high. Direct, actionable maintainer review and revisions within a merged new-protocol MR.

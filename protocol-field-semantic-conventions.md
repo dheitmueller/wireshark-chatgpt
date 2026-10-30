@@ -81,3 +81,13 @@ Merged master MR !16118 adds a single hidden MAC-LTE LCID field intended to let 
 **Implementation rule:** when one `hf_` field intentionally provides a common filter over several wire forms, normalize every form to the same protocol-level identifier before adding that field. Keep raw/codepoint-specific fields separately when those representations are independently useful, but do not leak representation-specific numbering into the normalized filter contract.
 
 **Confidence:** Very high. Merged master change with explicit protocol-expert review from Pascal Quantin and an accepted revision by Martin Mathieson addressing the semantic mismatch.
+
+## Preserve numeric filter semantics even when the display is formatted with units
+
+A value that happens to be *displayed* as a string is not thereby a text field. Register measurements using a numeric `FT_*` type so display filters can compare magnitude, and attach unit presentation independently.
+
+In TECMP review !9882, Gilbert Ramirez noticed voltage was registered as `FT_STRING` and explicitly proposed `FT_DOUBLE` so users could filter greater/less-than values. The follow-up **merged master MR !9887** implements that recommendation: a packed two-byte voltage is converted into a double and added with `proto_tree_add_double`, with a unit-formatted field registration. Older stable-branch !9882/!9879 fixes only the zero-padded string display, so they are weaker evidence for the accepted semantic type direction.
+
+**Implementation rule:** model a voltage, rate, temperature, duration, or other measurement with an appropriate numeric field and use display presentation for its suffix/units. Do not make a measurement nonfilterable just to append text to the label.
+
+**Confidence:** Very high. Explicit Gilbert Ramirez review followed by the merged substantive correction.

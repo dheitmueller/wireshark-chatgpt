@@ -25,3 +25,11 @@ Merged release MRs !15210 and !15211, authored and merged by John Thacker, carry
 **Review implication:** for crash reports involving a dialog closed while redissection, retap, export, or another long operation is active, inspect both object ownership and signal delivery mode. A lifetime-safe design needs the connection type and the object's destruction policy to agree.
 
 **Confidence:** Very high. The accepted fix was authored by John Thacker and carried into both maintained release branches; the failure mechanism is explicitly documented in the commit/MR description.
+
+## Use queued delivery to break known unsafe synchronous Qt action paths, in both GUI frontends
+
+A default direct Qt action connection can enter an unsafe synchronous call chain in affected framework versions. Merged master MR !9901 works around Qt issue QTBUG-106718 by connecting Export Packet Bytes and affected import/export actions using `Qt::QueuedConnection`. Tomasz Moń noted that the official Qt fix would arrive in later maintenance releases, but Linux distributions could retain vulnerable versions for some time. Gerald Combs and John Thacker explicitly requested the equivalent Logray fix alongside Wireshark's copy-pasted UI path; the merged changes include both.
+
+**Implementation rule:** when a synchronous Qt signal path triggers a reproducible crash or reentrancy problem, a deliberate queued connection can be a compatibility workaround if receiver lifetime and event-loop behavior are understood. Describe which dependency versions need the workaround and test the corresponding Wireshark and Logray paths before merging. Do not assume the workaround replaces the upstream framework fix.
+
+**Confidence:** Very high. Merged crash fix with direct Gerald Combs and John Thacker review, supported by the author's Qt-version rationale. Merged !9912 separately reinforces cross-frontend parity for selected-field menu state.

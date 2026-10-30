@@ -116,3 +116,13 @@ The follow-up **merged master MR !10009**, already present in the review corpus,
 **Review rule:** when generated-source regeneration is difficult or produces unexpectedly broad changes, verify the generator family's documented limitations and repair the canonical inputs/generator as a separate, reviewable step. Review both generated output parity and local source-check warnings. Do **not** cite the closed !9930 generated-only patch as an accepted implementation.
 
 **Confidence:** Very high for the rule. Direct Alexis La Goutte review, closed initial proposal, and merged source-plus-output successor !10009; the specific 2023 PIDL limitations should be rechecked before assuming they persist today.
+
+## Keep ASN.1 template and CNF changes aligned with generated dissector repairs
+
+Correcting `packet-*.c` by itself can produce a short-lived fix if the definition lives in an ASN.1 `.cnf` or generator template. The next regeneration can silently restore the defect.
+
+Merged master MR !9893, authored and merged by John Thacker, repairs six Coverity-reported NR-RRC field-length calculations where `(value=0)` accidentally assigned zero instead of comparing with `(value==0)`. Crucially, it fixes **both** `epan/dissectors/asn1/nr-rrc/nr-rrc.cnf` and generated `packet-nr-rrc.c`; release backports !9898 and !9899 preserve both. In separate merged master MR !9892, also by John Thacker, field-type/mask corrections initially made in generated ANSI MAP/TETRA dissectors are explicitly carried back into `packet-ansi_map-template.c` and `packet-tetra-template.c`, because otherwise regeneration would undo them.
+
+**Implementation rule:** identify and patch the authoritative `.cnf`, template, grammar, or generator input whenever changing generated dissector behavior. Regenerate the output, diff-check parity, and add targeted cases for the original error. Treat “fix the template too” as a correctness requirement, not optional cleanup.
+
+**Confidence:** Extremely high. Two independent merged master corrections authored and merged by John Thacker, plus matching stable-branch copies.

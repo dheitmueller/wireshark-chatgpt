@@ -13,3 +13,13 @@ Merged master MR !14262, authored and merged by Martin Mathieson, adds an F1AP-d
 **Review rule:** when two candidate identifiers differ mainly by protocol hierarchy (device-local vs controller-wide, bearer-local vs UE-wide, interface-local vs chassis-wide, and similar), review the topology/cardinality rules before choosing the convenient field. Tests should include multiple parent entities where a local identifier could legitimately repeat.
 
 **Confidence:** Very high. The collision risk was identified explicitly in review by Pascal Quantin, the author changed the implementation accordingly, and the merged diff uses the controller-scoped identifier.
+
+## Reused sequence numbers also require a bounded temporal correlation domain
+
+A protocol sequence number that wraps is not a globally unique transaction identifier, even after including an endpoint and domain in the lookup key. Over sufficiently long traces, matching solely on those fields can pair an old transaction with a new one.
+
+Merged master MR !9877 fixes PTP analysis after 16-bit sequence-number rollover. Its lookup includes the protocol-specific clock/domain/port identity as before, but entries also remember a reference timestamp; candidates separated from the current packet by more than a 60-second window are not reused. Packet-specific analysis information is attached for stable redissection. The numerical window is an implementation policy for PTP, **not** a universal rule for other protocols.
+
+**Implementation rule:** when sequence identifiers can recycle, establish an explicit reuse/expiry or timestamp-disambiguation policy consistent with the protocol's expected transaction lifetime. Make redissection retrieve the original packet's decision rather than recomputing it against a later mutated cache.
+
+**Confidence:** High. Merged master correction for a reproducible long-capture failure, accepted by Alexis La Goutte.
