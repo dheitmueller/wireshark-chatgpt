@@ -25,3 +25,11 @@ Merged master MR !16225 fixes NBAP by creating its auto-reset maps once during p
 **Review rule:** for every `wmem_*_new_autoreset(parent_scope, reset_scope)` call, audit both lifetimes independently. A call inside a repeated init routine is suspicious when `parent_scope` outlives that routine's reset cycle.
 
 **Confidence:** Very high. Two independent merged master fixes in the same period, one merged by Pascal Quantin and one by Anders Broman, converge on the same lifetime rule.
+
+## Finalizing a wmem array transfers the backing allocation, not the wrapper
+
+Merged master MR !9830 adds `wmem_array_finalize()` so an incrementally built array can become an allocator-owned raw C array. The helper resizes the backing buffer to its populated byte count (including a terminator for null-terminated arrays), frees the `wmem_array_t` wrapper, and returns the raw pointer. The same MR handles NULL arrays in `wmem_array_get_count()` and `wmem_array_finalize()`.
+
+**Implementation rule:** after `wmem_array_finalize()`, the wrapper is invalid; only the returned backing allocation may be used, for the lifetime of the original allocator. Track count from appended entries and honor null-termination when computing the final allocation.
+
+**Confidence:** Very high: merged master API addition authored by John Thacker alongside a fuzz-hardening consumer.

@@ -91,3 +91,11 @@ In TECMP review !9882, Gilbert Ramirez noticed voltage was registered as `FT_STR
 **Implementation rule:** model a voltage, rate, temperature, duration, or other measurement with an appropriate numeric field and use display presentation for its suffix/units. Do not make a measurement nonfilterable just to append text to the label.
 
 **Confidence:** Very high. Explicit Gilbert Ramirez review followed by the merged substantive correction.
+
+## State-derived fields must not claim current-packet bytes they did not decode
+
+Merged master MR !9846, authored by Guy Harris, corrects Gryphon IOCTL response presentation. The IOCTL code comes from the earlier *request*, so highlighting a byte in the current response falsely attributes it to response wire data. The accepted call uses `proto_tree_add_uint(..., tvb, 0, 0, saved_ioctl_code)` and registers the field as `FT_UINT32` rather than `FT_UINT8`, matching the 32-bit semantic value. Release backports !9861 and !9862 corroborate the accepted master behavior.
+
+**Implementation rule:** for a computed or saved state value, use a generated/zero-byte current-packet span when it has no genuine backing bytes in that frame; do not manufacture a source range. Keep the registered `FT_*` width equal to the actual semantic-value domain rather than an incidental displayed byte count.
+
+**Confidence:** Extremely high: Guy Harris's merged master correction and two accepted backports.

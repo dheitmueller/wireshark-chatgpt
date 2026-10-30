@@ -93,3 +93,13 @@ Merged master MR !13845, authored by Gerald Combs, adds recursion checks to `asn
 **Review rule:** inspect how a proposed recursion counter maps onto call-stack growth, especially for mutually recursive types. A numerically large maximum does not help if the counter systematically undercounts each traversal.
 
 **Confidence:** Very high. Merged master generator hardening authored by Gerald Combs, with the cycle-size accounting refinement directly driven by Evan Huus's review and incorporated into the accepted generated output.
+
+## Incremental parsing must bound allocation by decoded elements, not a claimed count
+
+Merged master MR !9830 fixes a fuzz-discovered RTPS denial-of-service: a packet could claim an enormous 32-bit number of variable-length datatype elements, causing `wmem_alloc0(wmem_file_scope(), count * sizeof(element))` to exhaust memory *before* later TVBuff access raised a bounds error. John Thacker replaced the eager allocation with `wmem_array_sized_new()` at a capped initial capacity, appended entries during parsing, and finalized only the populated array. The RTPS contributor tested large valid structures before merging.
+
+**Implementation rule:** separate the number *declared* by untrusted input from the number of *actually decoded* elements. Bound speculative memory commitment and grow storage as valid content is parsed rather than imposing an arbitrary ceiling on legal protocol sizes. The risk is especially significant for file-scope storage retained across packets.
+
+**Testing rule:** include truncated huge-count fuzz inputs and legitimate large structures; verify OOM is avoided without rejecting otherwise valid data.
+
+**Confidence:** Extremely high: merged master correctness fix authored by John Thacker, backed by fuzz evidence and protocol-contributor tests. This is a concrete element-count counterpart to the existing logical-size-versus-speculative-allocation rule.

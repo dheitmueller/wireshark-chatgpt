@@ -21,3 +21,11 @@ Merged master MR !9891 adds an error handler for WSLua dissectors. For Lua 5.2 a
 **Implementation rule:** report script failures as expert diagnostics and, where the scripting runtime supports it, expose structured traceback context in the packet tree. When installing a Lua error handler, explicitly document/test the positions of handler, function, arguments, and error result in the Lua stack; guard version-specific APIs.
 
 **Confidence:** High. Merged master implementation by Gilbert Ramirez, accepted by Anders Broman; no substantive additional maintainer design discussion in the corpus snapshot.
+
+## Reject invalid negative lengths before TVBuff range arithmetic in Lua bindings
+
+Merged master MR !9823, authored by Gilbert Ramirez and merged by Martin Mathieson, documents that WSLua `TvbRange` length `-1` means "to end of TVBuff", but rejects any `len < -1` with `luaL_error()` before signed arithmetic and unsigned bounds comparison.
+
+**Implementation rule:** distinguish a documented sentinel from other negative values; validate native-side signed lengths before adding offsets or casting to unsigned. Report script misuse through Lua's error boundary instead of passing a malformed range to TVBuff operations.
+
+**Confidence:** High: merged WSLua correctness fix with maintainer approval.

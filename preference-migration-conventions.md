@@ -11,3 +11,11 @@ During review of merged master MR !24424, which replaces NTLMSSP's single `nt_pa
 **Implementation rule:** before removing or replacing a persisted preference, define how values from existing profiles are recognized and migrated to the new representation. Marking the old key obsolete is not by itself a migration strategy; verify that the upgrade mechanism can still access the legacy value at the point where conversion occurs.
 
 **Confidence:** High. Direct maintainer review requirement on a merged master MR. The durable requirement is the compatibility/migration obligation; the exact migration API should be checked against current preference infrastructure when implementing a future change.
+
+## Evolve extcap CLI options and persisted preference keys together
+
+Merged master MR !9824, authored by Jaap Keuter, extends sshdump privilege escalation from old Boolean `--remote-sudo` to `--remote-priv={none,sudo,doas}` plus an optional privileged user. The old CLI switch remains accepted but is not advertised as the supported option. Wireshark's preference loader recognizes `sshdump.remotesudo`, redirects it to `sshdump.remotepriv`, and translates historical Boolean values to `sudo` or `none`. The same MR updates documentation and help; Gilbert Ramirez suggested clearer ProxyCommand wording, which Jaap adopted.
+
+**Implementation rule:** extcap flags can be both script APIs and saved UI preferences. When changing representation, handle old CLI spellings, old persisted keys and value conversion together. Simply hiding a flag or marking a preference obsolete does not migrate existing user configuration.
+
+**Confidence:** Very high: merged master compatibility change and accepted maintainer feedback.

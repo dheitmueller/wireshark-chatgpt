@@ -40,3 +40,11 @@ Merged master MR !9913, authored by John Thacker and merged by Gilbert Ramirez, 
 **Implementation rule:** when debug logging has no production functional side effect, use the project's intended compile-time-elidable debug helper where available rather than assuming a runtime log-level filter also removes the formatting and call overhead. Never put observable behavior or required error propagation behind a debug-only macro.
 
 **Confidence:** High. Merged maintainer-authored change with a documented release-build performance rationale; verify current macro behavior in the target branch.
+
+## Logging documentation must distinguish domains, levels, output and build-elided messages
+
+Merged master MR !9831 adds the Developer's Guide logging section. João Valverde's review corrected the stated default threshold to `message`, explained that release builds disable `debug` and `noisy` *output macros* (not all logging), and distinguished the special always-enabled `echo` level. He also requested `WS_DEBUG_HERE()` and negated domain-list examples; Jaap Keuter incorporated the corrections. !9855 follows up with grammar fixes.
+
+**Documentation rule:** describe the logging *domain* (what), *level* (when), and *channel* (where) independently. Document the true default and distinguish runtime filtering from compile-time elimination; do not suggest release builds contain no logging.
+
+**Confidence:** Very high: merged documentation with specific implemented maintainer review.

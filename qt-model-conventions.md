@@ -59,3 +59,13 @@ Merged master MR !13817, authored and merged by John Thacker, fixes a Windows cr
 **Testing rule:** exercise the proxy with each supported source model, including initialization states such as an empty/not-yet-loaded interface list. Platform-specific backend selection is part of the test matrix because that is where invalid casts often remain hidden.
 
 **Confidence:** Very high. Merged master crash fix authored and merged by John Thacker, with the multiple-unrelated-source-model cause stated explicitly.
+
+## Preserve source-column identity across filtered and empty proxy views
+
+Merged master MR !9840 (John Thacker) resolves the selected visible proxy column into a source column at filter-selection time; it must not depend on having a valid row index after the current filter removes all rows. Roland Knall asked that the exceptional empty-view path not impose a repeated cost in the normal case. Mapping only when the filter changes also avoids `mapToSourceColumn()` work for each `filterAcceptsRow()` call. Related accepted MR !9819 maps semantic Start/Duration columns through the proxy for timeline painting, uses the base delegate for unrelated columns, and preserves a column-oriented API after Roland's review.
+
+**Implementation rule:** persist semantic *source* column identity; translate between source and proxy at the UI boundary, not inside each hot-path row operation. Do not depend on a live row for an operation whose meaning is only about columns. Keep column-centric public APIs column-centric.
+
+**Tests:** hidden/filtered columns, zero visible rows while changing filters, and timeline delegate behavior after column changes.
+
+**Confidence:** Very high: merged master work and implemented review from John Thacker and Roland Knall.

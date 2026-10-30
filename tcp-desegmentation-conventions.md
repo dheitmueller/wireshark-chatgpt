@@ -56,3 +56,13 @@ Merged master MR !12106, authored and merged by John Thacker, fixes RTP payload 
 ## Relationship to general heuristic guidance
 
 These rules complement `dissector-conventions.md`: heuristic probes must be safe on arbitrary traffic and may decline nonmatches, but once a stateful TCP dissector has committed to desegmentation it must not subsequently behave as though the same packet were merely an unclaimed heuristic candidate.
+
+## A duplicate segment is not proof that a pending reassembly completed
+
+Merged release-4.0 MR !9818 carries John Thacker's master TCP fix: `MSP_FLAGS_REASSEMBLE_ENTIRE_SEGMENT` was being cleared on a later segment even when overlap meant no new data arrived and no PDU completed. The accepted code requires an actual `ipfd_head` result and the nonvisited pass before clearing the flag.
+
+**Implementation rule:** advance reassembly state only on evidence of new bytes or completion, not merely because another segment arrived. Preserve an outstanding `DESEGMENT_ONE_MORE_SEGMENT` request through unproductive retransmissions/overlaps; keep first-pass mutations separate from redissection.
+
+**Testing rule:** incomplete PDU, duplicate/overlapping segment with no progress, then the missing bytes; assert the pending request persists until completion.
+
+**Confidence:** High: merged maintainer-authored stable backport of the accepted master correction.

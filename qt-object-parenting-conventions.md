@@ -30,3 +30,11 @@ A dynamically allocated `QAction` does not automatically become owned by a `QToo
 **Implementation rule:** when a dynamically constructed action exists solely to serve a button or menu, give it an explicit QObject parent whose lifetime dominates that action. Audit copied GUI helpers for parentless actions, and prefer ownership by the actual UI component rather than manual cleanups in unrelated window code.
 
 **Confidence:** High. Merged master lifecycle fix; corroborates the established Qt-parentage conventions.
+
+## Installing a Qt model does not transfer ownership to the view
+
+Merged master MR !9825, authored and merged by John Thacker, fixes model leaks in Conversations/Endpoints tabs. `setModel()` does not adopt model ownership because Qt allows models to be shared across views; similarly, a proxy's `setSourceModel()` does not establish parentage. The accepted code explicitly parents per-view `ATapDataModel` objects to their `TrafficTree`, `TrafficDataFilterProxy` to the tree, and list models to their owning `TrafficTypesList`.
+
+**Implementation rule:** distinguish *which object uses a model* from *which QObject destroys it*. Explicitly parent one-view-only models to an owner with the correct lifecycle; deliberately shared models require a longer-lived owner rather than accidental parenting to one consumer.
+
+**Confidence:** Very high: merged maintainer-authored leak fix with stated Qt ownership rationale.
