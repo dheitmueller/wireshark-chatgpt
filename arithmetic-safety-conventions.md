@@ -107,3 +107,13 @@ Merged master MR !16344, authored and merged by John Thacker, fixes `tvb_get_bit
 **Review rule:** after introducing a clamp or normalization step, search all subsequent uses of the original input and verify that each is intentionally raw; stale uses are a common way for safety fixes to become incomplete.
 
 **Confidence:** Very high. Merged master tvbuff correctness fix authored and merged by John Thacker.
+
+## Reject negative bit counts before rounding to bytes
+
+Merged master MR !9925, authored by John Thacker, corrects three packet-tree bit-item helper paths that accepted a signed `no_of_bits`. Conversion to octets through `(no_of_bits + 7) >> 3` could round bit counts from -1 through -7 to zero, bypassing later length validation. The accepted code checks `no_of_bits < 0` **before** the conversion and throws `ReportedBoundsError`. For APIs that distinguish a zero-width programmer error, the zero check remains a separate condition.
+
+**Implementation rule:** validate signed counts and offsets in their original semantic domain *before* adding rounding bias, shifting, casting to unsigned, or deriving a byte length. Checks on the derived length cannot reliably recover whether the original bit count was invalid.
+
+**Testing rule:** include the small negative values immediately adjacent to zero (especially -1 through -7) and the legitimate zero boundary, not only very large malformed lengths.
+
+**Confidence:** Very high. Merged master boundary fix authored by John Thacker, with an explicit arithmetic failure mechanism.

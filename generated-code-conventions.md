@@ -105,3 +105,14 @@ Guy Harris's substantive review of merged !10330 (SPNEGO offset), !10341 (ATN-UL
 **Review rule:** when the changed path is a generated dissector, verify that the same fix is represented in the source template, conformance file, ASN.1 definition, or generator, and that regeneration reproduces the committed C. Apply this check to tiny bug fixes as well as large regenerated changes.
 
 **Confidence:** Extremely high — repeated direct Guy Harris feedback and his accepted corrective MRs; consistent with the existing generated-source CI invariant.
+
+
+## Repair troublesome generator inputs rather than normalizing manual edits to generated dissectors
+
+Closed MR !9930 proposed manual changes in generated DCE/RPC SRVSVC C/header files to repair `NetShareEnumAll`. Alexis La Goutte explicitly requested matching updates to `srvsvc.idl` and `.cnf`. The contributor found that the PIDL README documented known problematic input for SRVSVC and that regeneration had substantial side effects; Alexis recommended a separate MR rather than using the closed generated-only patch as the accepted implementation.
+
+The follow-up **merged master MR !10009**, already present in the review corpus, updated the authoritative SRVSVC IDL/CNF alongside regenerated source, using `tools/pidl/pidl --ws-parser -- srvsvc.idl`. Alexis also requested fixing trailing whitespace and unused field-registration warnings, pointing to pre-commit hooks and `tools/check*` scripts. This is a concrete example of repairing the generator workflow and running source checks rather than accepting a divergent artifact.
+
+**Review rule:** when generated-source regeneration is difficult or produces unexpectedly broad changes, verify the generator family's documented limitations and repair the canonical inputs/generator as a separate, reviewable step. Review both generated output parity and local source-check warnings. Do **not** cite the closed !9930 generated-only patch as an accepted implementation.
+
+**Confidence:** Very high for the rule. Direct Alexis La Goutte review, closed initial proposal, and merged source-plus-output successor !10009; the specific 2023 PIDL limitations should be rechecked before assuming they persist today.

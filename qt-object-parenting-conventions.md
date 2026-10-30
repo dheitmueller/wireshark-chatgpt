@@ -13,3 +13,12 @@ Merged MR !25271, authored and merged by John Thacker, fixes `FunnelConsoleActio
 **Testing rule:** sanitizer findings in GUI paths are actionable even when the UI appears to work normally. Undefined reference binding or invalid ownership assumptions may remain latent until a particular startup/lifecycle state occurs.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker with a concrete UBSan diagnostic and a narrowly targeted ownership correction.
+
+
+## Parent auxiliary graph QObjects to their actual visual owner
+
+Merged master MR !9923, authored by John Thacker, changes `RtpAudioGraph` construction to `QObject(audio_plot)`, parenting the helper object to its `QCustomPlot` owner. This ensures that graph helper lifetime follows the plot's lifecycle rather than leaving an auxiliary QObject without the intended owner.
+
+**Implementation rule:** for QObject helpers whose semantic lifetime is strictly subordinate to a plot, dialog, or other QObject, establish Qt parentage explicitly when creating the helper. Keep ownership consistent with any manual deletion paths, and do not assume C++ pointer membership alone communicates destruction responsibility.
+
+**Confidence:** High. Merged maintainer-authored leak/lifecycle correction; use current Qt code as authority for the precise class relationship.

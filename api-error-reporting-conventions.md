@@ -59,3 +59,21 @@ Merged master MR !13243, authored and merged by John Thacker, changes 802.11 dec
 **Testing rule:** cover representative distinct rejection classes and verify that each produces the intended actionable reason, not only that parsing returns failure.
 
 **Confidence:** Very high. Merged master API/diagnostic improvement authored and merged by John Thacker, with the need for richer parser errors stated in the preceding related change.
+
+## RPC requests must produce a response on recoverable failures
+
+Merged master MR !9918 fixes `sharkd`'s load RPC when a capture read returns a nonzero wiretap error. Previously the server could write a diagnostic to its console but send no JSON-RPC result, leaving the client waiting indefinitely. The accepted code reports `status` from `wtap_strerror(err)` and the numeric `err` in a JSON result; the MR supplies a truncated PCAP and `suite_sharkd.py` regression test. Merged master MR !9919 similarly returns a JSON-RPC error (historically code -10003) when an RTP download request matches no payload instead of remaining silent.
+
+**API rule:** every request path, including recoverable parse/read failures and empty-result cases, must complete the RPC contract with a well-formed response appropriate to its historical API. Logging locally is not a substitute for replying to a remote client. Preserve the distinction between returned result-status and JSON-RPC error objects when modifying an established API; do not silently reinterpret the old codes.
+
+**Testing rule:** add a minimal malformed capture for read failures and a capture/query that produces no matching data. Verify the exact wire response and that the client cannot hang waiting for a reply.
+
+**Confidence:** High. Both fixes were merged with focused `suite_sharkd.py` self-tests and capture fixtures.
+
+## Keep machine-readable output consistent with the input grammar of related RPC methods
+
+Merged MR !9919 also corrects the RTP SSRC field in `sharkd` tap results from a decimal JSON number to a `0x...` hexadecimal string, matching the `ws_hexstrtou32()` parsing contract of related `rtp-analyse` and `rtp-download` tokens. It adds SIP/RTP test-capture coverage. Gilbert Ramirez explicitly recommended documenting sharkd's special error codes in a manpage or similar file, as a separate future change.
+
+**API rule:** when a consumer is expected to feed an identifier emitted by one RPC into another, treat the exact representation as an end-to-end API contract. Exercise that round-trip in self-tests, document nonobvious error codes, and do not assume a display-oriented numeric formatting choice is harmless.
+
+**Confidence:** High. Merged implementation with self-tests and explicit maintainer documentation feedback.

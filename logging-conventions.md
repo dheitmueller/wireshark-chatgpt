@@ -31,3 +31,12 @@ Merged master MR !10332 changes the `ws_return.h` warning helpers from generic c
 **Implementation rule:** assign severity according to whether the failed precondition leaves the state unsafe. Keep recoverable early-return diagnostics identifiable by a dedicated logging domain, and permit targeted fatal configuration for debugging instead of promoting all argument warnings to globally fatal errors.
 
 **Confidence:** High — merged wsutil logging contract change with its explicit fuzzing/debugging rationale.
+
+
+## Use build-elidable debug logging for hot-path diagnostics
+
+Merged master MR !9913, authored by John Thacker and merged by Gilbert Ramirez, changes several `dfilter_compile_real()` debug-only messages from `ws_log(WS_LOG_DOMAIN, LOG_LEVEL_DEBUG, ...)` to `ws_debug(...)`. The MR explicitly states the objective: these calls should be optimized away in release builds.
+
+**Implementation rule:** when debug logging has no production functional side effect, use the project's intended compile-time-elidable debug helper where available rather than assuming a runtime log-level filter also removes the formatting and call overhead. Never put observable behavior or required error propagation behind a debug-only macro.
+
+**Confidence:** High. Merged maintainer-authored change with a documented release-build performance rationale; verify current macro behavior in the target branch.

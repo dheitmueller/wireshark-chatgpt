@@ -61,3 +61,28 @@ Merged master MR !12866, authored and merged by John Thacker, fixes the first de
 **Review rule:** stateful dissectors should include a cold-start case where the first packet both establishes state and immediately consumes it. A trace that succeeds only from the second packet onward can hide an ordering bug in state publication.
 
 **Confidence:** Very high. The bug and ordering rationale are stated directly in a merged master fix authored by John Thacker.
+
+
+## Snapshot negotiated values at the packet where they affect interpretation
+
+A conversation's latest negotiated state may be correct for the most recent packet but wrong for an earlier packet that is dissected again. This is especially dangerous when a protocol can renegotiate an interpretation parameter.
+
+Merged master MR !9950, authored by John Thacker, fixes TLS 1.2-and-earlier key-exchange dissection after cipher renegotiation. The first pass records the cipher in per-packet `SslPacketInfo` at the Client or Server KeyExchange, associated with the current TLS layer. On a visited packet, the dissector retrieves that snapshot instead of treating the conversation's final cipher as the one in effect for the earlier handshake.
+
+**Implementation rule:** when a packet's interpretation depends on mutable negotiation state, save the relevant *packet-time* value during the first pass in appropriately keyed packet/protocol data. Redissection should use that historical value rather than infer it from a conversation object already advanced by later packets. Distinguish multiple occurrences/layers of a protocol in one frame.
+
+**Testing rule:** include multiple handshakes or renegotiations with changed parameters, and revisit earlier frames after full sequential dissection. The packet must decode identically regardless of when the GUI or another caller revisits it.
+
+**Confidence:** Very high. Merged master correctness fix authored by John Thacker; accepted code directly demonstrates the packet-time snapshot.
+
+## Do not restore nested dissection context at the expense of final packet metadata
+
+Context that is transient for one nested dissector may still be part of the *final packet's* public state consumed after dissection by the GUI. Blanket save-and-restore at each child return can silently erase the authoritative context of the last PDU.
+
+Merged master MR !9914, authored by John Thacker, reverts unconditional restoration of `pinfo` conversation endpoints/elements in `call_dissector_work()`. Its rationale is explicit: `find_conversation_pinfo()` and UI consumers need the final packet's conversation/address values after the last PDU. The desired reset *between sibling PDUs* and preservation of *final packet metadata* cannot be achieved by indiscriminately restoring the same fields after every dissector call. A specific PPP case had already been handled separately in !8013.
+
+**Architecture rule:** distinguish ephemeral nested-call context, context for the next sibling PDU, and finalized packet-visible metadata. Establish which consumers read each state and at what lifecycle point before introducing automatic restoration. A narrow protocol-specific correction is preferable to a generic state reset that changes postdissection API semantics.
+
+**Testing rule:** exercise a frame with multiple PDUs and verify both that sibling dissections do not inherit inappropriate context and that final conversation/address metadata remains available to packet-details, Follow, and other GUI/API consumers.
+
+**Confidence:** Very high. Merged master revert by John Thacker documents the downstream consumer contract and a concrete regression; it supersedes the reverted generic restoration approach.

@@ -126,3 +126,13 @@ Merged master MR !13670, authored by John Thacker, removes `QDialogButtonBox::ac
 **Testing rule:** exercise the action that intentionally diverges from standard `QDialogButtonBox` acceptance behavior and verify both the outer dialog and any nested file/modal dialog remain alive for the expected lifetime.
 
 **Confidence:** Very high. Merged master lifecycle fix authored by John Thacker plus three accepted stable backports, with the Qt 6 ordering failure and destruction symptom documented directly.
+
+## Notify UI consumers when authoritative selected-field state is computed
+
+Merged master MR !9953 fixes the packet-details context menu's **Colorize with Filter** action sometimes applying a stale expression. The menu callback constructed a new `field_filter` from the actual selected field, but `fieldFilterChanged` was emitted only later in a path guarded by packet-tree focus. The accepted change emits the signal immediately after the new filter is constructed, before that guard. John Thacker explicitly requested the equivalent fix in both Wireshark and Logray main windows, and recommended rebasing/squashing the contributor's tangled commit history before merge.
+
+**UI rule:** broadcast a derived selection/filter value at the point where its authoritative state changes, before unrelated focus or menu-lifecycle guards can cause a return. Do not depend on a later callback or UI focus transition to synchronize menu actions with selected-field state.
+
+**Review/submission rule:** when two frontends share the same interaction logic, verify equivalent fixes in both. Before submission, rebase and squash messy history into coherent reviewable commits rather than relying on GitLab's automatic rebase to handle a stack of unrelated intermediate commits.
+
+**Confidence:** Very high. Merged master fix with direct John Thacker review on both frontend coverage and submission history.
