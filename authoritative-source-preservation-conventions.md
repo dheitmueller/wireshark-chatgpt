@@ -65,3 +65,9 @@ Merged master MR !13225 adds DHCPv6 Client Link-Layer Address option handling fr
 **Testing rule:** include at least one valid non-default/non-common subtype where practical, especially when the field names or surrounding code make one popular representation easy to assume implicitly.
 
 **Confidence:** Very high. The over-constraint was identified directly by John Thacker during review of a merged master protocol addition, corrected before merge, and propagated to a maintained release branch.
+
+## Normalize volatile provenance metadata before deciding regenerated data changed
+
+Gerald Combs's merged `make-tls-ct-logids.py` update-mode corrections !9199/!9200 address regeneration noise: a fetched certificate-transparency list may have a new `Last-Modified` timestamp while the actual emitted C list is unchanged. The generator compares the meaningful generated block independently of the source's volatile modification timestamp rather than committing timestamp-only churn; the changes also make the output filename construction portable.
+
+**Generator rule:** retain source provenance where it helps auditing, but separate metadata volatility from substantive generated-data equality. For update/no-op detection, compare normalized generated content and emit a source change only for a real dataset change. Still preserve sufficient provenance to reproduce and diagnose an unexpected change; never silence a changed registry entry simply because its timestamp is unchanged. **Confidence:** High, two merged Gerald Combs changes including maintained release work.

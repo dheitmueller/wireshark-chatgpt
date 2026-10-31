@@ -13,3 +13,9 @@ Merged master MR !14204, authored by John Thacker, fixes Export Packet Bytes as 
 **Review/testing rule:** include adversarial payload endings and delimiters: trailing backslash, comment markers, quotes, control characters, and data at exact line-wrap boundaries. Compile or parse the generated artifact with the supported toolchains when practical; visual inspection of the exported text is insufficient.
 
 **Confidence:** Very high. Merged master correctness fix authored by John Thacker with the C preprocessing failure mode and rejected whitespace workaround documented directly in the MR.
+
+## Keep named lexer patterns consistent as a separately reviewable source contract
+
+Merged Flex scanner cleanup !9194 renamed hyphenated named patterns and removed an unused start condition. Guy Harris noted that the adjacent `IPv4address`/`IPv6address` definitions should follow the same CamelCase convention; João Valverde acknowledged the omission and merged !9208 completed the `IPv4Address`/`IPv6Address` rename, updating all dependent named-pattern references.
+
+**Maintenance rule:** lexer pattern names form an internal source-level vocabulary even when they do not change the wire or display-filter syntax. When normalizing that vocabulary, update every reference, keep the naming rule consistent across related patterns, and isolate mechanical changes from behavior changes. **Confidence:** High for Guy's explicit review and the accepted follow-up; this is source maintainability, not an external syntax requirement.

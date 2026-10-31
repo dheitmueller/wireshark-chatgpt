@@ -13,3 +13,9 @@ Merged master MR !14155, authored by John Thacker and merged by Anders Broman, f
 **Testing rule:** pathname code that must run on Windows should include mixed/alternate valid separator forms as well as ordinary native paths, particularly when deriving suffixes or filename components used for output.
 
 **Confidence:** Very high. Merged master portability fix authored by John Thacker, accepted by Anders Broman, and propagated to two stable branches.
+
+## Convert file URLs to native filesystem paths before displaying them
+
+Guy Harris's merged master !9183 and release backports !9184/!9185 fix extcap Help error dialogs on Windows: `QUrl::path()` is the URL's path component (for example, `/C/this/is/wrong`), **not** necessarily the native local pathname. The corrected code obtains `QUrl::toLocalFile()`, checks that value with `QFileInfo`, and formats the pathname for presentation with `QDir::toNativeSeparators()`.
+
+**Path rule:** preserve the distinction between URL syntax, local filesystem path syntax, and the user-facing rendering of a local path. Convert at the boundary rather than using a URL path string as a filename or in a diagnostic. Test Windows drive-letter URLs and native separators as well as ordinary POSIX paths. **Confidence:** Extremely high: three merged Guy Harris fixes across master and release branches.

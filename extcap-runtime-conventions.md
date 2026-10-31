@@ -73,3 +73,11 @@ Merged MR !26232, authored, approved, and merged by John Thacker, moves Interfac
 **Implementation rule:** centralize ownership and serialization of a framed control stream in the subsystem responsible for its lifecycle. Other threads/UI components should enqueue immutable/ref-counted messages rather than hold duplicate descriptors. Give the queue its own explicit lifetime, and use nonblocking/retry startup where FIFO peer-open ordering can otherwise deadlock.
 
 **Confidence:** Very high. Merged master concurrency/lifetime redesign authored and merged by John Thacker.
+
+## Resolve extcap-relative directories without confusing helper paths with the main installation
+
+Merged master !9168 (Gerald Combs), with accepted release backports !9179 and !9181, adjusts the cached program-directory computation when launched from an `extcap/` subdirectory. Configuration, plugins and shared resources must resolve relative to the main Wireshark installation/build root rather than accidentally resolving under `extcap/`. A related build correction !9176 places log-based extcap executables under the intended `run/extcap` runtime directory. The path-splitting code must handle Windows and POSIX separators.
+
+Guy Harris's review of !9168 asks whether both the stripped main-program directory and original helper executable directory should be retained; he separately checked the Windows library-path reset behavior in !9179. His merged !9186 introduces `get_executable_path(name)` so callers launching `dumpcap`/`mmdbresolve` do not have to misuse `get_progfile_dir()` as a universal executable-location API; the new public symbol was added to Debian's symbols inventory.
+
+**Architecture rule:** use a shared helper that states which domain it resolves: **main application resources**, **extcap/helper directory**, or **specific executable**. When changing global path semantics, audit dynamically loaded libraries, subprocess launchers, build-tree behavior, resource lookup, and exported-symbol packaging. A normalized installation root is not necessarily the physical directory of the currently running helper. **Confidence:** Extremely high for the merged Gerald/Guy implementation and Guy's explicit architecture/security questions.

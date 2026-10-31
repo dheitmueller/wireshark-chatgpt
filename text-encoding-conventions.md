@@ -52,3 +52,9 @@ A related pair of John Thacker fixes, merged !9224 and !9248, batches contiguous
 **Rule:** separately track bytes validated, bytes consumed (including malformed subsequences), bytes emitted and remaining source bytes. Test empty strings, trailing incomplete multibyte sequences, consecutive invalid bytes, and a valid run immediately following an invalid one. The source representation must be decoded according to the specification, not guessed from the final intended text encoding.
 
 **Confidence:** Very high for direct John Thacker byte-accounting review and accepted follow-up fixes.
+
+## Decode NFS filename bytes according to their specified protocol encoding
+
+Merged João Valverde NFS correction, carried by !9205 and !9206 to maintained releases, replaces a raw `tvb_memcpy()` into a manually terminated buffer with `tvb_get_string_enc(wmem_packet_scope(), tvb, offset, length, ENC_UTF_8)` for NFSv4 directory-entry names. This makes the string-decoding boundary explicit and keeps allocation in the correct packet lifetime. The MR description also distinguishes NFSv4's expected UTF-8 from NFSv3, whose unspecified filename encoding requires more caution.
+
+**Text-decoding rule:** select the encoding from the actual protocol/version contract, not from a convenient existing byte-copy implementation. Keep the source length bounded, use the encoding-aware TVB helper for display strings, and avoid silently projecting one protocol version's encoding onto another. **Confidence:** High for the merged fix and its exact version-aware rationale.

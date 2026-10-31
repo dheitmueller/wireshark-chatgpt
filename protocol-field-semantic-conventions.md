@@ -127,3 +127,15 @@ Merged MP4 segment-index support !9423 uses a value-string for an on-wire refere
 Merged IEEE 802.11 !9432 supplies a stronger complementary API rule: short-SSID *integer* fields needed `ENC_LITTLE_ENDIAN`, while Alexis La Goutte rejected mistakenly assigning that integer encoding to a separately registered `FT_BOOLEAN` field and requested the appropriate `ENC_ASCII` at that call site. Correct comparable occurrences together, but audit **each field's registered type** before mass-applying an encoding fix. Alexis also requested a commit subject shorter than 80 characters. **Confidence:** very high, explicit maintainer corrections in a merged MR.
 
 Merged BGP-LS fix !9422/!9421 compares an IPv6-address TLV's payload length against the **length constant**, not the similarly named TLV **type ID** (which had yielded an absurd expected size of 262 bytes). **Rule:** distinguish type discriminators from size constants in validation and expert error text. **Confidence:** high, merged stable-branch corrections.
+
+## Ensure declared bitmasks can represent the complete enumerated value domain
+
+Merged DECT-NWK Coverity fix !9190 widens the extended-location type mask from `0xE0` to `0xF0` and adjusts its shift from five to four. Martin Mathieson explicitly pointed out that a three-bit masked value cannot represent the defined enumeration value `0x0F`; matching named `value_string` entries are not enough if the mask makes a branch unreachable. The same fix widens the arithmetic domain before multiplying an IPEI component, avoiding an intermediate overflow.
+
+**Field rule:** reconcile mask width, bit shift, registered field type, every declared enum member, and the arithmetic type used to construct a display value. Code generation and static checking cannot replace validating the entire protocol value domain. **Confidence:** Very high, explicit Martin review resolved by a merged Coverity fix.
+
+## Keep custom-column resolution controls synchronized with field display semantics
+
+Merged John Thacker master !9201 brings `FT_IPv4`, `FT_IPv6` and `FT_FCWWN` custom-field presentation through the shared `address_to_display()` name-resolution path. Its UI changes enable the custom-column resolution toggle for the newly resolvable field types and keep preference helper logic consistent with the runtime formatter.
+
+**Presentation rule:** a field's displayed label, custom-column value, optional name resolution, and UI capability flags must agree. Changing the formatting API alone is insufficient if users cannot select whether they want the resolved or numeric representation. Preserve distinct machine/filter values. **Confidence:** Very high; merged John Thacker cross-layer correction.

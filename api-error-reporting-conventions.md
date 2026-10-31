@@ -77,3 +77,9 @@ Merged MR !9919 also corrects the RTP SSRC field in `sharkd` tap results from a 
 **API rule:** when a consumer is expected to feed an identifier emitted by one RPC into another, treat the exact representation as an end-to-end API contract. Exercise that round-trip in self-tests, document nonobvious error codes, and do not assume a display-oriented numeric formatting choice is harmless.
 
 **Confidence:** High. Merged implementation with self-tests and explicit maintainer documentation feedback.
+
+## Route configuration syntax errors to a user-visible reporting channel
+
+Merged !9203 changes preference-file syntax diagnostics in `read_prefs_file()` from `ws_warning()` (normally only the console/log) to `report_warning()`, which Wireshark can surface through its GUI reporting mechanism. The MR's motivating case was a user who could not understand why migrated custom columns did not load because the original warning was effectively invisible.
+
+**Reporting rule:** choose the diagnostic API for the intended audience and failure class. An error that prevents user-provided configuration from loading should be discoverable to the interactive user, including a preference name, line number, and source path, rather than being emitted only as developer telemetry. Preserve CLI usefulness and avoid modal/pop-up behavior for routine nonerrors. **Confidence:** High, merged focused user-facing correctness fix.

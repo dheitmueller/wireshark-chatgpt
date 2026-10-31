@@ -43,3 +43,9 @@ Merged master MR !10756, authored and merged by Gerald Combs, fixes an XRA disse
 Merged master MR !9752 (John Thacker) removes a CBOR chunk-read error-path rollback to `chunk->start` that defeated `wscbor_skip_if_errors()`. A failed parse could repeatedly revisit the same malformed container element, causing nontermination or memory exhaustion.
 
 **Rule:** An error-skipping parser must either consume invalid input or terminate its caller. Do not silently restore a cursor to the same position when the caller may continue. Test malformed/excessive-length lists for monotonic offset progress. **Confidence:** Very high; accepted master fix.
+
+## Advance a variable-length parser only if the child decoder has not consumed an offset
+
+Pascal Quantin's merged master fix !9169, with stable backports !9177/!9178, repairs `dissect_per_restricted_character_string_sorted()`. In the empty/restricted-character-string case, the caller previously unconditionally incremented `offset`, even when `dissect_per_length_determinant()` had already advanced it. The accepted code records `old_offset` before the length operation and increments one unit only if the offset remains unchanged.
+
+**Parser contract:** a nested helper that returns an updated cursor transfers ownership of that consumed span to the caller. Do not add a default increment after a successful advance; if a zero-length element requires progress, make that conditional on the helper returning an unchanged cursor, preserving alignment semantics. Test both length-determinant forms, empty values, and the field immediately following the string. **Confidence:** Very high; merged master fix and two accepted stable backports.

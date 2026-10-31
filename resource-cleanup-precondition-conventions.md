@@ -15,3 +15,9 @@ This regression chain is useful precisely because the intent of !13315 was corre
 **Review rule:** when adding missing cleanup on error/success paths, review the producer and destructor contracts together. A leak fix can become a crash if teardown is made unconditional without checking whether the corresponding resource ever reached its initialized state.
 
 **Confidence:** Very high. Two merged master MRs by John Thacker form a direct fix/regression/fix sequence and expose the precise dependency-API precondition.
+
+## Free compiled filters on every post-acquisition early exit
+
+Merged Gerald Combs Qt fix !9211 closes a Coverity-identified leak in the IAX2 Analysis dialog. The constructor already had a compiled display-filter program (`sfcode`), but the no-current-frame error path returned without `dfilter_free(sfcode)`; the accepted one-line change adds cleanup at that precise early exit.
+
+**Review rule:** enumerate each state-dependent return between acquisition and transfer/release, including user-facing GUI validation failures. Free only after the object is known to have been constructed; a cleanup should not be broadened to pre-acquisition failure paths without checking the destructor contract. **Confidence:** Very high for the merged Coverity-backed fix; reinforces the existing initialization-precondition convention.

@@ -47,3 +47,11 @@ Merged master MR !13900 added RSVP SESSION_ATTRIBUTE support. During review Alex
 ## Submit a bug fix to master before requesting its stable-branch backport
 
 Closed OPC UA !9299 proposed correcting `parseDiagnosticInfo` field order directly on `release-4.0`. Alexis La Goutte explicitly requested submitting the correction on `master` first and arranging the release-4.0 backport afterward. Several adjacent closed attempts (!9307–!9311) show why branch selection and reviewable commit scope matter; !9310's mistaken cherry-pick produced a 502-file diff for a one-file protocol fix. **Submission rule:** normally land the primary fix on master and then request or prepare focused stable backports; inspect the actual compare diff and base branch before opening or revising an MR, especially after cherry-picking. These are **review/workflow** lessons from closed drafts, not accepted implementation precedents. **Confidence:** High for Alexis's stated process; low for the abandoned source proposals.
+
+## Move new protocol support to master even when the initial request targets a release branch
+
+Closed Locamation timestamp submission !9189 originally targeted a release branch. Martin Mathieson explicitly explained that new feature code normally lands and stabilizes on `master`; release branches primarily receive fixes. The author resubmitted the feature as merged master !9193, providing a concrete accepted successor. Conversely, the **bug fix** for extcap path resolution was intentionally backported from merged master !9168 as accepted !9179/!9181 after Guy Harris requested it.
+
+Open, unmerged TPM20 reassembly !9166 adds a separate branch-hygiene warning: Alexis La Goutte identified that the contributor opened the MR from the fork's `master`, producing an unsuitable compare/pipeline state. Its implementation is not a Wireshark precedent.
+
+**Submission rule:** send new capabilities to a dedicated topic branch targeting master; only propose narrow backports of accepted fixes after evaluating stable-branch compatibility. Inspect the actual compare base, not merely the intended title. **Confidence:** Very high for Martin's explicit policy and the merged replacement/backport chain; the TPM example is process-only evidence from an open MR.
