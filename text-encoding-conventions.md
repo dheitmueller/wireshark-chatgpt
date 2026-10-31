@@ -36,3 +36,9 @@ Merged master !9705 moves UTF-8 sanitization into `wsutil/unicode-utils`, where 
 **Implementation rule:** validate exactly the specified byte span, use Wireshark's shared UTF-8 replacement semantics, and allocate the sanitized result in the scope appropriate to its downstream consumer. A NUL is valid UTF-8 but may still be prohibited or specially handled by the particular destination string API; keep those two contracts separate. Preserve the distinction between raw captured bytes, cleaned Unicode text, and ownership of the destination field/block.
 
 **Review nuance:** Gerald Combs proposed banning direct `g_utf8_make_valid` calls via `checkAPIs.pl`; João Valverde preferred a gentle checker hint over a hard ban. Treat the merged replacement helper as accepted behavior but the proposed outright ban as *not* settled policy. **Confidence:** very high for implementation and sampled encoding behavior; the tool-enforcement policy remained debated.
+
+## Decode captured text with the protocol's declared encoding before placing it in columns
+
+Merged master !9489 (John Thacker) fixes EtherCAT FoE filename/error strings displayed in columns. The old `tvb_memcpy` into a raw char array treated wire bytes as already suitable for display; the accepted change calls `tvb_get_string_enc(wmem_packet_scope(), ..., ENC_ASCII)`, bounds the source length, and uses an empty fallback when no string was present.
+
+**Rule:** even purported ASCII protocol bytes can contain invalid sequences. Decode or sanitize with Wireshark's encoding-aware TVB string helpers rather than copying into a NUL-terminated presentation buffer; provide a safe output for absent payloads and match the allocation lifetime to the column consumer. **Confidence:** high, merged John Thacker bug fix for actual column output.

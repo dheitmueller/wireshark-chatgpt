@@ -17,3 +17,9 @@ Merged master MR !12635 (`BLF: Fix CAN parsing`) provides explicit maintainer gu
 ## Stable branches normally take fixes rather than enhancements
 
 Merged MR 10474 and its release backports 10489 and 10490 provide direct maintainer evidence for the existing scope rule. Alexis La Goutte explained that fixes are candidates for backport while enhancements generally are not, with judgment required for borderline cases. Keep correctness changes separable so release branches can take the fix without unrelated feature work.
+
+## A performance-neutral refactor is still an enhancement for stable-branch purposes
+
+Closed, unmerged release-4.0 MR !9501 proposed backporting the PFCP grouped-IE decoder refactor from master !9363. Alexis La Goutte replied explicitly: **“We backport only bug fix and not enhancement.”** The contributor acknowledged the restriction and the release-branch MR was closed.
+
+**Submission rule:** do not assume that a simplification with fewer wrappers or lines of code qualifies for stable release maintenance. Unless a concrete defect is being corrected, submit structural cleanups to master, and keep separately backportable bug fixes independent. This closed MR is authoritative *review-policy feedback*, **not** an accepted stable-branch implementation. **Confidence:** very high for explicit Alexis La Goutte guidance, corroborating the existing merged stable-branch scope conventions.

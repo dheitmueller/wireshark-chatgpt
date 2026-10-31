@@ -31,3 +31,9 @@ Merged master MR !9550 (John Thacker) makes IPv4/IPv6 address/name entries manda
 **Architecture rule:** Persist non-packet metadata at the file-reader/block lifetime, replay it when a consumer's cache or dissection context is recreated, and free the owned records with the block. Test names before the first packet, between packets, after packets, and after redissection.
 
 **Scope qualification:** !9550 did **not** implement full NRB deep-copy/serialization for writers (the proposed mandatory-data copy routine remained disabled); do not mistake its replay behavior for a guarantee that an arbitrary capture transform preserves NRBs. Related later accepted NRB work appears in !9573, !9608 and !9669. **Confidence:** Very high for the reader/redissection invariant (merged John Thacker implementation); later MRs qualify output preservation.
+
+## Captured DNS PTR records can populate resolution caches, but only during the authoritative pass
+
+Merged master !9486 (John Thacker) uses DNS `PTR` answers for packet-derived IPv4/IPv6 name resolution as well as forward-answer data. It gates the cache mutation on the user preference `dns_pkt_addr_resolution`, IN-class DNS answer, and `!PINFO_FD_VISITED(pinfo)`, then decodes `in-addr.arpa`/`ip6.arpa` forms into address types before calling `add_ipv4_name()` or `add_ipv6_name()`.
+
+**Rule:** when packet dissection populates a shared name resolver, distinguish first-pass fact collection from redissection rendering and apply the user's resolution preference. Require a valid parsed address before inserting derived records; avoid rebuilding or mutating the resolver through repeated display passes. **Confidence:** high for the gating and accepted master implementation; do not assume this one historical parser handles every modern reverse-DNS edge case.

@@ -13,3 +13,9 @@ Merged master MR !23609 originally attempted to disable software updates for Por
 **Review rule:** trace the artifact pipeline from compilation through packaging and launch. A preprocessor check is only meaningful if the compiler invocation differs; packaging metadata or launcher-provided state belongs at packaging/runtime boundaries.
 
 **Confidence:** Very high. Merged master behavior after direct John Thacker review corrected the original compile-time assumption, with further maintainer participation during the accepted revision.
+
+## Relocatable bundles need coordinated runtime lookup overrides and privilege rules
+
+Merged master !9504 (Gerald Combs) updates AppImage's generated AppRun wrapper to provide the bundled `LD_LIBRARY_PATH`, `WIRESHARK_DATA_DIR`, `WIRESHARK_EXTCAP_DIR`, and `WIRESHARK_PLUGIN_DIR` if the user has not already supplied overrides. It also documents those directory environment variables in the Wireshark and TShark manuals and their deliberate ineffectiveness in root/setuid execution. The change leaves a documented follow-up idea: deriving the resource directories relative to the executable path in `wsutil/filesystem.c` could reduce wrapper-specific configuration.
+
+**Rule:** verify library, data, plugin, and extcap lookup *together* when moving to a relocatable distribution. Align build-time installed paths, launcher defaults, runtime lookup and user documentation; do not bypass privileged-process environment-variable restrictions to make the package work. **Confidence:** high for the merged AppImage implementation; executable-relative discovery is a suggestion, not implemented policy in this MR.

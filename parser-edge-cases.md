@@ -171,3 +171,15 @@ Merged UDS master fixes !9905 and !9897 guard `record_length > 0` before `tvb_ne
 **Implementation rule:** distinguish the presence of a record from the presence of a nonempty payload. Parse/label a valid zero-length record normally, but skip helpers that require positive lengths and avoid dispatching empty child TVBs unless their contract explicitly permits it. Include zero-length cases in regression captures.
 
 **Confidence:** High. Two merged master corrections and matching backports for explicit assertion bugs.
+
+## An invalid embedded message still deserves bounded, diagnostic dissection
+
+Merged John Thacker master !9474 and corresponding stable backports !9480/!9481 fix a crash when an iSCSI Reject encapsulates a header containing an invalid opcode. The nested decoder no longer receives a potentially NULL opcode-display string from the caller: it derives a safe `"Unknown"` fallback, inserts the actual opcode field, and attaches a specific expert diagnostic if the opcode has no registered name. The surrounding Reject can remain meaningful even when the offending header is malformed.
+
+**Rule:** for a protocol's Reject/Error response, don't make the error report itself undissectable merely because the embedded rejected message violates normal dispatch assumptions. Decode the known outer envelope, show the original invalid selector, and attach an expert item instead of dereferencing an expected lookup result. **Confidence:** very high; merged master correctness fix and both maintained-branch backports.
+
+## Reject zero-length compressed payloads before entering third-party decompressors
+
+In merged release-3.6 !9475, John Thacker adds a `length == 0` check to Kafka decompression before calling Snappy/LZ4/Zstd entry points. The MR describes third-party codec behavior on zero input potentially causing an infinite loop; the accepted path reports `ei_kafka_zero_decompression_length` (`PI_PROTOCOL`/`PI_NOTE`) and returns without attempting decompression.
+
+**Rule:** validate nonempty encoded input at the protocol boundary whenever the codec contract does not guarantee useful behavior on zero-length messages. Keep the diagnostic proportional to the anomaly instead of letting codec-specific undefined behavior or looping become a dissector crash. **Confidence:** high, merged John Thacker stable-branch fix; the specific behavior of current codec versions must be rechecked before generalizing to other APIs.

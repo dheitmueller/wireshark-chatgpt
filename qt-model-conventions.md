@@ -83,3 +83,9 @@ Merged master !9663 by John Thacker and release-4.0 backport !9664 fix the Show 
 **UI rule:** avoid relying on index equality when an explicit `QVariant` item value is feasible. If index mapping is retained, document and test that enum order, displayed item order and conversion code agree when options are inserted or alphabetized. **Confidence:** high; merged John Thacker fix and backport.
 
 Merged master !9693 and backports !9695/!9696 make the RTP Stream Dialog packet-loss sort compare `rtpstream_info_calculate()` results rather than a stale or different cached member. **Sorting rule:** the comparator must use the displayed semantic metric and consistent calculation on both rows. **Confidence:** high; merged master and backports.
+
+## A custom-column field identifier is not the complete column identity
+
+In merged master !9476 and release-4.0/3.6 backports !9491/!9492, Stig Bjørlykke corrects `column_prefs_has_custom()`: an existing column with the same expression but a *nonzero occurrence* is not equivalent to the default-occurrence custom column proposed by “Apply as Column”. The updated duplicate check requires `cfmt->custom_occurrence == 0` before suppressing that UI action.
+
+**Model/UI rule:** include modifiers such as occurrence index in equality semantics when they change what a column actually displays. A string-equal filter expression alone is insufficient to decide whether the user already has the requested column. Regression-test adding a default column alongside an existing field with a nondefault occurrence. **Confidence:** high, merged master fix and two accepted backports.

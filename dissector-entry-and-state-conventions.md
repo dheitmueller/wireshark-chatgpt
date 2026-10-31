@@ -56,3 +56,9 @@ Merged master MR !13797 fixes Bluetooth ATT automatic protocol registration afte
 **Testing rule:** include boundary values around reserved/member/experimental classes and at least one currently unassigned value inside a structurally reserved class. This catches code that accidentally turns a future allocation into a Decode As or fixed-registration conflict.
 
 **Confidence:** Very high. Merged master correctness fix prompted by real Bluetooth registry growth; the accepted range change encodes the broader member-assignment class rather than the present set of assigned UUIDs.
+
+## Cross-dissector context is optional unless every entry path establishes it
+
+Merged master !9465 adds ATSC 3.0 ALC/LCT/LLS signaling, a service-list table used to inform subsequent ALC dissection, configurable automatic/forced classification, and a sample capture. The actual new LCT logic accesses a `data_exchange` context from its caller. **Post-merge**, Gerald Combs reported a Coverity `FORWARD_NULL` at both `data_exchange->is_atsc3` accesses, and Alexis La Goutte flagged an `hf_fsize_header` noncontiguous mask `0x0CF0`. The author referred to follow-up !12011. These are **observed review concerns**, not examples to copy uncritically from the already-merged code.
+
+**Entry/dispatch rule:** if a dissector may be called through generic tables, heuristics, direct handles or nested entry points, audit whether each path supplies the optional `void *data` context. Guard pointer dereferences or establish an explicit required context precondition; test direct invocation and negative/non-ATSC paths as well as the supplied ATSC sample. Keep state tables at the correct capture lifecycle and validate their keys. **Confidence:** very high for the risk (explicit Gerald Combs Coverity diagnostics after merge) and high for the need to preserve first-pass/dissector context semantics; whether !12011 fully corrected the issue requires examining that successor separately.

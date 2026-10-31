@@ -136,3 +136,9 @@ Merged master MR !9953 fixes the packet-details context menu's **Colorize with F
 **Review/submission rule:** when two frontends share the same interaction logic, verify equivalent fixes in both. Before submission, rebase and squash messy history into coherent reviewable commits rather than relying on GitLab's automatic rebase to handle a stack of unrelated intermediate commits.
 
 **Confidence:** Very high. Merged master fix with direct John Thacker review on both frontend coverage and submission history.
+
+## A widget that escapes markup must be styled through its own presentation API
+
+Merged release-3.6 !9462 (Gerald Combs) adjusts I/O Graph and Sequence dialogs after `ElidedLabel` began escaping HTML in !9261. Callers no longer prepend `<small><i>` or embed `<b>` markup in hint messages; they call `hintLabel->setSmallText()` and pass ordinary text. The existing bold error emphasis was lost, with a comment proposing a future dedicated widget feature.
+
+**GUI rule:** when a reusable label enforces plain-text escaping, treat that as a rendering contract rather than working around it with HTML-looking input. Add explicit style APIs for needed emphasis and test message content and visual semantics when changing the widget's escaping policy. **Confidence:** high, merged stable-branch corrective change; the proposed bolding capability was not part of this MR.

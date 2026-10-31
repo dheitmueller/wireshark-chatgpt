@@ -35,3 +35,9 @@ Merged master MR !11857, authored and merged by Gerald Combs, moves Manage Inter
 **Review rule:** enumerate all ways a Qt object can close or be destroyed and consider nested event loops that may run between a close request and actual destruction. Cleanup should occur at the ownership boundary that makes those paths equivalent.
 
 **Confidence:** Very high. Merged master lifetime fix authored and merged by Gerald Combs, with concrete reproduction/testing and explicit discussion of the nested-event-loop hazard.
+
+## Qt model destruction must release non-QObject content owned by the model
+
+Merged master !9488 (John Thacker) explicitly adds `CredentialsModel::~CredentialsModel()` calling `clear()`, fixing a leak of model-managed credential records. QObject parent-child destruction does not automatically release separately allocated C/C++ data objects kept in member containers.
+
+**Lifetime rule:** a model's ownership contract includes the objects it stores, not only its QObject children. Put cleanup in a destructor or another unique teardown boundary, and ensure its usual `clear()` path is safe at destruction. **Confidence:** high, accepted targeted memory-leak fix.

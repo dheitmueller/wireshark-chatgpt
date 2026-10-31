@@ -35,3 +35,9 @@ Merged master MR !13547, authored by Martin Kaiser and merged by Martin Mathieso
 **Review rule:** when adding a new checker mode or directory layout, compare the file lists produced by whole-tree and changed-file invocations. A checker that reaches a file only through one mode has a coverage bug even if each mode appears internally consistent.
 
 **Confidence:** Very high. The inconsistency and concrete missed nested dissector file are stated directly in merged master MR !13547, and the accepted change was specifically to make the outputs consistent.
+
+## Repair field-registration warnings precisely, retaining documented wire-layout exceptions
+
+Merged master !9477 (Martin Mathieson) repairs a large collection of `check_typed_item_calls.py` findings: 16/24/32-bit field masks are written at the corresponding fixed width, repeated GSM SMS abbreviations get distinct protocol-specific names, and a legitimate **noncontiguous** STUN method mask is listed explicitly as a checker exception with RFC 5389 support. Merged !9493 separately fixes an ambiguous duplicate BGP Link State display-filter abbreviation by giving the old-format field its own `.old` suffix; its MR description also documents a mismatched FT_UINT16-versus-four-byte usage that should not be inferred corrected by the one-line diff.
+
+**Checker rule:** validate registration width, item width, abbreviation uniqueness, and mask shape separately. Prefer adjusting actual field registration; use a narrowly named/documented exception for *specification-defined* discontinuous bits rather than disabling all mask checks. Confirm the final diff addresses each warning claimed in the description. **Confidence:** high for merged Martin/Alexis changes; note that accepted checker exceptions do not mean arbitrary noncontiguous masks are correct.
