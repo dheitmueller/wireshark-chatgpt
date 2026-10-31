@@ -25,3 +25,8 @@ Merged master MR !15097, authored by John Thacker and approved/merged by Gerald 
 **Testing rule:** exercise both directions of compatibility: load representative older/variant input with the new parser, and verify that newly written configuration still uses the canonical representation expected by older supported readers.
 
 **Confidence:** Very high. Merged master compatibility change authored by John Thacker and approved/merged by Gerald Combs, with the writer-side backward-compatibility requirement stated explicitly.
+## Qt toolkit upgrades can change serialized preference formats
+
+Merged master **!8691**, authored by **Gerald Combs**, handles a saved QFont::toString() preference created by Qt 6 that Qt 5's QFont::fromString() cannot correctly parse (historically, 16 fields versus 10, with different weight representation). The Qt 5 path detects the newer representation and uses safe font fallback instead of loading an incompatible preference; **!8709** backports the fix. Merged **!8692** and backport **!8693** separately adjust Windows monospace font sizing with Qt 6.
+
+**Rule:** treat GUI toolkit serialization as a persisted compatibility boundary. Test settings written by each supported toolkit version and read by the other, and distinguish serialization compatibility from platform font-size rendering. Do not assume a nominally identical toolkit API means interchangeable on-disk values. **Confidence:** high, Gerald's merged master fix with stable backport.

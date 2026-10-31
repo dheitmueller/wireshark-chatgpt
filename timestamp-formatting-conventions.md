@@ -15,3 +15,8 @@ A sequence of merged master MRs authored and approved by Guy Harris establishes 
 **Testing rule:** exercise intermediate precisions as well as the endpoints and common 3/6/9-digit cases. A test matrix that only covers milliseconds, microseconds, and nanoseconds can miss exactly the inconsistencies this design removes.
 
 **Confidence:** Extremely high. This is a coherent series of merged master changes authored and approved by Guy Harris, spanning shared APIs, call-site migration, UI/CLI precision handling, and removal of hard-coded resolution cases.
+## Prefer composition over a guessed fixed-size timezone-name buffer
+
+Merged **!8703** (João Valverde), with release backport **!8705**, increased a 32-byte timezone display buffer to avoid truncating long internationalized names and corrupting UTF-8. **Guy Harris's merged !8708** supplies the more durable design: remove the scratch buffer and pass timezone text plus its optional separator to the allocator-backed timestamp formatter. No guessed maximum length is needed, and UTC/local/hidden-zone options remain explicit.
+
+**Rule:** when the final output already uses scoped dynamic formatting, pass semantic string pieces directly rather than reformatting through an intermediate fixed-size array. Check timezones whose localized name is long and verify all UTC/local/quoted/hidden variants. **Confidence:** extremely high for Guy's merged replacement; the enlargement is historical intermediate evidence, not preferred architecture.
