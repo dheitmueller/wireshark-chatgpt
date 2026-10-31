@@ -33,3 +33,11 @@ Merged master MR !11629, authored and merged by John Thacker, fixes SNMP request
 **Review implication:** when request/response correlation is wrong, audit both key specificity and state initialization across all entry points. Symptoms such as unmatched responses, duplicate Follow Stream entries, or assertions can all arise from a conversation key or setup path that does not match the protocol's real topology.
 
 **Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker, with concrete request/response and assertion failures described in the MR.
+
+## Remove a conversation from the hash table that currently owns its key
+
+Merged master !9249, authored and merged by John Thacker, fixes `conversation_set_addr2()`: when the original conversation still has a second port but no second address, its entry must be removed from `conversation_hashtable_no_addr2`, **not** `conversation_hashtable_no_port2`, before the key is updated. The wrong table had been selected for years and could crash because `conversation_remove_from_hashtable()` did not defensively handle a lookup returning NULL. The same correction was merged into release-4.0 (!9254) and release-3.6 (!9256).
+
+**Rule:** when evolving a keyed conversation, derive the removal table from the **current key shape**, not the newly requested endpoint or a similarly named partial-key table. Verify all combinations of missing address/port components, ensure removal occurs before re-insertion, and test that no stale entry or null lookup is left behind. A table-ownership mismatch can turn a valid endpoint update into a segmentation fault.
+
+**Confidence:** Extremely high: John Thacker's merged master fix, explicit failure analysis, and two accepted backports.

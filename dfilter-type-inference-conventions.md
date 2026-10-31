@@ -13,3 +13,11 @@ Merged master MR !12643 (`dfilter: Improve constant values type inferrence`) cha
 **Testing rule:** exercise equivalent comparisons in both operand orders, including constant expressions rather than only bare literals, and verify that invalid cross-type comparisons still produce normal user-facing diagnostics.
 
 **Confidence:** Very high. Merged master display-filter compiler correctness change with a concrete previously rejected operand ordering.
+
+## Resolve untyped function arguments from a definite type, not their position
+
+Merged master !9216 changes `min()`/`max()` semantic checking so leading literal arguments need not be rejected before a later typed field supplies a type. The compiler defers resolving untyped literal nodes, finds a definite argument or expected type, then converts the pending literals; if no type can be established, it must not guess. Its temporary `dfw_scope` makes allocation cleanup possible even when filter compilation uses exceptions. Merged !9225 subsequently replaces strict equality of operand field-type enums with `compatible_ftypes()`, allowing the function to compare values whose types are semantically compatible. Merged !9220 prevents a preceding crash by validating node kinds before invoking field-only accessors; !9221 is its stable backport.
+
+**Type-checking rule:** validate AST node kind before dereferencing type-specific storage; infer missing literal types from actual constraints; check semantic compatibility instead of equality of implementation enum labels; and provide ordinary user diagnostics for unresolved or invalid expressions. Test literal-first, typed-first, all-literal, incompatible-type, and malformed expressions.
+
+Merged !9212 explored operand commutation for arithmetic inference. Guy Harris specifically questioned anti-commutative operators such as subtraction. João Valverde explained that the expression's AST operand order was preserved, **but later withdrew part of this approach in !9246**. Treat !9212 as instructive historical design/review evidence, **not** the current implementation to copy. **Confidence:** Very high for the merged crash and type-checking fixes; superseded for the commutation mechanism.

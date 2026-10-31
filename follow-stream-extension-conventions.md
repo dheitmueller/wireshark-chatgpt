@@ -33,3 +33,11 @@ John Thacker's merged !9540 removes the dialog's cached `follow_type_t` member a
 Merged master !9429 adds WebSocket Follow Stream using a `websocket_follow` tap. The dissector queues its derived `tvb_payload` **after WebSocket framing/unmasking**, so Follow Stream can show useful unmasked and reassembled application payload instead of the masked TCP byte stream. This early implementation also added `FOLLOW_WEBSOCKET` and multiple manually wired Qt actions.
 
 **Data-flow rule:** a follower for a transforming protocol should consume the post-transformation tvbuff at the correct layer, with suitable conversation/stream filters and tap lifetime. **Architecture caveat:** do **not** copy !9429's hard-coded enum/UI wiring into new work; later merged !9957 replaces it with registered follower capabilities and generated actions, as documented above. **Confidence:** high for payload placement (merged feature); newer registration architecture supersedes the old UI technique.
+
+## Register substream navigation as a follower capability
+
+Merged master !9259 (John Thacker) extends `register_follow_t` with an optional `follow_sub_stream_id_func`. The callback finds a valid substream ID at or beyond the requested ID within a selected stream; a NULL callback means that protocol has no such substreams. Both the Qt Follow Stream dialog and the CLI consult the registered callback instead of hard-coding HTTP/2 or QUIC names and enums. Alexis La Goutte found a dead-store warning in the dialog's revised control flow; John corrected the missing `else`.
+
+**Design rule:** register subordinate stream-navigation semantics with the protocol follower that owns them. Do not assume that the numbering or existence semantics of substreams match across protocols: HTTP/2 reserves stream 0 for control, whereas QUIC stream 0 is a normal stream and its CRYPTO stream is not represented by a Follow Stream substream ID. Check callback presence and valid returned IDs rather than infer either from a protocol-name comparison or a zero-based default. This historical capability step complements later, broader follower-registration work in !9957.
+
+**Confidence:** Very high: merged John Thacker implementation, direct post-review correction, and consistent later architecture.

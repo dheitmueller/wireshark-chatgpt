@@ -42,3 +42,13 @@ Merged master !9705 moves UTF-8 sanitization into `wsutil/unicode-utils`, where 
 Merged master !9489 (John Thacker) fixes EtherCAT FoE filename/error strings displayed in columns. The old `tvb_memcpy` into a raw char array treated wire bytes as already suitable for display; the accepted change calls `tvb_get_string_enc(wmem_packet_scope(), ..., ENC_ASCII)`, bounds the source length, and uses an empty fallback when no string was present.
 
 **Rule:** even purported ASCII protocol bytes can contain invalid sequences. Decode or sanitize with Wireshark's encoding-aware TVB string helpers rather than copying into a NUL-terminated presentation buffer; provide a safe output for absent payloads and match the allocation lifetime to the column consumer. **Confidence:** high, merged John Thacker bug fix for actual column output.
+
+## Count the entire consumed invalid sequence when repairing UTF-8
+
+Merged master !9214 (Gerald Combs) fixes an invalid UTF-8 decoder that could read or emit past the valid input length. John Thacker's direct review corrected the essential accounting: decrement remaining bytes by the **full validator-consumed span** `ptr - prev`, not just the number of valid prefix bytes; then advance past the valid segment before deciding whether to append U+FFFD. The accepted implementation avoids spurious replacement characters at the end and preserves the Unicode maximal-subpart replacement intent.
+
+A related pair of John Thacker fixes, merged !9224 and !9248, batches contiguous valid ASCII bytes for efficient appending but also advances `prev` correctly when **two invalid ASCII bytes occur consecutively**. Merely optimizing the common valid run is insufficient if pointer state drifts on malformed runs. Merged !9217 validates and repairs SRT's protocol-specific UTF-8 text before presenting it, while documenting the unusual storage as 32-bit little-endian words.
+
+**Rule:** separately track bytes validated, bytes consumed (including malformed subsequences), bytes emitted and remaining source bytes. Test empty strings, trailing incomplete multibyte sequences, consecutive invalid bytes, and a valid run immediately following an invalid one. The source representation must be decoded according to the specification, not guessed from the final intended text encoding.
+
+**Confidence:** Very high for direct John Thacker byte-accounting review and accepted follow-up fixes.

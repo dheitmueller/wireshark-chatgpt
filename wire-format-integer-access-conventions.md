@@ -19,3 +19,11 @@ Treat this as strong architectural guidance:
 - Consumers should include the header that declares the primitive they use instead of depending on a transitive umbrella include.
 
 This reduces duplicated endian logic and gives portability/static-analysis work one canonical implementation surface.
+
+## Choose unaligned integer-load implementations by compiler behavior, not by unsafe casts
+
+Merged master !9238 (John Thacker) refines `wsutil/pint.h` unaligned integer accessors. Its tested 2022 compiler branches use `memcpy()` into a naturally typed local scalar plus an endian-correct byte swap for MSVC and Intel compilers, where that form optimized better, while relying on portable shift/mask implementations optimized by GCC/Clang. Reading through a potentially misaligned integer pointer is not an acceptable shortcut. Guy Harris provided extensive authoritative review of the conditional endianness assumptions and MSVC `__unaligned` possibilities; he did **not** propose an accepted blanket replacement with `__unaligned`.
+
+**Implementation rule:** express the serialized width and byte order explicitly, preserve strict alignment/aliasing correctness, and validate generated code with the actual target compiler and optimization settings before introducing a specialized fast path. Gate the implementation narrowly by supported compiler capabilities, retain a portable fallback, and never equate the commonly little-endian Windows/Intel platforms with a universally little-endian wire format. Recheck the current header/toolchains before applying these historical compiler branches.
+
+**Confidence:** Extremely high: John Thacker's merged low-level primitive update with detailed Guy Harris technical review.

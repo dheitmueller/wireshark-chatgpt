@@ -57,3 +57,11 @@ Merged John Thacker MR !9801 changes TShark `-j` and `-J` filtering from a globa
 Separate open MR !9799 proposes `-X` extension-option validation. Gilbert Ramirez correctly identified duplicated file-type listing logic across Wireshark and TShark and recommended factoring common code into `wsutil`; that architectural feedback is useful, but the **open proposal must not be treated as an accepted CLI behavior change**.
 
 **Confidence:** Very high for merged !9801 authored/merged by John Thacker; provisional for the implementation of open !9799, with maintainer design feedback recorded independently.
+
+## Separate a user's expression from option parsing with the standard terminator
+
+Merged master !9255, authored and merged by João Valverde, fixes `dftest` when a display filter begins with a minus sign, such as `-2 == tcp.port`. The test runner must execute `dftest -- <expression>` so the tool does not mistake a valid expression for a command-line option. The MR also replaces the earlier GLib option parser with a conventional `getopt` implementation; its own debug flags were introduced by !9250.
+
+**CLI/testing rule:** when a harness passes arbitrary user-language expressions or filenames to an option-parsing executable, use `--` before the payload and verify its position against the tool's accepted grammar. Test negative-leading literals and values that resemble switches, in addition to ordinary arguments. A front-end's option parser must not silently narrow the valid syntax accepted by its underlying language.
+
+**Confidence:** High: merged tool change and direct regression-test adjustment.

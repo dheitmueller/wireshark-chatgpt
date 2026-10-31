@@ -41,3 +41,11 @@ Merged master MR !13547, authored by Martin Kaiser and merged by Martin Mathieso
 Merged master !9477 (Martin Mathieson) repairs a large collection of `check_typed_item_calls.py` findings: 16/24/32-bit field masks are written at the corresponding fixed width, repeated GSM SMS abbreviations get distinct protocol-specific names, and a legitimate **noncontiguous** STUN method mask is listed explicitly as a checker exception with RFC 5389 support. Merged !9493 separately fixes an ambiguous duplicate BGP Link State display-filter abbreviation by giving the old-format field its own `.old` suffix; its MR description also documents a mismatched FT_UINT16-versus-four-byte usage that should not be inferred corrected by the one-line diff.
 
 **Checker rule:** validate registration width, item width, abbreviation uniqueness, and mask shape separately. Prefer adjusting actual field registration; use a narrowly named/documented exception for *specification-defined* discontinuous bits rather than disabling all mask checks. Confirm the final diff addresses each warning claimed in the description. **Confidence:** high for merged Martin/Alexis changes; note that accepted checker exceptions do not mean arbitrary noncontiguous masks are correct.
+
+## Check bitfield insertion contracts for the actual registered field types
+
+Merged master !9243 (Martin Mathieson) enables `check_typed_item_calls.py` checks for `proto_tree_add_bits_item()` and `proto_tree_add_bits_ret_val()`, broadening static coverage beyond the conventional typed insertion paths. Merged DECT-NWK fix !9232 supplies the corresponding real example: `FT_NONE`, `FT_STRING` and `FT_UINT_BYTES` do not meet the bit-insertion API's expectations; the accepted dissection uses appropriate compatible field types or another tree-add API.
+
+**Checker rule:** validation must be API-specific: compare declared `hf` type and mask width against the exact tree insertion function and its value/storage semantics. A field that is legitimate for one tree-add API may be invalid for another. Keep source-checker coverage in step with new API families and test false positives before treating the check as blocking.
+
+**Confidence:** Very high: two merged master fixes, including a checker update authored and merged by Martin Mathieson.

@@ -55,3 +55,11 @@ Merged master MR !15806 adds RTPS pre-shared-key decryption. Decrypted secure co
 **Review rule:** a suppression is not evidence of correctness. Review the semantic bound independently—for recursion, prove depth/progress or enforce a guard; for aliasing, lifetime, or arithmetic warnings, establish the corresponding invariant—then ensure the suppression covers no more code than necessary.
 
 **Confidence:** Very high. Merged master feature with an explicit safety argument from the contributor and direct Gerald Combs guidance on the accepted localized clang-tidy suppression.
+
+## Grade advisory refactoring hints below correctness errors
+
+Merged master !9234 adds an optional `tools/check_tfs.py --check-value-strings` scan for two-state `value_string` tables that could be represented with shared `true_false_string` entries from `epan/tfs.c`. Jaap Keuter objected to classifying "could have used" as an **error**, and suggested downgrading case-insensitive near-matches even further. The accepted checker uses **Warn** for exact reusable equivalents and **Note** for capitalization-only similarities. Martin Mathieson emphasized that this new check was not enabled in CI until its existing warning inventory could be resolved. The checker also recognizes that external plugins cannot simply import non-exported libwireshark data constants.
+
+**Checker rule:** distinguish correctness violations from optional canonicalization, and severity-rank approximate matches below exact ones. Before making an advisory scan CI-blocking, inventory and address its baseline; accommodate generated sources and plugin linkage boundaries rather than recommending an unavailable dependency. A merged optional diagnostic is not evidence that its results are project-wide mandatory errors.
+
+**Confidence:** Very high: direct Jaap Keuter review and Martin Mathieson implementation/CI comments, with final merged diagnostic levels.
