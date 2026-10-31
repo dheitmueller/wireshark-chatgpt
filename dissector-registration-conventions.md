@@ -33,3 +33,9 @@ Merged master MR !13202, authored and merged by John Thacker, fixes decade-old I
 **Review rule:** treat compiler or static-analyzer "unreachable code" diagnostics in long-lived registration loops as possible evidence that the controlling predicate refers to the wrong table element, rather than dismissing them as warning noise.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with Clang 17 exposing a decade-old semantic bug.
+
+## Register reusable dissector handles by name and reuse the returned handle
+
+Merged **!8809** converts numerous dissectors from anonymous `create_dissector_handle()` handles to named `register_dissector()` registrations. The name makes those dissectors available through `find_dissector()`, Lua `Dissector.get()`, rawshark and fuzzshark, not merely their automatic port bindings. Register during `proto_register_*()` and retain the returned handle for use during `proto_reg_handoff_*()`.
+
+**Anders Broman** explicitly questioned following registration with a redundant `find_dissector()` lookup, given Wireshark's large dissector registry. **Rule:** when the registering module needs the handle itself, assign the result of `register_dissector()` to a module-level handle and reuse it. Name a dissector as an intentional extension point rather than assuming a locally created handle is globally discoverable. **Confidence:** very high for the merged multi-dissector refactor and direct maintainer review.

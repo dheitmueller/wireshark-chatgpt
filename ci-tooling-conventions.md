@@ -121,3 +121,13 @@ Merged master MR !15389, authored by Gerald Combs and merged by Anders Broman, u
 ## Preserve strict release checks without blocking instrumented fuzz execution
 
 Merged **!8829** runs an ordinary GCC release build with strict warnings while explicitly supplying `-DENABLE_WERROR=Off` for certain ASan/Valgrind fuzz jobs. A release-compiler hygiene job and a fuzz job have different goals: warnings should remain visible but instrumented fuzz processing should be able to execute in the latter. **Rule:** choose warning severity intentionally per job, inspect whether a new diagnostic prevents test/fuzz binaries from being built, and retain the evidence from those jobs. This is historical accepted CI configuration, not a mandate to disable `-Werror` in all future fuzz jobs. **Confidence:** high.
+
+## Compare diagnostics across actual CI job configurations before declaring a source warning fixed
+
+In merged **!8811**, Gerald Combs found numerous `-Wunused-but-set-variable` and `-Wunused-but-set-parameter` failures in fuzz jobs that had not appeared in the separate Code Checks + Clang Warnings job. The accepted repair removes dead writes/counters or marks truly unused parameters instead of disabling the warning. **Rule:** toolchain flags and compiler paths differ among regular, release and fuzz CI; validate the relevant failing job, not just a superficially equivalent checker job. **Confidence:** high, Gerald-authored/merged fix with explicit discrepancy report.
+
+## Differentiate transient package-download failures from actual compiler/dependency regressions
+
+The long-lived discussion on merged Windows GitHub Actions **!8807** shows that a Chocolatey/SourceForge TLS download failure was initially suspected to be fixed by forcing TLS 1.2. **Gerald Combs** and **Chuck Craft** instead traced changing DocBook package sources/catalogs and subsequently CMake 3.25 / libsmi / Strawberry Perl path-selection interactions. Gerald argued against retaining a gratuitous TLS-version override, and the contributor removed it. Verified clean builds preceded the merge.
+
+**Rule:** inspect error provenance and upstream package changes, test on clean environments, and avoid permanent global security-protocol overrides for a possibly transient download outage. Diagnose dependency resolution separately from network retrieval and account for cross-toolchain library discovery. **Confidence:** high for the direct technical discussion and merged cleaned-up workflow; these are historical dependencies, not current package-version recommendations.

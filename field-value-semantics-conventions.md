@@ -107,3 +107,13 @@ During merged USB-PTP port !9230, Martin Mathieson questioned adding a protocol-
 **Rule:** keep the registered field's stored value and its filter comparisons semantically correct. When a protocol needs context/masking-specific display strings, implement a scoped formatter rather than abusing a lookup-table layout that other consumers interpret differently. Do not export a new general-purpose data type without specifying conversion, filters, display, and plugin/API behavior.
 
 **Confidence:** High for Martin Mathieson's direct architectural review and the contributor's stated resolution; limited final-diff visibility.
+
+## Use a typed character field for an ASCII codepoint with named semantics
+
+Merged **!8765** replaces AllJoyn's hand-built header type-character formatter with `FT_CHAR` plus a normal `value_string`. This preserves a single-byte type code as a typed, filterable value and avoids constructing malformed UTF-8 for arbitrary byte values. **Rule:** for a one-byte protocol discriminator, register the correct numeric/character type and a lookup table; do not manufacture a string representation by passing unchecked bytes into UTF-8 labels. **Confidence:** high.
+
+## Generate match-selected literals using the registered display base
+
+Merged **!8764**, approved by **João Valverde**, removes duplicate hand-coded signed/unsigned integer cases from `construct_match_selected_string()` because `fvalue_to_string_repr()` already receives the field's base. The special `BASE_NONE` plus `strings` case remains significant: registered display settings can alter how a selected field is serialized into a filter.
+
+**Rule:** centralize value-to-filter spelling in the typed fvalue API while retaining the distinct field-display/enum cases that affect filter literals. Test generated filters for signedness, base and string/enum-backed values; a visible label is not automatically the appropriate comparison literal. **Confidence:** high for merged change and João's approval.

@@ -201,3 +201,13 @@ In open/unmerged !9279, a proposed TCP change moved nested payload subdissection
 ## A closed series of duplicate branches is not evidence of multiple independent design decisions
 
 OPC UA !9307–!9311 are repeated unmerged attempts at the same one-file `parseDiagnosticInfo` field-order correction. One attempt, !9310, contains **502 changed files** after cherry-picking against the wrong base, and another, !9311, has no surviving changed file. Review these as one failed submission episode, not five independent accepted precedents. Alexis La Goutte's master-before-backport direction on related closed !9299 is a genuine submission-process lesson, while the candidate implementation remains unaccepted. **Review rule:** detect duplicated commits, reverts, and unintended branch-wide diffs before counting apparent evidence as independent corroboration. **Confidence:** High on the observed corpus state; no claim about a later successfully merged successor.
+
+## A partial-capture loading proposal needs packet-unit semantics and visible disclosure
+
+Open **!8789** proposes packet-count limits and offsets when loading large captures; it is **not accepted implementation guidance** in this corpus. **Guy Harris** distinguished an ordinal offset in the packet sequence from a byte offset in the file. **Stig Bjørlykke** requested explicit `packets_limit` / `packets_offset` names, UI disclosure that only part of a capture was loaded, and accurate summary placement. The historical diff also counts backward by scanning all records for negative offsets, so performance and error behavior require review.
+
+**Review rule:** specify units in variable names and user-facing controls; make partial-data state visible to downstream statistics and packet numbering; test negative, empty and malformed offsets and repeated loads. Weight Guy/Stig's requirements as authoritative review questions, not a completed feature. **Confidence:** high for discussion, unconfirmed final design.
+
+Closed **!8803** is a useful counterexample to promoting a speculative text helper: John Thacker withdrew a vertical-tab-as-whitespace change when the original malformed capture could not be reproduced and current master appeared to handle it better. Closed **!8768** similarly should not be counted as independent implementation when the corrected documentation change merged as **!8775**.
+
+**Submission caution:** merged **!8763** fixes misspelled Bluetooth `btatt.fragmet.*` field abbreviations along with ordinary prose typos. A registered filter abbreviation is a compatibility surface even when the edit is presented as spelling cleanup; consider the impact on saved filters and profiles. This is a source-level compatibility risk, not an observed regression.

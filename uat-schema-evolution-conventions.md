@@ -15,3 +15,9 @@ Merged master MR !15181, authored and merged by Martin Mathieson with direct gui
 **Review rule:** for every UAT schema change, test or reason through both directions of version skew: old row -> new Wireshark and new row -> old Wireshark. Pay particular attention to booleans/enums where a default silently changes dissection behavior.
 
 **Confidence:** Very high. Merged master dissector change by Martin Mathieson with explicit John Thacker guidance on the intended UAT compatibility API and behavior.
+
+## Default a newly persisted DNS port to the protocol's meaningful value
+
+Merged **!8771**, with release backport **!8772**, uses `uat_set_default_values()` to assign both appended DNS-server UAT port fields the default string `"53"` instead of leaving older saved rows with absent port entries. The intended behavior is compatibility when older configuration files are read by newer Wireshark versions.
+
+**Rule:** write a typed/serialized default for every newly added persisted UAT field whose intended value is not the empty or zero state, and verify legacy saved rows load to the same operational behavior. An accepted backport corroborates the original compatibility fix, not a separate architecture decision. **Confidence:** high.

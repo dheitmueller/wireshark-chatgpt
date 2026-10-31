@@ -43,3 +43,9 @@ Merged master MR !13198, authored and merged by John Thacker, fixes several HTTP
 Merged master RTPS !9722 changes two PL_CDR_LE/PL_CDR_BE branches to use decompressed `data_holder_tvb`, rather than the compressed source `tvb`, for tree items and parameterized decoding. The source buffer has different bytes and may not share the transformed payload's offsets.
 
 **Rule:** At decompression or transformation boundaries, pair each parser call, tree item and offset with the tvbuff holding the bytes actually interpreted. Closed preliminary !9721 is not implementation evidence. **Confidence:** High; focused merged diff.
+
+## Add the current TVBuff origin before applying absolute bit offsets
+
+Merged IPv6 fix **!8793** (and its backport **!8797**) changes a well-known-prefix embedded-IPv4 read from `tvb_get_bits32(tvb, 96, 32, ...)` to `tvb_get_bits32(tvb, (offset * 8) + 96, 32, ...)`. A fixed bit offset from the start of the TVBuff is wrong when the IPv6 header being decoded starts at a nonzero byte offset.
+
+**Rule:** when moving between byte-origin parameters and bit-extraction APIs, convert exactly once and preserve the enclosing header's origin. Test nested/subset dissections at nonzero offsets; counting a backport twice would overstate the independent evidence. **Confidence:** high, master fix and release backport.

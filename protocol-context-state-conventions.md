@@ -86,3 +86,9 @@ Merged master MR !9914, authored by John Thacker, reverts unconditional restorat
 **Testing rule:** exercise a frame with multiple PDUs and verify both that sibling dissections do not inherit inappropriate context and that final conversation/address metadata remains available to packet-details, Follow, and other GUI/API consumers.
 
 **Confidence:** Very high. Merged master revert by John Thacker documents the downstream consumer contract and a concrete regression; it supersedes the reverted generic restoration approach.
+
+## Pass framing metadata to a child dissector in per-packet, layer-keyed context
+
+Merged **!8767** fixes EVS compact-versus-header-full RTP payload heuristics: the RTP dissector has stripped padding from the child TVBuff, while the EVS format discriminator must consider the RTP padding length. The RTP layer publishes packet-scoped `struct _rtp_pkt_info` through `p_add_proto_data()` or `p_set_proto_data()` keyed by its protocol and layer number; EVS reads that context from its enclosing RTP layer and adds the padding count when evaluating the specified frame lengths.
+
+**Rule:** when a child decoder needs an enclosing protocol's framing facts that are no longer in its payload TVBuff, propagate explicit per-packet parent metadata, scoped to the appropriate layer, rather than reconstructing removed bytes or using global state. Test padded and unpadded frames and nested-layer selection. **Caution:** the historical diff uses `p_add` on one path and `p_set` on another; the merged fix is evidence for the context boundary, not proof the lifetime and replacement behavior is universally safe. **Confidence:** high for the accepted functionality; cross-path correctness should be tested separately.

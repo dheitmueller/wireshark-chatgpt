@@ -227,3 +227,9 @@ Merged MR !26036, authored and merged by John Thacker, fixes the Shomiti/Finisar
 **Implementation rule:** validate enclosing-size relationships before allocation, not after it. Checked arithmetic should guard the first derivation of a size that can influence allocation or reads.
 
 **Confidence:** Very high. Security-motivated merged master wiretap fix by John Thacker with a concrete resource-exhaustion failure mode.
+
+## Match PER UTF8String length determinants to octets, not assumed character width
+
+Merged **!8808** replaces generic restricted-character-string decoding of ASN.1 PER `UTF8String` with the X.691 §27.6 unconstrained-length path. UTF-8 characters have variable octet widths, so a character-count size constraint is not a known-multiplier PER constraint; the length determinant is in octets. The decoder uses `dissect_per_length_determinant()`, constructs an octet-aligned TVBuff for the specified length, reports an extra data source when needed, and handles a present zero-length string without passing zero length to `tvb_new_octet_aligned()`.
+
+**Rule:** choose a wire-length API based on the precise encoding rule rather than an ASN.1 source-level type's apparent character constraint. Keep bit offsets and octet lengths in explicit units, and exercise zero-length as well as unaligned data. **Confidence:** high, accepted targeted correctness fix with normative rationale.

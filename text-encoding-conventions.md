@@ -100,3 +100,15 @@ Merged **!8890** introduces shared `format_char()` so a raw IAX2 control byte is
 Merged **!8863** replaces X.509 distinguished-name fixed-size concatenation buffers with packet-scoped `wmem_strbuf_t`, avoiding truncation partway through a multibyte character; it updates the ASN.1 template and emitted dissector together. The follow-up merged **!8868** is important: it guards `x509if_get_last_dn()` against a NULL buffer and initializes the DN buffer with an empty string rather than an inappropriate zero-size constructor.
 
 **Rule:** dynamic string buffers solve capacity problems but not initialization, lifetime or absent-value semantics. Check accessor calls before the first DN and after the frame-end reset; review the later corrective merge rather than treating the first merge as a complete final design. **Confidence:** very high, accepted fix followed by a concrete merged crash correction.
+
+## Validate before repairing a mostly valid UTF-8 packet string
+
+In merged **!8792**, AFS converts RXStringV's one-octet-per-32-bit-word representation into a packet-scoped string buffer. **João Valverde** recommended first checking `wmem_strbuf_utf8_validate()` and calling `wmem_strbuf_utf8_make_valid()` only on failure; the common valid-input path avoids unnecessary sanitization. **John Thacker** agreed and identified that a validation-only caller should be allowed to pass a NULL end-pointer; merged **!8799** made that out-parameter optional without dereferencing it. The validator deliberately permits embedded NUL bytes, unlike `g_utf8_validate()`.
+
+**Rule:** preserve the wire span separately from the converted UTF-8 string, optimize common valid input, and establish documented nullable-output semantics for shared validation APIs. If a protocol does not specify a charset, mark UTF-8 fallback as a heuristic rather than asserting the wire encoding. **Confidence:** very high; explicit João/John review followed by two merged fixes.
+
+## Apply the governing document's character set rather than assuming raw octets are UTF-8
+
+Merged **!8784** corrects WBXML inline and string-table entries to use the document encoding stored in packet-level protocol data; `tvb_format_text()` assumes UTF-8 and `tvb_get_ptr()` bypasses conversion entirely. Merged **!8790** decodes MMS Text-string as US-ASCII under OMA-TS-MMS-CONF and considers the charset of Encoded-string-value. Merged **!8791** converts HL7 message-type bytes with an ASCII-aware API; **!8770** uses `tvb_ws_mempbrk_pattern_guint8()` plus `tvb_get_string_enc()` for XCSL tokens. Merged **!8782** substitutes replacement characters when Skinny's ASCII/codebook displayLabel contains unrecognized high-bit bytes.
+
+**Rule:** select encoding from the exact enclosing protocol/document rule, decode at the packet-buffer boundary, and preserve byte consumption independently of the resulting string length. Do not silently reinterpret arbitrary bytes as valid UTF-8. **Confidence:** high, corroborated by several independent merged dissector fixes.
