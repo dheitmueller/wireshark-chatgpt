@@ -21,3 +21,9 @@ Merged documentation MR !23863 replaces Developer's Guide guidance that effectiv
 **Implementation/review rule:** when creating or updating a plugin, start from the semantic requirements documented by the current build system, then add only dependencies the plugin uses. Treat copied boilerplate as suspect: if it is not understood or required by the documented target contract, verify it before carrying it forward.
 
 **Confidence:** High. Merged Developer's Guide update accepted by Anders Broman, with substantive review from Michael Mann, and it documents the project's intended build idioms directly.
+
+## Do not guess third-party plugin installation locations when they lack a standard
+
+**Merged master !9398**, authored by **Gerald Combs**, removes automatic Falco plugin lookup from `FindSinsp.cmake` because external Falco plugins had no dependable standard installation directory. The build takes explicitly supplied plugin paths instead; merged follow-up !9400 renames the option from `SINSP_PLUGINS` to the semantically clearer `FALCO_PLUGINS` and synchronizes CMake copy steps and the Falco bridge README.
+
+**Build rule:** distinguish discovering a dependency's core library from choosing optional plugins to bundle. Unless an upstream installation contract defines a reliable search location, expose a documented explicit list of plugins, avoid surprising auto-copy of unrelated plugins, and propagate option renames through targets and examples together. **Confidence:** very high; two merged maintainer-authored CMake changes.

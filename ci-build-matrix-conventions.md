@@ -13,3 +13,9 @@ Merged master MR !15730 fixes a Windows `ws80211_utils` build broken by the prec
 **Submission rule:** if a large mechanical refactor moves a widely used definition to a new header or otherwise changes transitive include dependencies, call that dependency-shape change out separately from the textual replacements. Build failures in optional/platform-specific consumers are not evidence that the mechanical source transformation itself was wrong, but they are part of the refactor's compatibility surface and should be anticipated.
 
 **Confidence:** Very high. Merged master repair approved and merged by John Thacker, with direct discussion of multiple real breakages and the limits of the normal CI matrix.
+
+## Treat conditional library builds and alternate parser entry paths as required compatibility tests
+
+**Merged master !9372** adds calculated HTTP/2 connection/stream flow-control windows but illustrates the limits of a successful default pipeline. **Alexis La Goutte** requested a build with `HAVE_NGHTTP2` disabled because the patch had conditional-compilation mistakes and relayed a Clang Analyzer null dereference. **John Thacker** later reported regression #18815: `dissect_http2_settings_ext` can receive a null `http2_session_t`, a path the new implementation did not handle. The author acknowledged the omission and filed follow-up !9534. Thus the merged feature is **not** evidence that its original initialization was correct.
+
+**Testing rule:** for changes to an optionally compiled protocol component, compile with the dependency both present and absent. Trace alternate dissector entry points, malformed/partial captures, and null context arguments; add a regression case for the failing path even when the primary flow works. **Confidence:** very high for the explicit Alexis/John feedback and observed post-merge regression.

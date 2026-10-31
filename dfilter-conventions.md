@@ -137,3 +137,9 @@ Merged master MR !12960 adds `$name(arg1, ...)` as an alternate spelling for the
 **Review rule:** evaluate new language syntax not only for parseability but also for the semantic expectations its shape creates. Test precedence-sensitive examples, especially negation and boolean operators, before deciding whether an apparently ergonomic syntax is truly an alias or a new language construct.
 
 **Confidence:** High. Merged master language feature by João Valverde with explicit maintainer discussion of textual-expansion semantics, precedence surprises, and backward compatibility.
+
+## Expose compiler operand types in opt-in diagnostic dumps
+
+**Merged master !9378** adds `dftest --types` and `DF_DUMP_SHOW_FTYPE` so display-filter bytecode dumps can show actual field and literal types at read/compare operations. The change uses a flags argument through `dfilter_dump`/`dfvm_dump` instead of permanently changing every dump, allowing normal output without type annotations.
+
+**Tooling rule:** when adding a semantic diagnostics view to a parser/compiler, make it opt-in and propagate a named dump flag through the underlying API; print the authoritative typed representation rather than trying to reconstruct types from textual syntax. Preserve the baseline diagnostic output for tools/tests that compare it. **Confidence:** high, merged master implementation by João Valverde.

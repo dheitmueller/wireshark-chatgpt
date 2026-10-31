@@ -21,3 +21,9 @@ Merged MR !21065, authored by John Thacker and merged by Michael Mann, removes t
 **Implementation rule:** before adding a boolean or enum preference to force a particular subdissector, check whether the relevant dissector table already provides Decode As for that selection. Prefer the generic mechanism unless the preference represents genuinely different protocol semantics rather than another spelling of the same dispatch choice.
 
 **Confidence:** Very high. Merged master simplification authored by John Thacker and accepted by Michael Mann.
+
+## Resolve protocol namespaces sharing a transport at the actual service discriminator
+
+**Merged master !9409** allows UDS and OBD-II requests on the same ISO-15765/DoIP connection without repeatedly changing Decode As. The UDS dissector recognizes service identifiers below its UDS minimum (`0x10`), and, under a separately named user preference, invokes a registered OBD-II handler on the appropriate payload subset. Merged !9408 also fixes a legal zero-parameter OBD-II service-0x04 request/response.
+
+**Dispatch rule:** where two protocols legitimately coexist over one transport/session, distinguish them using the protocol-defined service discriminator and an explicit handler, rather than forcing the user to replace the entire transport's dissector selection. Keep a preference when it changes the interpretation of *overlapping protocol semantics*, rather than merely duplicating an existing table's Decode As choice. Test zero-parameter legal messages as well as ordinary nonempty payloads. **Confidence:** high, merged master implementation; no substantive maintainer discussion captured.

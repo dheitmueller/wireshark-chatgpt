@@ -9,3 +9,9 @@ Merged master !9613 is authored by Guy Harris and revises Wireshark, TShark, Dum
 ## Documentation paths and build-system case must stay synchronized
 
 Merged master !9633 renames guide source files consistently; its preparatory work was backported in !9645/!9646, and the matching `CMakeLists.txt` case correction was merged in !9648 with backports !9649/!9650. **Rule:** when renaming documentation sources, update cross-references, source includes, generated paths and CMake source lists together; verify the change on case-sensitive and case-insensitive filesystems and across maintained branches. Backports are corroboration of one master change, not separate independent conventions. **Confidence:** high.
+
+## Align user-visible crypto algorithms with mandatory platform policy, and update documentation
+
+**Merged master !9364** fixes capinfos aborting under FIPS 140-2 environments: libgcrypt rejects the RIPEMD-160 digest. **Guy Harris** raised the option of disabling FIPS mode; **Gerald Combs** suggested removing RIPEMD-160 altogether because its ecosystem use had declined. The author noted some environments require FIPS mode and cannot disable it. The accepted change removes the digest from the implementation, command-line help, and `doc/capinfos.adoc`; Gerald explicitly requested the documentation update.
+
+**Compatibility rule:** avoid making a common inspection path fail because an optional legacy algorithm is forbidden by deployed security policy. Prefer a supported operation over assuming the user can override mandatory system policy. When the set of displayed algorithms/output columns changes, update command help, man pages, and any consumers/tests expecting the output schema. **Confidence:** very high; merged change with Guy Harris and Gerald Combs review.

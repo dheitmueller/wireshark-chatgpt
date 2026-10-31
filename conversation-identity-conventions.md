@@ -59,3 +59,9 @@ Merged master MR !11493, authored and merged by John Thacker, fixes RTP extended
 **Review rule:** when code keeps a “last”, “highest”, cycle count, rolling timestamp, or similar history at conversation scope, ask whether every packet in that conversation is normatively part of the same number space. Multi-stream captures and reuse of a familiar 5-tuple are useful tests for state-key collisions.
 
 **Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker, with the protocol namespace requirement stated directly from RTP/RFC semantics.
+
+## Configure conversation endpoints without cloning packet_info
+
+A dissector may need synthetic endpoints or port discriminators for a logical conversation (including TLS carried inside EAP), but copying a whole `packet_info` and modifying that copy can desynchronize other packet metadata and later consumers. **Merged release-4.0 !9373**, authored by **Guy Harris**, replaces EAP's temporary `packet_info` clone and private address/port mutations with `conversation_set_conv_addr_port_endpoints()` on the actual `pinfo`. The same packet continues through TLS/application subdissectors while the conversation endpoint layer carries the EAP identity and nested protocol-layer discriminator.
+
+**Architecture rule:** use the explicit conversation-endpoint API for alternate logical identity; do not manufacture a shallow packet-info copy just to affect conversation lookup. Check when the endpoint override is visible to subsequent dissectors and final packet metadata, especially alongside the !9914 final-context contract. **Confidence:** extremely high for Guy Harris's merged correction; !9373 is a stable backport of an earlier master fix.

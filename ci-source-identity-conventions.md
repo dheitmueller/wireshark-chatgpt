@@ -11,3 +11,9 @@ Merged MR !24783, authored and merged by John Thacker, fixes Wireshark's CI test
 **Implementation rule:** decide whether a CI operation needs the integration-test commit or the contributor/source commit. In GitLab MR pipelines, use the MR source SHA for source identity; use the synthetic merge-result SHA only when intentionally testing or referring to the merged result. Provide an explicit fallback for non-MR pipelines where MR variables are unset.
 
 **Confidence:** Extremely high. Merged master CI correction authored and merged by John Thacker, with the identity distinction stated directly in the change rationale.
+
+## Anchor CI pre-commit comparisons to the commit being tested
+
+**Merged master !9377**, authored by **Gerald Combs**, changes Wireshark's pre-commit CI invocation from `HEAD~$NUM_COMMITS` to `${CI_COMMIT_SHA}~$NUM_COMMITS` and prints `git status` to help diagnose the job checkout. This avoids relying on a mutable or unexpected local `HEAD` when the intended base is the GitLab pipeline's checked revision.
+
+**CI rule:** select and name the intended reference explicitly for history-range validation; `HEAD`, `CI_COMMIT_SHA`, and `CI_MERGE_REQUEST_SOURCE_BRANCH_SHA` are not interchangeable. This case tests the pipeline checkout; the later !24783 rule still governs tasks that specifically need the contributor's *source-branch* identity rather than a synthetic merge-result SHA. **Confidence:** high, accepted Gerald Combs CI correction.

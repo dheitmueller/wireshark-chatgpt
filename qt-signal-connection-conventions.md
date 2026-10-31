@@ -33,3 +33,9 @@ A default direct Qt action connection can enter an unsafe synchronous call chain
 **Implementation rule:** when a synchronous Qt signal path triggers a reproducible crash or reentrancy problem, a deliberate queued connection can be a compatibility workaround if receiver lifetime and event-loop behavior are understood. Describe which dependency versions need the workaround and test the corresponding Wireshark and Logray paths before merging. Do not assume the workaround replaces the upstream framework fix.
 
 **Confidence:** Very high. Merged crash fix with direct Gerald Combs and John Thacker review, supported by the author's Qt-version rationale. Merged !9912 separately reinforces cross-frontend parity for selected-field menu state.
+
+## Finish persistence before emitting a dialog's accepted outcome
+
+**Merged master !9394**, authored by **John Thacker**, fixes ColoringRulesDialog: Qt Designer had a button-box `accepted()` → `accept()` connection while an auto-connected `on_buttonBox_accepted()` slot was also writing the rule file. The dialog could close and trigger packet-list recoloring before its new colors were saved. The fix removes the UI-file connection and lets the persistence slot call `done(QDialog::Accepted)` only on success, or `done(QDialog::Rejected)` after reporting failure. Accepted backports !9395 and !9396 corroborate the behavior.
+
+**UI rule:** for dialogs whose acceptance triggers consumers of edited state, establish a single controlled accept path; perform validation/persistence first, then publish the accepted result. Audit both `.ui` signal connections and Qt auto-connected slot naming when diagnosing duplicate/out-of-order handlers. **Confidence:** very high, merged John Thacker fix and two release branches.

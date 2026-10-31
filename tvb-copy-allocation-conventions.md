@@ -13,3 +13,9 @@ This ordering matters especially when the requested size comes from packet data 
 **Implementation rule:** for a newly owned copy of a contiguous TVB range, use `tvb_memdup()` when its ownership/lifetime contract fits. Avoid `wmem_alloc(size)` + `tvb_memcpy(..., size)` when `size` is packet-derived merely to obtain a copy; validate the range before committing an allocation.
 
 **Confidence:** Very high. Merged master implementation plus an explicit John Thacker-authored API-documentation change and two stable-branch backports.
+
+## Copy from an existing TVB into existing storage with tvb_memcpy
+
+**Merged master !9376**, authored by **Gerald Combs**, replaces `memcpy(dst, tvb_get_ptr(tvb, offset, length), length)` with `tvb_memcpy(tvb, dst, offset, length)` in E2AP and LoRaWAN. Gerald stressed that the old form was technically valid, but preferred minimizing direct `tvb_get_ptr` use. Martin Mathieson and Ales Povalac checked the changed dissectors; Ales identified one more LoRaWAN call site. The E2AP change updates both the ASN.1 `.cnf` source and the generated dissector. Merged !9374 independently makes the same change for ATSC ALP MPEG-TS reconstruction.
+
+**Implementation rule:** if the destination storage already exists, prefer the TVB's checked copy API over exposing the backing pointer to a separate libc copy. If the destination must be newly allocated, the earlier `tvb_memdup()` rule applies instead. Keep generated parser templates and their output synchronized. **Confidence:** extremely high, merged maintainer-authored implementation with explicit review and an independent corroborating fix.
