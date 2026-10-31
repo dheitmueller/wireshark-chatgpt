@@ -45,3 +45,15 @@ Merged master MR !12274 changes the shared ring-buffer parser so an unrecognized
 **Testing rule:** include at least one unknown sub-option/name in CLI tests, in addition to valid names and malformed values, so future additions do not accidentally turn the parser into an accept-and-ignore path.
 
 **Confidence:** High. Merged master behavior change, approved and merged by Anders Broman.
+
+## Preserve per-selector semantics when repeatable CLI filters are combined
+
+A command line can accept multiple instances of options that select the same family of output fields but carry **different behavior flags**. Storing one global flag for all selected keys silently loses their distinct semantics, particularly when the options can be mixed in one invocation.
+
+Merged John Thacker MR !9801 changes TShark `-j` and `-J` filtering from a global `pf_flags` plus a string array to a `wmem_map_t` of protocol abbreviations to **per-key** flags. `epan/print.c` consults that map for PDML, JSON, and Elasticsearch-style output. When a matched selector requests descendants, the printer temporarily relaxes the filter during subtree traversal and **restores** it afterward. A null map means no filtering. The change updates the interfaces used by TShark and related frontends, rather than merely accepting repeated command-line spellings.
+
+**Review/testing rule:** test repeated `-j`, repeated `-J`, mixed option orders, different keys with different include-children policy, unmatched keys, and subsequent sibling nodes to catch leaked traversal state. Keep the option parser, shared output API, and recursive serializers consistent.
+
+Separate open MR !9799 proposes `-X` extension-option validation. Gilbert Ramirez correctly identified duplicated file-type listing logic across Wireshark and TShark and recommended factoring common code into `wsutil`; that architectural feedback is useful, but the **open proposal must not be treated as an accepted CLI behavior change**.
+
+**Confidence:** Very high for merged !9801 authored/merged by John Thacker; provisional for the implementation of open !9799, with maintainer design feedback recorded independently.

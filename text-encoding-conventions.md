@@ -12,3 +12,13 @@ Merged master MR !10427, authored and merged by John Thacker, adds EBCDIC code p
 **Architecture rule:** protocol dissectors should identify the on-wire encoding; common character-set conversion belongs in the shared text-decoding layer when the encoding has general meaning. This avoids parallel conversion code and lets other dissectors, Lua/introspection users, and generic string APIs share the same mapping.
 
 **Confidence:** Very high. Merged master implementation authored and merged by John Thacker.
+
+## Truncate rendered text on UTF-8 boundaries and preserve the full underlying value
+
+A byte-counted string formatting precision can cut through a UTF-8 multibyte sequence and produce invalid output. Character counts and rendered display-cell widths are not interchangeable either. Display abbreviation must not accidentally shorten metadata that should be retained for later protocol processing.
+
+Merged John Thacker MR !9772 changes DICOM tag-value display from `%-50.50s...` to `ws_utf8_truncate(vals, 50)` plus `UTF8_HORIZONTAL_ELLIPSIS`, preventing a split character. It copies a protocol error-comment value into file-scoped storage **before** deriving the shortened presentation form, so later data consumers retain the original information. The MR explicitly notes that 50 bytes, 50 code points, and a display width of 50 are not synonymous.
+
+**Review rule:** identify whether a truncation limit means bytes, Unicode code points, grapheme clusters, or visual width; use an appropriate helper and test multibyte characters exactly at the boundary. Keep the complete protocol value in its correct allocator scope and generate an abbreviated view for the UI independently.
+
+**Confidence:** Very high. Merged mainline correctness fix authored and merged by John Thacker with explicit UTF-8 semantics.

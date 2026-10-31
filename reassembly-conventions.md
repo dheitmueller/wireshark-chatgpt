@@ -117,3 +117,13 @@ Merged release-3.6 MR !9904 (Sake Blok; merged by John Thacker) moves dependency
 **Implementation rule:** record dependencies on the persistent owning frame; compute their transitive closure when deciding which packets to retain; make traversal duplicate-safe; prefer a set/hash table over an O(n) search through an unordered list for repeated membership checks; reset/destroy the graph with the frame. Exercise nested reassembly and long captures, not just one-level dependencies.
 
 **Confidence:** Very high for the accepted design. Multiple merged fixes, including John Thacker-authored follow-ups; verify the current API before copying these historical signatures.
+
+## Protocol terminal errors can complete a transfer without a zero-length packet
+
+Reassembly completion is a protocol state transition, not always a normal-length or zero-length data fragment. For USB link-layer transfers, a STALL can terminate a transfer in place of a zero-length packet. The STALL handshake's direction is not necessarily the direction of the data that should be exposed as a completed logical transfer.
+
+Merged master MR !9795 (Tomasz Moń) teaches the USBLL dissector to finish transfers on STALL. For IN transfers the completion resembles an ordinary short/zero-length termination; for OUT transfers the reassembled URB has the opposite direction to the STALL handshake, and the final OUT data packet contributes only if it was acknowledged (including NYET). The accepted patch tracks `last_data_acked`, classifies explicit ACK/STALL protocol states, and constructs the logical URB from the transfer state rather than merely from the current packet direction.
+
+**Implementation rule:** model error/abort/terminal handshakes explicitly in the reassembly state machine, including acknowledgment and direction. Do not append unacknowledged bytes or synthesize a completed PDU in the wrong direction. Verify normal termination, early STALL, split transfers, acknowledged vs unacknowledged final data, and redissection behavior.
+
+**Confidence:** High. Merged protocol-specific correctness fix; the general terminal-event/acknowledgment invariant is portable, while exact USB state names are not.

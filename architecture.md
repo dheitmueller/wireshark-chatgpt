@@ -116,3 +116,19 @@ Merged master MR !10441, authored by Fabian Bäumer and merged after detailed Jo
 **Lifecycle rule:** choose init/cleanup/shutdown based on the cache's real invalidation boundary. Process-lifetime caches should use process-lifetime storage and shutdown teardown; capture-lifetime objects must not be retained in them.
 
 **Confidence:** Very high. Merged correctness fix with detailed lifetime and invalidation review from John Thacker.
+
+## Shared command-line infrastructure belongs below GUI-specific dependencies
+
+A capture helper or standalone CLI executable should not need to link against UI infrastructure merely to report command-line usage errors. Common diagnostic interfaces should live in a utility layer usable by both UI and non-UI tools.
+
+Merged master MR !9780 (João Valverde) moves `cmdarg_err` implementation and headers out of `ui/` into `wsutil/`, updates users across extcap, fuzzing, CLI programs and GUI code, and removes `dumpcap`'s dependency on the UI library. This is a dependency-direction correction, not just a source-file move.
+
+**Architecture rule:** when a low-level executable unexpectedly depends on a high-level library for a small common service, relocate the service to a genuinely shared foundational target, adjust includes and linkage in all consumers, and verify feature-disabled and platform builds. Avoid creating a utility-layer dependency back into UI code.
+
+## Name intermediate values for protocol meaning, not their downstream consumer
+
+Merged master MR !9771, authored and merged by **Guy Harris**, renames raw TLS supported-group values previously called `ja3_value` to `ext_supported_group` (and makes similar protocol-semantic cleanups). A supported-group value remains a supported-group value even when its serialization also feeds a JA3 fingerprint; the old name obscured what the field represents.
+
+**Review rule:** use names based on the on-wire protocol concept and unit, especially at decode boundaries. Downstream hashing, display, or analytics can have their own result variables, but should not rename the underlying wire value as though it were created solely for that consumer.
+
+**Confidence:** Extremely high. Direct Guy Harris-authored and merged correction articulating the semantic naming rationale.

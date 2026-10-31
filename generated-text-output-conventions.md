@@ -25,3 +25,13 @@ Merged master MR !13111, authored by John Thacker, fixes TShark delimiter-separa
 **API rule:** when multiple producers need the same textual grammar, prefer one shared escaping primitive and make its parameter contract explicit. Update documentation, exported-symbol metadata, and representative tests together when that primitive becomes externally visible.
 
 **Confidence:** Very high. Merged master correctness change authored by John Thacker; the diff directly aligns implementation, public helper API, documentation, and tests around the same serialization rules.
+
+## Respect XML 1.0's character domain and reserve space for the longest escape
+
+Escaping a byte to a numeric XML character reference is **not** a general way to include characters forbidden by XML 1.0. ASCII control characters other than tab, LF, and CR cannot occur even as character references. Generic whitespace predicates do not match this set because vertical tab and form feed are prohibited. Preserve valid UTF-8 bytes with the high bit set rather than treating them as illegal ASCII controls.
+
+Merged Gerald Combs MR !9770 updates `epan/strutil.c:xml_escape()` and the streaming `epan/print.c:print_escaped_xml()` path to emit readable textual `\\xHH` sequences for prohibited controls while retaining valid whitespace and high-bit bytes. The MR backports !8184 and !8302. Paired merged MR !9769 fixes a Coverity-detected overflow: the streaming formatter used a 256-byte staging buffer but checked fullness *after* appending a multi-byte escape. It reserves room for the longest expansion (six-byte `&quot;` plus NUL), adjusts the flush threshold accordingly, and keeps all writes within capacity.
+
+**Serialization rule:** separate character validity in the target grammar from how a display string should represent an unrepresentable byte. Before expanding one input unit, guarantee room for its maximum encoded representation and any terminator; test inputs ending at each capacity boundary with all escape forms. For APIs that produce fixed-width external strings, preserve required leading zeroes as well (merged sharkd MR !9764 uses `%06x` for CSS-compatible RGB values).
+
+**Confidence:** Very high. Merged fixes by Gerald Combs with concrete XML-format and static-analysis evidence; the textual backslash escape is a display convention, not a reversible XML encoding of the original control character.

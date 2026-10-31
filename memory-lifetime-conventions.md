@@ -168,3 +168,12 @@ Merged master MR !10723, authored and merged by John Thacker, fixes reassembly-t
 
 **Confidence:** Very high. Merged reassembly lifetime fix authored and merged by John Thacker for a concrete use-after-free hazard.
 
+## Conversation-retained protocol strings must be allocated in a capture-compatible scope
+
+Strings copied out of tvbuff data with `pinfo->pool` are temporary packet-scope objects. A dissector that stores their pointers in conversation state or another capture-lifetime structure creates a use-after-free risk after the current packet has finished.
+
+Merged MR !9776 (David Fort) changes the RDP client-network channel-name extraction from `tvb_get_string_enc(pinfo->pool, ...)` to `tvb_get_string_enc(wmem_file_scope(), ...)`, because the channel name is retained in `rdp_conv_info_t` and later used to identify/reassemble traffic. The same accepted MR repairs dynamic-channel reassembly/decompression logic; the scope change is a concrete example of the storage-lifetime invariant across stateful channel dispatch.
+
+**Review rule:** audit every assignment from packet-derived strings into persistent conversation/flow/channel objects. Use an owning allocation whose lifetime covers all downstream lookups and redissection; verify capture close/reopen eventually releases it. Do not extend every intermediate string unnecessarily—copy or allocate at the point where it becomes persistent.
+
+**Confidence:** High. Merged stateful-dissector correction; this example reinforces the broader allocator-scope rules already in this notebook.

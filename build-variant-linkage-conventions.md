@@ -33,3 +33,13 @@ This complements the target-oriented guidance in `build-conventions.md`: where p
 **Review rule:** when adding a new call inside a utility archive, consider which executables might begin pulling that object into a static link and whether the new symbol introduces a library dependency they do not currently list.
 
 **Confidence:** Extremely high. The rule is directly explained and implemented in a merged master portability fix authored and merged by Guy Harris.
+
+## Privileged executables require a loader-safe relocation strategy, not just relative RPATH
+
+A relative ELF RPATH/RUNPATH can make ordinary applications relocatable, but a privileged executable can run under dynamic-loader security restrictions that ignore nonstandard or relative library search paths. Merely setting install-time RPATH to `$ORIGIN` is not sufficient for a setuid/capability-bearing helper such as `dumpcap`.
+
+Merged master MR !9793 (João Valverde) resolves this by building a static `wsutil_static` variant and linking `dumpcap` against it while letting other installed Wireshark components use relative paths as appropriate. It updates `include/ws_symbol_export.h` for `ENABLE_STATIC` and records relocatable installation support in release notes. The immediately preceding take-2 implementation was **reverted** in merged !9792 because it broke the MSYS2 build; that failed variant is not an exemplar. Later compiler/platform cleanups !9794 and !9791 separately show the need to distinguish the MSYS2 target environment (including `MSYSTEM_CARCH`) and gate x86-only SSE4.2 flag probing on actual target architecture.
+
+**Design/review rule:** first identify the security context and dynamic-loader behavior of each executable; choose static/shared linkage per executable rather than imposing one global RPATH assumption. Ensure the statically linked variant propagates its full dependency closure, export/import annotations suit static builds, and both privileged Linux execution and Windows/MSYS2 cross-platform CI are exercised before claiming relocation support. Align packaging and release notes with user-visible changes.
+
+**Confidence:** Very high. Accepted third implementation by João Valverde, with an explicit preceding merged revert documenting a portability regression. Historical build flags may have evolved.

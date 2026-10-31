@@ -25,3 +25,13 @@ Merged John Thacker MR !10347 converts the current/next indicator across MPEG/DV
 **Review rule:** only apply this transformation to real masked binary flags, preserving their mask width, filter semantics, and label polarity. A whole-value integer with a zero mask is not automatically interchangeable with `FT_BOOLEAN` merely because its observed values happen to be 0 or 1.
 
 **Confidence:** High — merged broad cleanups by two experienced contributors, reinforced by a project checker and explicit scope caveat.
+
+## Every field in a bitmask-set array must use the same containing width
+
+A `proto_tree_add_bitmask` or `proto_tree_add_bitmask_list` group represents fields from one underlying container. Registering a mixture of `FT_BOOLEAN` containing widths (or otherwise mismatched `hf` widths) in the same bitmask array is inconsistent even if each individual mask looks plausible.
+
+Merged master MR !9789 (Martin Mathieson) extends `tools/check_typed_item_calls.py` to discover field arrays, obtain each member's registered width, and warn when those widths disagree. The same MR corrects many dissectors' 8/16-bit boolean registrations, including cases where the mask remains `0x0001` but the containing width changes to 16. The checker also normalizes boolean widths for comparisons.
+
+**Implementation/review rule:** derive every bitmask member's containing width from the actual on-wire parent field, check the width of the **whole array**, and run the typed-item checker after changing related registrations. Do not treat mask magnitude or `FT_BOOLEAN` alone as proof of a matching container width; validate both the parent and each member with asymmetric bit patterns.
+
+**Confidence:** Very high. Merged mainline cross-dissector cleanup plus mechanical checker enhancement by Martin Mathieson.

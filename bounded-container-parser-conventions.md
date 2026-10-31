@@ -39,3 +39,13 @@ Diagnostics that report one-time state discovery or unsupported setup conditions
 Merged !20117, authored and merged by John Thacker, limits the unsupported SSH KEX-type warning to the first pass among several SSH cleanups.
 
 **Confidence:** High. Merged master cleanup by John Thacker; this also corroborates existing notebook guidance about redissection-aware state and presentation.
+
+## Consume fixed headers from the declared remaining length before iterating records
+
+When a protocol structure begins with a fixed header followed by a list, decrement the list's remaining-byte budget when consuming the fixed header. Advancing the tvbuff offset alone does not update the logical length bound; a loop can then parse beyond the declared container even when every individual item read is otherwise bounded.
+
+In merged MR !9798, John Thacker reviewed two RDMnet response decoders and specified the precise corrections: subtract **four** bytes after the Endpoint List change number and **six** bytes after the Endpoint Responders ID plus change number, *before* their respective `while` loops. The accepted diff implements those exact decrements. The contributor supplied a capture and identified packets 584 and 593; John also explained the default-disabled RDMnet-over-TCP heuristic needed to reproduce the issue. Alexis La Goutte requested rebasing after unrelated master changes appeared.
+
+**Review rule:** trace both the absolute cursor and the local declared-length budget through every fixed field and variable list. Test minimum-sized structures, empty lists, a final truncated member, and examples decoded with the appropriate heuristic preference enabled. Do not use a correct cursor as evidence that the loop's remaining-length invariant is correct.
+
+**Confidence:** Extremely high. Direct maintainer diagnosis from John Thacker, with exact changes incorporated into a merged result and a concrete sample-capture reproduction.

@@ -66,3 +66,13 @@ Merged release-4.0 MR !9818 carries John Thacker's master TCP fix: `MSP_FLAGS_RE
 **Testing rule:** incomplete PDU, duplicate/overlapping segment with no progress, then the missing bytes; assert the pending request persists until completion.
 
 **Confidence:** High: merged maintainer-authored stable backport of the accepted master correction.
+
+## Distinguish sender-side TCP retransmissions from bytes already delivered to the dissector
+
+A transport analyzer's retransmission flag expresses what the sender or ACK history suggests, not necessarily whether Wireshark has already given those sequence bytes to an application dissector. A capture can begin midstream, arrive out of order, or contain a retransmission that overlaps previously processed data **and appends a new suffix**. Treating every sender-level retransmission as ignorable can drop the suffix and stall application PDU reassembly.
+
+Merged John Thacker MR !9809 (release-branch backport of master commit `f3df91b90d2cd1f71b266b4be53f754df9828a5c`) introduces an explicit `TCP_A_OLD_DATA` distinction for `reassemble_ooo`. It uses the latest contiguous sequence frontier and existing multisegment-PDU state to decide which bytes the reassembler has actually seen, instead of relying only on `TCP_A_RETRANSMISSION`. The patch updates `test/suite_dissection.py`. It explicitly acknowledges the cost: out-of-order reassembly consumes extra memory and CPU and cannot make progress across a gap that never gets filled.
+
+**Review rule:** test exact duplicate segments, overlapping retransmissions with new trailing bytes, first-seen packets that the sender might call retransmissions, and missing/out-of-order segments. Compare with out-of-order reassembly both enabled and disabled; the disabled path retains its separate fallback semantics. Only advance the contiguous delivered frontier for bytes that really became available. This complements the !9818/!9812 rule above about not clearing `REASSEMBLE_ENTIRE_SEGMENT` until a new segment advances the PDU.
+
+**Confidence:** Very high. Accepted implementation authored and merged by John Thacker, with concrete test changes; current upstream APIs may differ from these historical release-branch names.

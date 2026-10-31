@@ -15,3 +15,13 @@ Merged MR !11574 fixes the Wi-SUN FAN Join Metrics IE after exactly this mistake
 **Testing rule:** include values that distinguish the competing interpretations. A test vector with only zeroes, all ones, or symmetric bit patterns can pass under both mask orientations and therefore does not validate the mapping.
 
 **Confidence:** Very high. This is a merged master correctness fix with explicit specification text explaining the failure and maintainer approval.
+
+## RFC bit diagrams index from the most significant side of each octet
+
+A standards diagram labeled 0–7 does not mean bit 0 is the C integer's least-significant bit. In RFC-style diagrams, bit position 0 is typically the high-order (MSB) bit of the first octet. Mistaking diagram positions for low-order shift counts reverses every packed field.
+
+Merged MR !9765 (Mathis Marion, merged by Alexis La Goutte) corrects RPL Path Control's four two-bit fields to `PC1=0xC0`, `PC2=0x30`, `PC3=0x0C`, and `PC4=0x03`, and fixes previously introduced ND-EARO masks in the same submission. The author explicitly acknowledged that interpreting the RFC 6550 diagram's bit labels as low-endian C positions had inverted the masks, referring to the IPv4/RFC 791 bit-diagram convention.
+
+**Review rule:** state the numbering convention used by the *specific* standard before translating its diagram into `hf` masks; RFC-oriented and LSB-first vendor formats can demand opposite mappings. Check a vector in which only the first (high-order) field is set and another in which only the last field is set. A correction to one field may warrant auditing related prior commits for the same mistaken assumption.
+
+**Confidence:** High. Author diagnosed the protocol-specification error and committed the corrected masks in a merged MR; distinct from the Wi-SUN LSB-first counterexample described above.
