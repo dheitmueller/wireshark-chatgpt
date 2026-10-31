@@ -135,3 +135,19 @@ Merged master !9692 adds CoAP options, but **after merge** Stig Bjørlykke found
 **Review rule:** merge status is evidence of acceptance, not proof that no defects remained. Inspect substantive post-merge discussion and corrective successors, verify any spec/registry assertion against the actual registry, and ensure every newly declared field is included in all shared registration/initialization lists. Prefer fixing an accepted narrow regression before extending the feature.
 
 **Sample-capture rule:** Stig requested a representative capture; Alexis La Goutte clarified that a capture uploaded directly to the MR is sufficient for review and need not be committed to `test/captures` unless it serves an actual regression test. **Confidence:** very high; direct reviewer discussion and merged corrective successor.
+
+## A fork's default branch is not a suitable merge-request topic branch
+
+Closed !9658 accumulated substantial Windows Delivery Optimization dissector review, including expert diagnostics, naming, release-note updates, and representative captures. Alexis La Goutte eventually required the contributor to stop submitting from fork `master` and create a dedicated source branch; the author opened successor !10124, and the original was closed. Its detailed code review remains useful **reviewer feedback**, but the original MR is not an accepted implementation.
+
+**Submission rule:** start new work on a named topic branch in the fork, rebase against upstream when needed, and keep an MR's diff confined to intended commits. Do not spend repeated review cycles on a default-branch source whose unrelated history interferes with rebasing/squashing. **Confidence:** very high for Alexis's explicit branch instruction; the closed MR is negative workflow evidence.
+
+## Captures for encrypted or uncommon protocols need reproduction instructions
+
+For merged ICMPv6 EARO !9615, Alexis La Goutte requested a capture; the contributor supplied an 802.15.4 encrypted pcap **and the relevant dissector decryption-preference settings**, making the new fields reproducible. For merged Couchbase flag update !9614, Alexis asked for a pcap exercising the new bits and explicitly allowed uploading it to the MR. A small targeted sample is preferable to an unexplained bulk capture.
+
+**Testing/submission rule:** attach representative traffic for newly decoded fields, tell reviewers exactly how to enable relevant protocol preferences, Decode As, keys, and expected field output, and separate test-fixture inclusion from merely uploading reviewer evidence. Do not include secrets from production captures; use disposable or sanitized keys and traffic. **Confidence:** high, repeated Alexis review on merged changes.
+
+## Verify UI and platform regressions after a merge
+
+Merged extcap fix !9625 received Tomasz Moń's specific report that its deleted Boolean-label override changed USBPcap options-dialog appearance; the author acknowledged the mistake. Merged macOS-CI addition !9662 was followed by a missing `speexdsp` build dependency report and !9679 repair. **Review rule:** retain actionable post-merge feedback and follow-up MRs, distinguishing acceptance of the main feature from claims that every UI/platform behavior was already validated. **Confidence:** high.
