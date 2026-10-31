@@ -33,3 +33,9 @@ Merged MR !22950, authored by Jaap Keuter and merged by Michael Mann, explicitly
 The same review also illustrates scope discipline: Anders Broman suggested folding in a related unsigned-offset idiom, and Jaap deferred that to a separate broad change so the mechanical API migration would remain visible rather than being hidden inside the semantic range fix.
 
 **Confidence:** Very high. Merged master behavioral cleanup with the analysis-engine dependency stated directly by the author and accepted by Michael Mann.
+
+## Round a bit-aligned decoded item's ending offset upward to complete bytes
+
+Merged **!8723** and branch backport **!8722** correct the source-length passed to proto_tree_add_string() for ASN.1 PER restricted character strings. The old expression (offset >> 3) - (old_offset >> 3) + 1 adds a full byte even when the final bit offset is already byte-aligned. The accepted expression ((offset + 7) >> 3) - (old_offset >> 3) measures from the starting byte to the ceiling of the exclusive ending bit offset.
+
+**Rule:** for a field parsed at bit granularity, specify whether the ending bit index is exclusive and compute the byte range with ceiling division rather than an unconditional extra byte. Verify exact-alignment, one-bit, zero-length and cross-byte cases against the protocol tree's highlight span. The backport is duplicate evidence, not a second independent design. **Confidence:** high, merged targeted fix.

@@ -13,3 +13,9 @@ Merged master MR !15485, authored and merged by John Thacker, fixes LAPD after b
 **Review rule:** when changing address handling, test consumers beyond the packet-list columns, especially Flow Graph/sequence analysis and taps. Verify both resolved and unresolved display modes and ensure source/destination direction is represented correctly in the underlying `packet_info`, not only visually in one UI path.
 
 **Confidence:** Very high. Merged master correctness change authored and merged by John Thacker, followed by a merged stable-branch backport of the same semantic fix.
+
+## Do not feed uninitialized address structures into conversation and endpoint taps
+
+Merged **!8752** fixes 802.11 conversation/endpoint statistics displaying random MAC addresses that did not exist in the capture. The code initializes the wlan_hdr_t header array before use, checks whdr->src.type/whdr->dst.type against AT_NONE, and only calls add_conversation_table_data() when **both** addresses exist. Endpoint accumulation is guarded per-address; TAP_PACKET_REDRAW is returned only when actual data was added.
+
+**Rule:** treat address validity as an explicit precondition for statistics/tap aggregation, not as an assumption derived from a partially decoded packet. Initialize records before any read, handle source and destination independently where the consumer permits, and do not advertise an update to the UI when no data was accepted. This prevents bogus address-table identities and unnecessary redraws. **Confidence:** high, merged fix with reviewer attention from Chuck Craft and Richard Sharpe.

@@ -41,3 +41,9 @@ Merged master MR !11857, authored and merged by Gerald Combs, moves Manage Inter
 Merged master !9488 (John Thacker) explicitly adds `CredentialsModel::~CredentialsModel()` calling `clear()`, fixing a leak of model-managed credential records. QObject parent-child destruction does not automatically release separately allocated C/C++ data objects kept in member containers.
 
 **Lifetime rule:** a model's ownership contract includes the objects it stores, not only its QObject children. Put cleanup in a destructor or another unique teardown boundary, and ensure its usual `clear()` path is safe at destruction. **Confidence:** high, accepted targeted memory-leak fix.
+
+## A QObject ownership fix must be validated against reported close paths
+
+Merged master **!8734** and branch backport **!8735** change the status-bar profile dialog from a stack object to a new ProfileDialog(this) with Qt::WA_DeleteOnClose, intending to repair Qt 6 dangling-object crashes. **Jim Young's post-merge macOS reproductions in !8734 report that crashes remained**, including after cancelling/closing the export dialog and through “Selected Personal Profiles” actions. The change is evidence for an attempted ownership correction, **not proof that the crash was solved**.
+
+**Rule:** decide dialog parent, modal/modeless execution and close/delete ownership together; WA_DeleteOnClose is not a substitute for auditing callbacks, stale action pointers, nested dialogs or all exit paths. Keep post-merge reproducer feedback attached to the design conclusion, and test the original repeated-open/close workflow with the reported Qt/macOS configurations before declaring a lifetime issue fixed. **Confidence:** high for observed post-merge failure; resolution not established by this batch.
