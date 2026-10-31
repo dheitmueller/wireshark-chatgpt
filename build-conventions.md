@@ -159,3 +159,17 @@ Merged master !9697 raises the minimum Qt 5 version from 5.10 to 5.11 and remove
 Merged !9707 removes `wspcap.h` and updates its callers to include `<pcap.h>`, with required platform definitions centralized in `cmakeconfig.h.in`; merged !9706 similarly removes the requirement to include `wsgcrypt.h` rather than `<gcrypt.h>` when its previous warning suppression no longer applies. Merged !9709 uses a CMake-generated `HAVE_MSYSTEM` capability rather than assuming compiler family identifies installation layout; closed !9708's runtime MSYS2 detection was abandoned as unnecessary with CPack.
 
 **Build rule:** keep platform feature detection in CMake and generated configuration, eliminate obsolete wrapper restrictions from API checkers/docs as part of the same migration, and do not infer runtime behavior solely from a compiler macro. **Confidence:** high for the merged changes; low for abandoned runtime alternative.
+
+## Prune link dependencies without silently changing the public plugin interface
+
+Merged master !9653, authored by João Valverde, removes unused direct libraries and changes some CMake relationships to `PRIVATE` while isolating monitor-interface support. John Thacker flagged a compatibility consequence: generated out-of-tree plugins from !9617 could lose their implicit `wsutil` dependency. João ultimately **reverted the portion affecting plugin linkage**, explicitly keeping `wsutil` public through `epan`/wiretap because of their `wmem` interfaces, while retaining other link-what-you-use cleanup. John also requested release-note documentation if downstream plugin linking expectations were to change.
+
+**Rule:** prune genuinely unused *implementation* dependencies, but decide `PUBLIC` versus `PRIVATE` from the library's exported API and its consumers, not solely a single target's link diagnostic. Validate representative external-plugin CMake builds after changing transitive dependencies, update generated plugin templates and release notes if a public contract really changes, and distinguish a suggested stricter design from the actual merged resolution. **Confidence:** very high (merged master, João/John discussion and revised implementation).
+
+Merged !9617 extends `tools/generate-dissector.py` to create an epan plugin with its own `CMakeLists.txt`, registration, `CHECKAPI`, and install wiring. **Generator rule:** whenever changing a plugin build contract, also inspect the skeleton emitted by the generator so newly created out-of-tree projects still compile.
+
+## CI platform enablement must include its dependency installation contract
+
+Merged !9662 introduced a GitLab macOS merge-request build and refactored Homebrew setup into required/optional package groups. After merge, Chuck Craft's macOS build exposed missing required `speexdsp`; John Thacker confirmed it belonged in the required list, and Gerald Combs pointed to the !9679 follow-up.
+
+**Rule:** when adding a platform job, treat its dependency bootstrap as part of the feature. Cross-check mandatory CMake probes against the CI installation list and rerun the actual platform job; a successful merge does not prove a newly introduced CI lane has all prerequisites. Distinguish a discovered post-merge integration problem from the accepted original code. **Confidence:** high from merged CI change and named maintainer follow-up.
