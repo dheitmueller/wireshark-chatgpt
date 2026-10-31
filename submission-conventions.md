@@ -151,3 +151,9 @@ For merged ICMPv6 EARO !9615, Alexis La Goutte requested a capture; the contribu
 ## Verify UI and platform regressions after a merge
 
 Merged extcap fix !9625 received Tomasz Moń's specific report that its deleted Boolean-label override changed USBPcap options-dialog appearance; the author acknowledged the mistake. Merged macOS-CI addition !9662 was followed by a missing `speexdsp` build dependency report and !9679 repair. **Review rule:** retain actionable post-merge feedback and follow-up MRs, distinguishing acceptance of the main feature from claims that every UI/platform behavior was already validated. **Confidence:** high.
+
+## Submit translation updates through the project's localization service
+
+In closed/unmerged !9600, Alexis La Goutte directed a contributor fixing a German Qt .ts typo to Wireshark's Transifex workflow. The contributor registered and submitted the change there; the direct source-tree MR was closed. This corroborates the earlier localization process feedback around !26392 and is **not** an endorsement of merging one-off generated .ts edits.
+
+**Submission rule:** check the current upstream localization workflow before editing generated or synchronized translations; use the project's translation service as the authoritative source unless maintainers request a different route. **Confidence:** high for explicit Alexis guidance, lower for implementation because the MR was closed.

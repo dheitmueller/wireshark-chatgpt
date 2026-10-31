@@ -84,3 +84,15 @@ Merged master !9669 by John Thacker corrects a streaming output assumption in me
 Merged master !9685 by John Thacker strengthens merge output-format selection by testing whether each input's encapsulation is supported by the chosen output type. A convenient file-level guess is insufficient for mixed sources.
 
 **Rule:** validate encapsulation representability across all input streams and relevant per-record/interface variants rather than silently coercing one file's type to another. **Confidence:** high; merged master code.
+
+## Keep pcapng name-resolution metadata live through one-pass conversion
+
+Merged master !9608 by John Thacker extends Wiretap's growing metadata treatment to Name Resolution Blocks (NRBs). An output dumper can reference an input NRB array that continues to grow as records arrive, while separate `nrbs_seen` and `nrbs_growing_written` cursors prevent repeated consumption. Mergecap gathers trailing NRBs and DSBs after the last packet, and output must avoid writing duplicate name resolutions from both preserved NRBs and derived address-info lists. The accepted code explicitly notes that TShark's creation of *new* NRBs remains incomplete in one-pass and some two-pass workflows: preserving original blocks is not proof that generated resolver information is correctly published.
+
+**Rule:** make metadata growth, consumer cursors, EOF draining, and block ownership explicit. Preserve source metadata before adding derived metadata; deduplicate origins when a writer sees both. Test NRBs interleaved with packets, trailing NRB/DSB, multi-input merge, stripped-resolution output, and one- vs two-pass TShark. **Confidence:** very high for accepted preservation paths; known limitations recorded in John Thacker's discussion.
+
+## Process known pcapng internal blocks before the first packet without consuming opaque extensions
+
+Merged master !9573 by John Thacker corrects an opener assumption: SHBs, IDBs, NRBs, and DSBs can precede the first packet, so `pcapng_open()` must process supported internal blocks until a caller-visible record is reached. The accepted classifier deliberately does *not* preconsume custom block types registered by plugins, because their handler may want to expose the block as a record. John notes that the existing custom-block workaround remains necessary in some cases.
+
+**Rule:** distinguish internal metadata blocks from caller-visible records during initial format recognition. Do not hard-code plugin extension semantics that their registration interface cannot promise. Validate files beginning with NRB/DSB before IDB, metadata-only files, initial custom blocks, and multiple sections. **Confidence:** very high; accepted John Thacker change with explicit plugin uncertainty.

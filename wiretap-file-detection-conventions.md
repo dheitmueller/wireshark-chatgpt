@@ -51,3 +51,9 @@ Companion merged !10331 documents that MPEG's short magic numbers are weak enoug
 Merged master !9725 updates Wiretap `file_access.c` documentation: every added file type, even extensionless formats, must appear in `open_info_base[]`, not only the extensions list. Reader probes return `WTAP_OPEN_ERROR`, `WTAP_OPEN_MINE` or `WTAP_OPEN_NOT_MINE`; the cleanup contract for reader-private state differs between errors managed by `wtap_close` and NOT_MINE probes preceding another opener.
 
 **Rule:** Review both format-discovery registrations, named open outcomes and cleanup paths together. **Confidence:** High; merged documentation of concrete Wiretap contracts.
+
+## Normalize ASCII file extensions once before case-insensitive heuristic lookup
+
+Merged master !9594 and Guy Harris's companion backports !9598/!9599 make Wiretap extension-assisted recognition case-insensitive. Pascal Quantin asked whether `g_ascii_strcasecmp()` could avoid an extra allocation; the accepted implementation used the project's `ascii_strdown_inplace()` and compared against lowercase registered extensions, so normalization happens once rather than in every iteration.
+
+**Rule:** for file-format extension matching, use locale-independent ASCII comparison or normalized ASCII lookup keys consistently across the extension table and query; avoid unnecessary temporary allocations in repeated probes. Case-insensitive extension matching does not turn a weak file-format heuristic into a strong magic-based identification. **Confidence:** very high; accepted master and Guy Harris backports, explicit Pascal Quantin review.

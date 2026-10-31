@@ -166,3 +166,9 @@ Merged HTTP cleanup !9616 replaces a shared global `stat_info` with packet-scope
 Merged !9622 replaces a linked list of dependent frame numbers with a hash table because order is irrelevant and long fragmented captures otherwise incur excessive lookup work. John Thacker caught a real GLib assertion: `g_hash_table_foreach` must not be called on a NULL table. The author retained lazy initialization and added NULL guards rather than eagerly allocating for every frame.
 
 **Rule:** use set-like structures when order is semantically irrelevant and many dependencies accumulate, but audit **all** callers, recursion, reset, and destruction for lazy-initialization invariants. Benchmark large reassembled captures and include frames with no dependencies. **Confidence:** very high (merged code plus John review and correction).
+
+## Parser advancement must not depend on an optional protocol tree
+
+Merged MySQL !9579 fixes an “incomplete dissector” regression: `mysql_dissect_field_packet()` advanced its offset only under `if (tree && tvb_reported_length_remaining(tvb, offset) > 0)`, so first-pass dissection without a presentation tree consumed a different length than later redissection with a tree. The accepted fix removes `tree` from the condition.
+
+**Rule:** protocol parser offsets, state transitions, and record-consumption results are semantic operations and must happen identically when `proto_tree *tree` is NULL. Only presentation should be gated on tree existence. Test with and without a tree, in first pass and redissection, and compare returned offsets/remaining bytes. **Confidence:** very high; merged concrete correctness fix with direct reproducible difference.

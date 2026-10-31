@@ -47,3 +47,9 @@ Merged master MR !13227, authored and merged by Gerald Combs, fixes Windows pack
 In Gerald Combs's merged macOS MR !9730, ChmodBPF and path_helper uninstall scripts gain `pkgutil --forget` for their corresponding package receipts after deleting the installed resources. Guy Harris requested coverage of the companion path-helper package, and Peter Wu checked the cleanup order. Release backports !9735 and !9736 preserve the fix.
 
 **Rule:** Complete uninstallation includes installer receipt/registry and helper service state, not just payload files. Test a subsequent reinstall or upgrade. **Confidence:** Very high; merged Gerald fix and Guy/Peter review.
+
+## Documented destination changes must update actual lookup and package manifests
+
+Merged !9566 fixes a personal extcap path relocation whose earlier work had changed the documented folder but left `extcap_get_extcap_paths()` reading the old personal configuration path. The accepted code uses `get_extcap_pers_dir()` for runtime discovery. Merged !9565 separately demonstrates that RPM `%docdir` only *marks* a directory as documentation; the spec still needs an explicit file-list entry for `%{_datadir}/doc/wireshark`.
+
+**Rule:** migrate the runtime producer/consumer path with the public documentation and upgrade behavior; verify actual feature discovery from the new path and fallback behavior. In RPM specs distinguish metadata declarations from package ownership so installed directories are represented explicitly. **Confidence:** high; merged targeted fixes.

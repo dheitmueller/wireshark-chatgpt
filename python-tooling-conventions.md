@@ -31,3 +31,9 @@ Merged master MR !23392 changes Wireshark's developer-environment setup to confi
 **Implementation rule:** when project tooling configures hooks, helper paths, worktrees, or other repository-owned resources, prefer paths relative to a stable repository/configuration anchor whenever the consumer supports them. Use absolute paths only when the external interface genuinely requires them or when the target is intentionally outside the movable workspace.
 
 **Confidence:** Very high. Merged master developer-tooling fix approved and merged by John Thacker.
+
+## Test harnesses must avoid assuming one private unittest outcome layout
+
+Merged master !9572 by John Thacker adapts Wireshark's `test/subprocesstest.py` result gathering: older Python exposes `self._outcome.errors`, while Python 3.11 exposes `self._outcome.result`. The accepted compatibility branch examines the available attribute and gathers both errors and failures. The MR explicitly says that pytest integration remains a separate caveat.
+
+**Rule:** if test infrastructure must inspect private test-framework state, gate it by tested structure/capability and validate the supported Python-version matrix; avoid upgrading one interpreter only to discover that cleanup/reporting silently loses failures. Prefer public integration APIs when possible. **Confidence:** high; accepted John Thacker harness fix, limited to the described unittest path.

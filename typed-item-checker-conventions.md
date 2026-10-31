@@ -44,3 +44,9 @@ Merged MR 10493 made broad typed-item checker driven corrections, but Lars Volke
 **Review rule:** after checker-driven metadata changes, verify the protocol semantics and all affected call sites, and run representative behavior tests where practical.
 
 **Confidence:** High. This is a concrete regression report attached to a merged checker-cleanup MR and directly corroborates the stronger MR 10605 rule above.
+
+## Checker parsing must allow valid source formatting and still verify encoding semantics
+
+Martin Mathieson's merged !9592 fixes TWAMP MBZ fields whose registered `FT_UINT8` type disagreed with a two-byte item span. His review diagnosed why `tools/check_typed_item_calls.py` missed the calls: the source contains whitespace between the function name and opening `(`. Merged !9593 changes the checker's regular expression to allow that whitespace; merged !9562 broadens encoded-value checking and repairs `proto_tree_add_item` calls across multiple dissectors.
+
+**Rule:** source checkers must recognize syntactically valid formatting, not just a narrow canonical spelling. Test the checker with whitespace variants and ensure the `ENC_*` mode, registered `FT_*` field type, mask, and tvbuff item width agree with the actual protocol. Use checker reports to guide semantic inspection rather than treating regex success as proof. **Confidence:** high; Martin Mathieson's merged diagnostic/fix chain.

@@ -69,3 +69,9 @@ Merged master MR !14394, authored and merged by Guy Harris, changes the candump 
 **Review rule:** when a reader synthesizes packets, compare its output record with the existing wiretap encapsulation catalog before adding a generic metadata wrapper. Verify that native encapsulation preserves the desired dissector selection and any byte-order contract.
 
 **Confidence:** Extremely high. Merged master wiretap cleanup authored and merged by Guy Harris, with the unnecessary metadata and naming mismatch both called out explicitly.
+
+## Append generated Exported PDU headers without corrupting existing packet bytes
+
+Merged !9596 refactors several Wiretap format readers to build Exported PDU TLVs with shared helpers. A generated header occupies the beginning of a packet buffer and the original payload follows; `ws_buffer_end_ptr()`, `ws_buffer_assure_space()`, and `ws_buffer_increase_length()` must agree about both capacity and *used* length, and a new record needs `ws_buffer_clean()` before population. Tag values use the format's four-byte padding, not just the logical payload length. Subsequent MSVC CI revealed `strlen()` (`size_t`) narrowing into 16-bit tag-length parameters; John Thacker flagged it and the correction ultimately belonged to the accepted !10048, not the closed !10049.
+
+**Rule:** when a Wiretap reader synthesizes a framed packet, distinguish allocated capacity, valid bytes, framed/serialized length, and per-record reset. Append rather than overwrite, perform bounded type conversions, and set `caplen` and `len` from the final buffer. Test with a prepopulated buffer and both Windows and Unix compilers. This illustrates a safe buffer-writing contract, *not* a mandate to prefer Exported PDU when a native encapsulation suffices (see Guy Harris's later !14394). **Confidence:** high; accepted code plus post-merge portability correction.

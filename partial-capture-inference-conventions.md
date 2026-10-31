@@ -13,3 +13,9 @@ Merged MR !15535 fixes TCP Stream role selection. The old tap assumed that the f
 **Review rule:** test state/role inference with captures that begin at different points in a conversation, including SYN, SYN-ACK, established data, and atypical port assignments. A path that works only when the handshake is present is not robust to common midstream captures.
 
 **Confidence:** Very high. Merged master change authored and merged by John Thacker with the old assumption, direct TCP evidence, and fallback policy explicitly described.
+
+## Missing negotiated capabilities require bounded fallback assumptions
+
+Merged MySQL !9586 handles midstream captures where the greeting/login capability exchange was absent. The implementation infers a limited parsing path when observed client and server flags are both missing. Alexis La Goutte suggested a configurable dissector preference for default capability bits instead; the author explained that even server/client version may be unavailable when the capture starts late. The proposed preference was **not implemented in this MR**, so it is review guidance rather than accepted behavior.
+
+**Rule:** represent “unknown because not observed” separately from a negotiated false/zero capability; use explicit, scoped heuristics only when possible, and consider a user-configurable default where inference cannot be reliable. Test complete sessions, captures starting after negotiation, and disagreement between heuristic and actual negotiated state. **Confidence:** high for the accepted fallback; advisory for the unimplemented preference alternative.

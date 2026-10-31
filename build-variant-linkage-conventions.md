@@ -43,3 +43,11 @@ Merged master MR !9793 (João Valverde) resolves this by building a static `wsut
 **Design/review rule:** first identify the security context and dynamic-loader behavior of each executable; choose static/shared linkage per executable rather than imposing one global RPATH assumption. Ensure the statically linked variant propagates its full dependency closure, export/import annotations suit static builds, and both privileged Linux execution and Windows/MSYS2 cross-platform CI are exercised before claiming relocation support. Align packaging and release notes with user-visible changes.
 
 **Confidence:** Very high. Accepted third implementation by João Valverde, with an explicit preceding merged revert documenting a portability regression. Historical build flags may have evolved.
+
+## A merged relocation change may still be the wrong cross-platform linkage model
+
+Historical merged !9610 by João Valverde tried to make Linux installs relocatable by linking privileged `dumpcap` to a static `wsutil` and configuring relative RPATH for other binaries. Guy Harris explicitly highlighted GNU/Linux secure-loader restrictions on `$ORIGIN` for setuid/setgid programs. **After merge**, macOS CI found `tshark --version` aborting; Gerald Combs observed that executables linked *both* `libwsutil_static.a` and `libwsutil.dylib`, and !9647 reverted the change. The stronger accepted corrected implementation is the later !9793, already described above.
+
+Merged !9607 separately made Unix installation data/plugin/extcap paths relative to the executable, with Guy Harris clarifying platform/package layouts and Gerald identifying AppImage-style needs. macOS plugin discovery still failed in the build-directory case until follow-up !9621.
+
+**Review rule:** treat platform-dependent CMake PUBLIC/PRIVATE transitive dependencies and installed-versus-build-tree runtime paths as independent test axes. A merged MR followed by an explicit revert or corrective regression report is *negative evidence* for the original implementation, not a reusable endorsement. Check cross-platform linkage closure and plugin-discovery tests as well as privileged-loader behavior. **Confidence:** very high from Guy Harris and Gerald Combs review plus follow-up history.
