@@ -15,3 +15,7 @@ The option is intentionally disabled by default because formula neutralization c
 **Compatibility rule:** if secure neutralization changes established machine-readable output semantics, expose the behavior through shared explicit export configuration and preserve the historical default unless the project deliberately chooses a compatibility break.
 
 **Confidence:** Very high. Merged master security feature with CLI and GUI integration, concrete formula-injection examples, and maintainer review of the escaping semantics.
+
+## Plain-text Qt widget APIs must escape before passing content through a rich-text renderer
+
+Merged Gerald Combs release-3.6/4.0 backports !9287 and !9286 change `ElidedLabel::setText()` to store `text.toHtmlEscaped()` because the widget implements elision with Qt rich-text rendering even though its public setter promises plain text. They explicitly document that setter contract. The separately reviewed corrective !9462 shows how old callers that used markup for appearance must switch to the widget's presentation API (`setSmallText()`) rather than attempting to defeat escaping. **Security/UI rule:** distinguish plain-text data from rich-text markup at reusable widget boundaries; encode when converting untrusted plain text into rich-text context, and expose styling through explicit widget APIs. Test both literal markup-looking strings and existing styled callers. **Confidence:** High from merged backports and subsequent corrective GUI integration.

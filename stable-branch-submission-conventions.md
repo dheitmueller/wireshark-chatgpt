@@ -43,3 +43,7 @@ Merged master MR !13900 added RSVP SESSION_ATTRIBUTE support. During review Alex
 **Review rule:** when a feature MR contains an incidental bug fix, do not judge only whether the combined diff is correct on master. Check whether the correction should be independently backportable; if it should, request a split before the history makes that distinction harder to preserve.
 
 **Confidence:** Very high. Direct maintainer review in a merged feature MR, followed by exactly the requested split-out master fix and accepted backports to both maintained stable branches.
+
+## Submit a bug fix to master before requesting its stable-branch backport
+
+Closed OPC UA !9299 proposed correcting `parseDiagnosticInfo` field order directly on `release-4.0`. Alexis La Goutte explicitly requested submitting the correction on `master` first and arranging the release-4.0 backport afterward. Several adjacent closed attempts (!9307–!9311) show why branch selection and reviewable commit scope matter; !9310's mistaken cherry-pick produced a 502-file diff for a one-file protocol fix. **Submission rule:** normally land the primary fix on master and then request or prepare focused stable backports; inspect the actual compare diff and base branch before opening or revising an MR, especially after cherry-picking. These are **review/workflow** lessons from closed drafts, not accepted implementation precedents. **Confidence:** High for Alexis's stated process; low for the abandoned source proposals.

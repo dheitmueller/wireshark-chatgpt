@@ -69,3 +69,7 @@ The merged WoW dissector MR !9744 records a shadow warning for a local `index` i
 Merged !9702 extended the MySQL dissector for native cloning commands. Alexis La Goutte caught a Windows/MSVC failure because a new GCC-style `__attribute__((fallthrough))` was not available in that build, and directed the author to a portable fallthrough comment used elsewhere in the Wireshark source; the author updated the MR and supplied a sample capture.
 
 **Rule:** follow Wireshark's supported compiler/standard baseline and existing source style for intentional switch fallthrough. Check Windows builds when using compiler-specific syntax or diagnostic attributes; do not assume a Unix-only successful build is enough. **Confidence:** very high for the concrete CI correction and maintainer feedback; consult the current source for today's preferred fallthrough annotation.
+
+## Print fixed-width integer fields with fixed-width format macros
+
+Merged master !9268 introduced CQL row-number text using `%ld` even though the counter was a `gint64`. Stig Bjørlykke's merged !9278 immediately replaces it with `%" PRId64`. His merged !9277 likewise replaces `%04lx` with `%04" PRIx64` for a 64-bit AVSP control word in both the protocol item and Info column. **Rule:** use the relevant `PRI*` fixed-width macros for 64-bit wire values and counters instead of assuming C `long` has the required width across 32-/64-bit and Windows ABIs. Audit formatting in columns as well as tree labels. **Confidence:** Very high; two accepted corrective master MRs (!9277, !9278).
