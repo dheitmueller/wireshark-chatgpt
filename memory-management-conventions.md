@@ -56,3 +56,9 @@ Merged master MR !14178 provides the same lesson at string granularity. SRT row 
 Merged master !9670 by Guy Harris refactors TShark's capture-filter-looking-like-a-display-filter warning into a helper that creates a temporary `pcap_open_dead` handle, invokes `pcap_compile`, calls `pcap_freecode` on successful compilation, and closes the handle with `pcap_close` on all opened-handle paths. Merged immediate follow-up !9673 corrects the filter string passed to that diagnostic helper; release backports !9672/!9674 and !9675/!9676 propagate both corrections.
 
 **Rule:** diagnostic/error-only paths are subject to normal allocation and release contracts; success-only compiler buffers need their own cleanup even when no packet capture is running. On refactoring shared error handling, verify the parameter passed is the rejected expression (read/display filter), not a similarly named variable. **Confidence:** extremely high; Guy Harris-authored merged fixes and stable-branch backports.
+
+## Pass the packet allocator through helpers instead of relying on ambient scope
+
+Merged master HTTP refactor !9616 replaces scattered `wmem_packet_scope()` lookups with the current `pinfo->pool` and adds explicit `packet_info *` or `wmem_allocator_t *` parameters for helpers that allocate request/response-derived data. The same patch moves packet-local statistics from an unsafe global into per-packet protocol data.
+
+**Memory rule:** make each helper's allocation lifetime explicit in its signature, use the current packet's allocator for packet-derived scratch data, and reserve file/conversation scope for objects that actually survive beyond packet dissection. This helps avoid accidental use of the wrong packet's allocation context during nested dissection and redissection. **Confidence:** high; merged master implementation.
