@@ -28,3 +28,11 @@ Merged John Thacker MR !9772 changes DICOM tag-value display from `%-50.50s...` 
 Merged master !9720, authored and merged by John Thacker, replaces six PROFINET string paths built from `wmem_alloc`, `tvb_memcpy`, manual NUL placement and `proto_tree_add_string` with `proto_tree_add_item(..., ENC_UTF_8)`. This enables central encoding and trailing-NUL validation without maintaining temporary character buffers.
 
 **Rule:** When the bytes are already in a tvbuff, prefer an encoding-aware field API; maintain separate explicit cursor increments for protocol blank/padding bytes. **Confidence:** Very high; merged John Thacker patch.
+
+## Decode arbitrary-length UTF-8 using a shared validator with explicit allocation scope
+
+Merged master !9705 moves UTF-8 sanitization into `wsutil/unicode-utils`, where `ws_utf8_make_valid(scope, bytes, length)` can handle bounded capture-option data and Unicode replacement of ill-formed sequences without treating embedded NUL bytes as malformed UTF-8. John Thacker validated the pcapng change with a real Apple-produced capture containing NULs at the ends of string options. Merged !9711 extends this central API to a `wmem_strbuf` form and uses packet-scoped storage when sanitizing HTTP/2 headers for display.
+
+**Implementation rule:** validate exactly the specified byte span, use Wireshark's shared UTF-8 replacement semantics, and allocate the sanitized result in the scope appropriate to its downstream consumer. A NUL is valid UTF-8 but may still be prohibited or specially handled by the particular destination string API; keep those two contracts separate. Preserve the distinction between raw captured bytes, cleaned Unicode text, and ownership of the destination field/block.
+
+**Review nuance:** Gerald Combs proposed banning direct `g_utf8_make_valid` calls via `checkAPIs.pl`; João Valverde preferred a gentle checker hint over a hard ban. Treat the merged replacement helper as accepted behavior but the proposed outright ban as *not* settled policy. **Confidence:** very high for implementation and sampled encoding behavior; the tool-enforcement policy remained debated.

@@ -29,3 +29,11 @@ Merged master MR !16507, authored and merged by John Thacker, fixes 6LoWPAN fiel
 In the merged WoW dissector MR !9744, CI explicitly reported a field using `VALS64` whose display did not include `BASE_VAL64_STRING`; the author corrected it. The 32-bit `VALS` registration behavior does not automatically carry over to 64-bit lookups.
 
 **Rule:** Register value-string lookup width, `FT_*` type and display-base flags consistently. Treat dissector checker errors as semantic API-contract failures. **Confidence:** Moderate/high from explicit CI diagnostic and author discussion; the corpus lacks the final oversized diff.
+
+## Never reuse one filter abbreviation for incompatible field types
+
+Merged master !9694 corrected the MySQL `COM_BINLOG_DUMP_GTID` position, which is an eight-byte value rather than the four-byte field used by a different command. Alexis La Goutte recommended a separate header field and then caught the proposed use of the same abbreviation `mysql.binlog.position` for both `FT_UINT32` and `FT_UINT64`: `proto_register_field_init()` rejects incompatible duplicate abbreviations. The contributor corrected the submission before merge and supplied replication sample traffic.
+
+**Field rule:** field identity includes its type and wire semantics. When two command variants genuinely encode different widths, give them appropriately registered, distinguishable filter names; don't assume two different `hf_` identifiers make a duplicate filter abbreviation legal. Test both variants and field-registration initialization. **Confidence:** very high; explicit Alexis review and merged correction.
+
+Merged master !9703 further corrects RDMnet and MS NLB fields whose registered `FT_UINT8` types were narrower than their actual 32- and 16-bit encodings. **Checker rule:** use `check_typed_item_calls.py` to find mismatches, fix the actual width, and make narrowly justified checker exceptions rather than suppressing valid diagnostics. **Confidence:** high.

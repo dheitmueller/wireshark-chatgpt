@@ -73,3 +73,14 @@ Merged master MR !13559, authored and merged by John Thacker, fixes display and 
 **Review rule:** test captures with at least two sections whose interface numbering overlaps, including repeated interface ID zero with different IDBs. Verify both user-visible interface names/descriptions and rewritten packet interface IDs after save/export/merge.
 
 **Confidence:** Very high. Merged master architecture/correctness fix authored and merged by John Thacker; the section-scoped mapping and single-SHB dump behavior are stated directly in the MR description.
+## Preserve interface blocks even when they follow the final packet
+
+Merged master !9669 by John Thacker corrects a streaming output assumption in mergecap, editcap, and TShark: an input capture can contain IDBs *after* its final packet record. Just as trailing Name Resolution Blocks and Decryption Secrets Blocks need end-of-stream processing, newly encountered interface blocks must be processed before closing a compatible output dumper. The accepted code also accounts for callers without a dumper instead of dereferencing it unconditionally.
+
+**Implementation rule:** packet EOF does not imply metadata EOF. Drain and publish all supported late-arriving Wiretap block types before finishing a conversion, and guard optional output handles and format-support checks. **Tests:** IDB after last packet, metadata-only stream, supported versus unsupported output block types, and normal writer-close/error paths. **Confidence:** very high; merged master fix authored by John Thacker.
+
+## Select merge output encapsulation from every input's representable records
+
+Merged master !9685 by John Thacker strengthens merge output-format selection by testing whether each input's encapsulation is supported by the chosen output type. A convenient file-level guess is insufficient for mixed sources.
+
+**Rule:** validate encapsulation representability across all input streams and relevant per-record/interface variants rather than silently coercing one file's type to another. **Confidence:** high; merged master code.

@@ -127,3 +127,11 @@ Closed/unmerged automation MR !9907 tried to update several registries and a gen
 In CoAP MR !9731, Stig Bjørlykke requested splitting a small header-field regression fix from a larger Q-Block enhancement needing a longer review. The author retained the fix in merged !9731 and moved the Q-Block extension to !9742, still a draft/open MR in the corpus.
 
 **Rule:** Submit a narrow, independently testable correction without attaching speculative protocol behavior that might delay it. Distinguish accepted corrections from open successors. **Confidence:** Very high: direct Stig review, implemented split, merged fix.
+
+## Review feedback can remain binding after an early merge
+
+Merged master !9692 adds CoAP options, but **after merge** Stig Bjørlykke found missing entries in `COAP_COMMON_HF_LIST` (potential registration errors/crashes) and questions about private/vendor option interpretation. After checking the IANA registry, Stig revised his interpretation and still asked for a follow-up correction; the author submitted merged !9731, with larger draft Q-Block work separated into !9742.
+
+**Review rule:** merge status is evidence of acceptance, not proof that no defects remained. Inspect substantive post-merge discussion and corrective successors, verify any spec/registry assertion against the actual registry, and ensure every newly declared field is included in all shared registration/initialization lists. Prefer fixing an accepted narrow regression before extending the feature.
+
+**Sample-capture rule:** Stig requested a representative capture; Alexis La Goutte clarified that a capture uploaded directly to the MR is sufficient for review and need not be committed to `test/captures` unless it serves an actual regression test. **Confidence:** very high; direct reviewer discussion and merged corrective successor.

@@ -51,3 +51,8 @@ Merged master MR !14178 provides the same lesson at string granularity. SRT row 
 **Review/testing rule:** exercise lifecycle edges: open the consumer before any capture, keep it open across capture close/reopen, and trigger redissection/reset. Debug builds are particularly useful because allocator-scope assertions can reveal lifetime mismatches that release builds only expose intermittently.
 
 **Confidence:** Very high. Two merged master fixes, one authored/merged by John Thacker and one with direct John Thacker review, both demonstrating the same consumer-lifetime invariant with concrete crashes.
+## Free BPF compiler allocations on every diagnostic path
+
+Merged master !9670 by Guy Harris refactors TShark's capture-filter-looking-like-a-display-filter warning into a helper that creates a temporary `pcap_open_dead` handle, invokes `pcap_compile`, calls `pcap_freecode` on successful compilation, and closes the handle with `pcap_close` on all opened-handle paths. Merged immediate follow-up !9673 corrects the filter string passed to that diagnostic helper; release backports !9672/!9674 and !9675/!9676 propagate both corrections.
+
+**Rule:** diagnostic/error-only paths are subject to normal allocation and release contracts; success-only compiler buffers need their own cleanup even when no packet capture is running. On refactoring shared error handling, verify the parameter passed is the rejected expression (read/display filter), not a similarly named variable. **Confidence:** extremely high; Guy Harris-authored merged fixes and stable-branch backports.

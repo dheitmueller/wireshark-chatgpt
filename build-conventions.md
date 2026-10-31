@@ -147,3 +147,15 @@ Merged master MR !20378, authored and merged by John Thacker, marks Wireshark pl
 Closed MR !9718 proposed adding `GCRYPT_LIBRARIES` to sdjournal extcap after an RHEL7 build using custom cryptographic libraries failed on a versioned symbol from system `libsystemd`. João Valverde pointed out that sdjournal does not directly depend on libgcrypt and rejected the linkage workaround as masking an incompatible dependency build. The contributor accepted rebuilding the dependent library or disabling the optional component.
 
 **Rule:** Trace the dependency and symbol-version provenance before adding a target link library unrelated to that target's APIs. This is authoritative **negative review guidance**, not a merged implementation. **Confidence:** High from João's explicit diagnosis and author acknowledgment.
+
+## Set minimum toolkit versions from the supported platform matrix
+
+Merged master !9697 raises the minimum Qt 5 version from 5.10 to 5.11 and removes now-impossible compatibility branches. Roland Knall opposed frequent baseline increases out of concern for enterprise compatibility; John Thacker checked the actual RHEL 8 Qt package baseline and other dependencies that already excluded RHEL 7; Joakim Karlsson supplied lifecycle context. The change merged after that disagreement.
+
+**Policy rule:** treat minimum dependency changes as an explicit support-matrix decision, not mere code-cleanup convenience. Document the user and downstream build impact, inspect real supported distributions and release/maintenance states, adjust the build failure message and setup scripts together, and then simplify code branches conditional on versions below the *accepted* baseline. Do not extrapolate the historical Qt 5.11 value to today's requirements. **Confidence:** high for the process; debate was substantive, final merged outcome decisive for that revision.
+
+## Move obsolete third-party include-wrapper duties into central configuration
+
+Merged !9707 removes `wspcap.h` and updates its callers to include `<pcap.h>`, with required platform definitions centralized in `cmakeconfig.h.in`; merged !9706 similarly removes the requirement to include `wsgcrypt.h` rather than `<gcrypt.h>` when its previous warning suppression no longer applies. Merged !9709 uses a CMake-generated `HAVE_MSYSTEM` capability rather than assuming compiler family identifies installation layout; closed !9708's runtime MSYS2 detection was abandoned as unnecessary with CPack.
+
+**Build rule:** keep platform feature detection in CMake and generated configuration, eliminate obsolete wrapper restrictions from API checkers/docs as part of the same migration, and do not infer runtime behavior solely from a compiler macro. **Confidence:** high for the merged changes; low for abandoned runtime alternative.

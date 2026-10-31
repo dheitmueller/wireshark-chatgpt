@@ -75,3 +75,11 @@ Merged master MR !9840 (John Thacker) resolves the selected visible proxy column
 John Thacker's merged !9737 changes Qt `colorized()` to require both `colorized_` and `color_ver_ == rows_color_ver_`; old cached colors should not be considered current after rule changes. Merged !9741 removes an unnecessary packet-list `resize()` that could hide the scrollbar/minimap after column updates, while !9740 and backports correct the minimap final-row fencepost.
 
 **Rule:** Track visual-cache generation, not simply whether output was once computed. Let the Qt view/layout control scrollbar geometry instead of resizing the packet list to column totals. Test off-screen recoloring, add/remove columns, and the final row. **Confidence:** High: merged John Thacker corrections.
+
+## A selector's enum values must match its combo-box index mapping
+
+Merged master !9663 by John Thacker and release-4.0 backport !9664 fix the Show Packet Bytes dialog: `ShowAsRustArray` had been declared out of order relative to the presentation combobox. When the UI treats an integer enum as a combo-box index, the two sequences are an implicit ABI.
+
+**UI rule:** avoid relying on index equality when an explicit `QVariant` item value is feasible. If index mapping is retained, document and test that enum order, displayed item order and conversion code agree when options are inserted or alphabetized. **Confidence:** high; merged John Thacker fix and backport.
+
+Merged master !9693 and backports !9695/!9696 make the RTP Stream Dialog packet-loss sort compare `rtpstream_info_calculate()` results rather than a stale or different cached member. **Sorting rule:** the comparator must use the displayed semantic metric and consistent calculation on both rows. **Confidence:** high; merged master and backports.

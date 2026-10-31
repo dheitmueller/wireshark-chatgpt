@@ -25,3 +25,11 @@ Merged master MR !12881, authored by John Thacker and merged by Anders Broman, f
 **Review rule:** for UAT-backed derived state, test at least initial load, edit/accept, save, and subsequent use. A callback arrangement that works immediately after editing can still be wrong after the save/copy lifecycle reconstructs `user_data`.
 
 **Confidence:** Very high. The lifecycle distinction and failure mode are stated directly in a merged master fix authored by John Thacker, and it sharpens the copy/save rule established by !12967.
+
+## Model a configured dissector as a dissector, not necessarily a protocol
+
+Merged master !9704, authored by John Thacker, replaced `UAT_PROTO_DEF` and `UAT_FLD_PROTO` with `UAT_DISSECTOR_DEF` and `UAT_FLD_DISSECTOR` for user-configurable payload/header/trailer dispatch. A named dissector handle such as `eth_withfcs` or `eth_withoutfcs` is not equivalent to a protocol abbreviation. The change adds a distinct `PT_TXTMOD_DISSECTOR` UAT editor, populated by `get_dissector_names()`, and corrects the User DLT documentation.
+
+**Design rule:** give preference/UAT fields the identity domain they actually select: dissector handle, protocol, display-filter field, and value-string key are not interchangeable registries. Keep serialization, validation, configuration macros, and UI widgets consistent when adding a new UAT field kind.
+
+**Post-merge review:** Stig Bjørlykke found that the initial editable combobox did not offer the same useful keyboard completion/dropdown behavior as filter fields. John Thacker pointed to later !10148. Preserve that as usability follow-up rather than claiming the first merged editor was final. **Confidence:** very high for registry semantics, high for usability feedback.

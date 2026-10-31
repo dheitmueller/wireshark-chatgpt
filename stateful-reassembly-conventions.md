@@ -101,3 +101,15 @@ Merged master MR !12503, authored and merged by John Thacker, fixes SSH channel 
 Merged USBLL master MR !9751 clears the endpoint's active transfer key, offset, expected length, last DATA PID and data length on each appropriate STALL handshake. After a host clears endpoint halt, a fresh DATA0 is not a retransmission or continuation of the previous transfer. The accepted code differentiates endpoint directions and split transactions. Merged !9795 corroborates STALL as a logical transfer-completion event.
 
 **Rule:** Reassembly and duplicate detection are scoped to protocol transfer epochs, not just repeated data-toggle/sequence values. Clear all prior-epoch state on terminal errors. Test old DATA0, STALL, halt-clear and new DATA0 in both directions. **Confidence:** High, merged source and protocol rationale.
+
+## Guard rollover arrays before both lookup and increment
+
+Merged master !9680 and release backports !9686/!9687 fix memory corruption in ISO 15765/ISO 10681 reassembly. The low fragment identifier indexes a 16-slot high-counter array. The accepted repair asserts that the index is below 16 before accessing the array and detects high-counter wraparound while extending the fragment ID; updates occur on the first packet pass only.
+
+**Rule:** when extending a bounded on-wire sequence number with per-slot rollover state, separately prove the slot index is valid and the high-order counter has not wrapped. Do not let a compact numeric expression hide an out-of-bounds access or silent segment-ID reuse. Verify malformed index values, wraparound, and repeat dissection. **Confidence:** high; master plus two merged backports.
+
+## Do not reject a reassembly key merely because endpoints are empty
+
+Merged master !9666 and stable backports !9667/!9668 remove over-strict `pinfo->src.data == NULL` and `dst.data == NULL` rejection from GSM SMS fragment hashing, while retaining the check that the actual fragment identifier exists.
+
+**Rule:** distinguish a missing *required discriminator* from legitimately empty endpoint addresses. A key builder must handle the address model supported by its capture/encapsulation paths rather than refusing valid packets on a generic NULL check. **Confidence:** high; merged master and backports.

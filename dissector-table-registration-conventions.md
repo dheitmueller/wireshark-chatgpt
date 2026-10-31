@@ -23,3 +23,8 @@ Merged master MR !11291, authored and merged by John Thacker, changes the RTP co
 **API-expression rule:** when an API offers a named semantic mode such as `STRING_CASE_INSENSITIVE`, prefer it over a bare Boolean literal. The named mode documents the equality contract and makes review less dependent on remembering an argument's Boolean meaning.
 
 **Confidence:** Very high. Merged master codec-registry correctness change authored and merged by John Thacker, reinforced by an adjacent merged cleanup that makes the matching mode explicit.
+## Extend a shared file-protocol parser via registered local handlers
+
+Merged master !9688 by Martin Mathieson adds registration for local/vendor-defined pcapng blocks and an Apple Darwin block dissector. A callback registration structure carries the local block handler and option dissector, while the common pcapng dissector retains shared framing. Joakim Karlsson requested and received a consistent field namespace `pcapng.darwin` instead of a hyphenated `pcapng-darwin` namespace, aligning protocol grouping and filter names with the base parser's tables.
+
+**Architecture rule:** for an extensible file or protocol container, keep common framing/record parsing centralized, register typed callbacks for extension-specific bodies and options, and pass explicit parent/context data to handlers. Keep extension filter abbreviations under an intentional shared namespace that matches actual registered protocol/table ownership. **Evidence caveat:** the corpus omitted the oversized `file-pcapng.c` diff, so exact internal registration mechanics must be checked against current source. **Confidence:** high for accepted design and explicit reviewer changes; limited for omitted diff details.

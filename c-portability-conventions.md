@@ -63,3 +63,9 @@ Merged master MR !11809, authored and merged by João Valverde, fixes an unalign
 The merged WoW dissector MR !9744 records a shadow warning for a local `index` identifier. Gerald Combs explained that `index` is a deprecated C library function still declared on some systems, while Alexis La Goutte noted historic macOS portability concerns. The contributor corrected the name.
 
 **Rule:** Investigate platform-specific identifier/shadow diagnostics even when the local source contains no same-named variable. Prefer descriptive names over suppressing an actionable checker warning. **Confidence:** High from maintainer review; the corpus omits the oversized final diff.
+
+## Use portable intentional fallthrough spelling in C dissectors
+
+Merged !9702 extended the MySQL dissector for native cloning commands. Alexis La Goutte caught a Windows/MSVC failure because a new GCC-style `__attribute__((fallthrough))` was not available in that build, and directed the author to a portable fallthrough comment used elsewhere in the Wireshark source; the author updated the MR and supplied a sample capture.
+
+**Rule:** follow Wireshark's supported compiler/standard baseline and existing source style for intentional switch fallthrough. Check Windows builds when using compiler-specific syntax or diagnostic attributes; do not assume a Unix-only successful build is enough. **Confidence:** very high for the concrete CI correction and maintainer feedback; consult the current source for today's preferred fallthrough annotation.

@@ -148,3 +148,9 @@ This is an earlier direct example of the same principle later sharpened by !1076
 **Architecture rule:** if packet interpretation depends on conversation history, decide whether callers need only the newest state or the state as of an arbitrary packet. For the latter, store a time/versioned transition history or per-PDU snapshot and look up the version valid at the packet being revisited.
 
 **Confidence:** Very high. Merged master correctness change authored and merged by John Thacker, with the sequential-versus-random-access failure stated directly in the MR.
+
+## A restored packet snapshot must not replace the current first-pass global state
+
+Merged master !9701 by Tomasz Moń fixes USB link-layer dissection state after random-access redissection. On the first pass, `usbll_create_data(pinfo)` sets the evolving global `usbll_data_ptr`; on a visited packet, `usbll_restore_data(pinfo)` supplies a **local** `usbll_data_t *data` to the decoding functions without overwriting that global pointer. The previous code made the current global state move backwards whenever an old packet was revisited.
+
+**Rule:** maintain a strict separation between the mutable first-pass frontier and a packet-scoped historical snapshot used to render a revisited packet. Pass the appropriate snapshot explicitly through subdissectors; do not assign historical state into a global that subsequent first-pass packets may consult. **Review tests:** sequential pass, revisit an earlier packet, then decode newer packets; compare state and outputs. **Confidence:** very high; merged master correctness patch.
