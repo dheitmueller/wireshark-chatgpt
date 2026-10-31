@@ -125,3 +125,17 @@ Merged release backports !9864 and !9863, both authored by Guy Harris, expand a 
 **Implementation rule:** if specifications reuse a numeric code or contradict one another, document the precise editions, tables, protocol context, and current workaround. Keep the distinction between actual wire values and internal disambiguation keys clear, and do not silently claim a speculative protocol interpretation is standard behavior.
 
 **Confidence:** Very high for the evidence-documentation practice, because Guy Harris authored both merged backports; the unresolved historical mapping is not a recommendation to introduce similar hacks.
+
+## Multiplexed transports require context-aware demultiplexing
+
+Merged master !9638, authored and merged by John Thacker, changes RTP's nonheuristic wrong-version handling to use RFC 7983's multiplexing classification for RTP/STUN/DTLS and related protocols. It deliberately does **not** force that same fallback inside RTP's heuristic recognition path, where other protocol heuristics should decide whether they own the packet.
+
+**Dispatch rule:** when multiple protocols share a five-tuple, classify by the applicable framing standard and the dispatch context. Do not assume a version-zero RTP-looking datagram must be one particular protocol, and do not have a heuristic claim or recursively hand off undecidable traffic. Preserve Decode As and explicit table-dispatch behavior. **Confidence:** very high (John-authored and merged master implementation).
+
+Merged !9654 fixes RTPS DomainId computation when UDP ports are non-default: prefer observed RTPS discovery information to a DomainId inferred from the usual port mapping. **State/identity rule:** a registered or default transport port is not necessarily a truthful protocol identifier after non-default endpoints, remapping, or Decode As. Prefer explicit on-wire negotiated/discovery identities wherever present. **Confidence:** high, merged master.
+
+## Surface malformed protocol facts as packet diagnostics
+
+John Thacker's detailed review on the **closed and superseded** Windows Delivery Optimization dissector !9658 recommended expert information in the tree for unexpected message sizes instead of `ws_warning` console output. The author stated that this was changed, but the large source-file patch is absent from the corpus snapshot and the MR was closed in favor of !10124.
+
+**Review guidance:** user-visible protocol nonconformance belongs in expert diagnostics attached to the offending packet field. Treat this as authoritative reviewer advice, **not** evidence that !9658's unmerged implementation is an accepted reference. **Confidence:** high in John's stated convention, lower in implementation verification.
