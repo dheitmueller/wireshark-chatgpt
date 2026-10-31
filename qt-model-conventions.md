@@ -89,3 +89,17 @@ Merged master !9693 and backports !9695/!9696 make the RTP Stream Dialog packet-
 In merged master !9476 and release-4.0/3.6 backports !9491/!9492, Stig Bjørlykke corrects `column_prefs_has_custom()`: an existing column with the same expression but a *nonzero occurrence* is not equivalent to the default-occurrence custom column proposed by “Apply as Column”. The updated duplicate check requires `cfmt->custom_occurrence == 0` before suppressing that UI action.
 
 **Model/UI rule:** include modifiers such as occurrence index in equality semantics when they change what a column actually displays. A string-equal filter expression alone is insufficient to decide whether the user already has the requested column. Regression-test adding a default column alongside an existing field with a nondefault occurrence. **Confidence:** high, merged master fix and two accepted backports.
+
+## Sort traffic data by the typed model role, not by speculative numeric conversion
+
+John Thacker's merged master !9438 (release backport !9450) corrects sorting of GeoIP country/city and numeric Endpoint/Conversation values. `QVariant::canConvert<double>()` tests whether the **type** has a conversion path, not whether this **particular value** is a number; even a nonnumeric string can pass. `TrafficDataFilterProxy` instead selects `ATapDataModel::UNFORMATTED_DISPLAYDATA` as its sort role and lets `QSortFilterProxyModel` compare appropriately typed values.
+
+**Rule:** expose a stable, typed semantic sort role; never promote arbitrary display text to a number solely because `canConvert` succeeds. Test mixed numeric, percentage and textual fields. **Confidence:** very high (merged John Thacker master fix plus backport).
+
+## Preserve displayed semantics when filtering typed traffic-table values
+
+Merged master !9447 replaces blanket integer conversion for Endpoint/Conversation filter comparisons with Qt-version-aware type handling. On Qt 6 it uses `QVariant::compare` with data on the left (conversion direction matters), explicitly handles time-only inputs for displayed `QDateTime` starts, and compares percentages at the two-decimal precision actually shown. Qt 5 requires a separate type-dispatched fallback. A filter expecting the visible time should not require users to type a hidden date, although time-only semantics are ambiguous for captures spanning midnight.
+
+**Rule:** filter comparison must respect the model's semantic type and the presentation contract. Validate conversion failures, doubles, strings, dates/times, negative numbers, and rounded equality on both Qt 5 and 6. Do not silently coerce all filter input to `long long`. **Confidence:** high, merged John Thacker implementation; note its explicit time-only limitations.
+
+Merged master !9437 (backport !9449) also fixes filter-menu column mapping when the Conversation ID and total columns are hidden: map **displayed** positions to canonical source positions by accounting for **absent** columns, not present ones. Merged !9419 (backport !9426) fixes `UatModel::appendEntry()` rejecting row data based on current **row count** rather than **column count**. **Rule:** maintain dimensional invariants explicitly; rows, columns, proxy positions and canonical field IDs are not interchangeable. **Confidence:** very high.

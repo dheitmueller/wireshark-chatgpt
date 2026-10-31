@@ -173,3 +173,9 @@ Merged !9617 extends `tools/generate-dissector.py` to create an epan plugin with
 Merged !9662 introduced a GitLab macOS merge-request build and refactored Homebrew setup into required/optional package groups. After merge, Chuck Craft's macOS build exposed missing required `speexdsp`; John Thacker confirmed it belonged in the required list, and Gerald Combs pointed to the !9679 follow-up.
 
 **Rule:** when adding a platform job, treat its dependency bootstrap as part of the feature. Cross-check mandatory CMake probes against the CI installation list and rerun the actual platform job; a successful merge does not prove a newly introduced CI lane has all prerequisites. Distinguish a discovered post-merge integration problem from the accepted original code. **Confidence:** high from merged CI change and named maintainer follow-up.
+
+## A portable source fix still needs compiler-version CI and diagnostic follow-ups
+
+Merged master !9431 zero-initializes CoAP and RTPS structures to fix Valgrind uninitialized reads, but a subsequent review comment from Joakim Karlsson reported that GCC 4.8.5 on RHEL 7.9 rejected the RTPS `{0}` aggregate with `-Werror=missing-field-initializers`; !9529 addressed that case. Gerald Combs's merged master !9440, backported in !9444 and !9445, extended a narrow AppleClang warning-gate to versions below 12 because AppleClang 10/11 emitted a bogus missing-braces diagnostic.
+
+**Rule:** do not mistake a sanitizer fix merged on one platform for proof that all supported compilers accept its spelling. When a compiler version has a demonstrated false-positive, constrain any diagnostic suppression to that toolchain/version; preserve useful warnings elsewhere. Follow post-merge build reports through their actual fixes. **Confidence:** high: merged changes, reproducible GCC report and explicit compiler-version backports.

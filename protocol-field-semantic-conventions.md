@@ -117,3 +117,13 @@ In merged !9544, John Thacker adds `FRAMENUM_TYPE(FT_FRAMENUM_RESPONSE)` to GTP/
 Merged CIP analysis MR !9542 (Dylan Ulis) builds generated connection-information subtrees and displays matching Forward Close frames or an expert diagnostic when no close was observed. Gilbert Ramirez specifically caught a call-site issue: an expert annotation should be made only in the branch that created the corresponding `proto_item *pi`, not unconditionally outside it; the author fixed this before merge.
 
 **Review rule:** A generated field, stored cross-packet state, and its expert indicator have distinct lifetimes and source ranges. Attach expert information to the precise existing item that represents the condition, and guard optional fields instead of reusing a stale/null item pointer. **Confidence:** High (merged implementation with explicit Gilbert Ramirez correction).
+
+## Two-value enumerations are not automatically Boolean protocol fields
+
+Merged MP4 segment-index support !9423 uses a value-string for an on-wire reference type whose defined values are Movie and Index. Anders Broman asked whether this should be an `FT_BOOLEAN` with a true/false string; the contributor argued these are named protocol variants rather than truth conditions, and the merged diff retained the enum presentation. This is not an authoritative prohibition on Boolean fields, but it shows that the **meaning** of a field matters more than cardinality alone.
+
+**Review rule:** prefer `FT_BOOLEAN` when a protocol actually defines a predicate, and a typed numeric/enum field when a binary-valued discriminator identifies distinct protocol cases. Check the wire specification and filtering semantics before changing representations. **Confidence:** moderate, explicit review question and merged semantic choice.
+
+Merged IEEE 802.11 !9432 supplies a stronger complementary API rule: short-SSID *integer* fields needed `ENC_LITTLE_ENDIAN`, while Alexis La Goutte rejected mistakenly assigning that integer encoding to a separately registered `FT_BOOLEAN` field and requested the appropriate `ENC_ASCII` at that call site. Correct comparable occurrences together, but audit **each field's registered type** before mass-applying an encoding fix. Alexis also requested a commit subject shorter than 80 characters. **Confidence:** very high, explicit maintainer corrections in a merged MR.
+
+Merged BGP-LS fix !9422/!9421 compares an IPv6-address TLV's payload length against the **length constant**, not the similarly named TLV **type ID** (which had yielded an absurd expected size of 262 bytes). **Rule:** distinguish type discriminators from size constants in validation and expert error text. **Confidence:** high, merged stable-branch corrections.

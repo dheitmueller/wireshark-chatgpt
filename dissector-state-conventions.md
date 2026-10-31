@@ -172,3 +172,9 @@ Merged !9622 replaces a linked list of dependent frame numbers with a hash table
 Merged MySQL !9579 fixes an “incomplete dissector” regression: `mysql_dissect_field_packet()` advanced its offset only under `if (tree && tvb_reported_length_remaining(tvb, offset) > 0)`, so first-pass dissection without a presentation tree consumed a different length than later redissection with a tree. The accepted fix removes `tree` from the condition.
 
 **Rule:** protocol parser offsets, state transitions, and record-consumption results are semantic operations and must happen identically when `proto_tree *tree` is NULL. Only presentation should be gated on tree existence. Test with and without a tree, in first pass and redissection, and compare returned offsets/remaining bytes. **Confidence:** very high; merged concrete correctness fix with direct reproducible difference.
+
+## Initialize transport conversation identity independently of optional analytics
+
+Merged TCP stream-numbering fix !9416 (release-4.0) and !9415 (release-3.6), authored by Sake Blok, move forward/reverse initial TCP sequence-number state out of the optional TCP Sequence Number Analysis routine. When that preference was disabled, new conversations reusing the same IP/port tuple could be misidentified because the base sequence was never recorded. The accepted change initializes base sequence values on the **first dissection pass** regardless of the analysis preference, with SYN/SYN-ACK-aware and missing-handshake fallback behavior.
+
+**Rule:** state needed to identify a conversation, distinguish endpoint reuse or maintain core dissection must not be gated behind optional presentation/diagnostic analysis. Separate always-required protocol identity from expensive/optional sequence metrics, and test both preference settings, reused tuples, out-of-order handshakes, truncated starts and redissection. **Confidence:** very high, merged fixes on two supported branches.

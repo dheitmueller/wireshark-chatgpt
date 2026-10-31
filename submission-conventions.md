@@ -157,3 +157,9 @@ Merged extcap fix !9625 received Tomasz Moń's specific report that its deleted 
 In closed/unmerged !9600, Alexis La Goutte directed a contributor fixing a German Qt .ts typo to Wireshark's Transifex workflow. The contributor registered and submitted the change there; the direct source-tree MR was closed. This corroborates the earlier localization process feedback around !26392 and is **not** an endorsement of merging one-off generated .ts edits.
 
 **Submission rule:** check the current upstream localization workflow before editing generated or synchronized translations; use the project's translation service as the authoritative source unless maintainers request a different route. **Confidence:** high for explicit Alexis guidance, lower for implementation because the MR was closed.
+
+## Change author attribution through `.mailmap`, not the generated `AUTHORS` listing
+
+Pascal Quantin's review of merged !9418 corrected a contributor who originally tried to fix a name/email in generated `AUTHORS`. Pascal directed the source change to `.mailmap`, then asked that the corrective/revert history be squashed into **one** commit; the final diff contains the mailmap mapping only.
+
+**Rule:** consult the generator/source-of-truth for attribution and other derived files instead of editing generated output. When review necessitates replacing a wrong file with the right source, present the final logical change as a coherent amended/squashed commit rather than leaving a revert-plus-fix sequence unless history itself is important. **Confidence:** very high, direct Pascal Quantin instructions and merged outcome.

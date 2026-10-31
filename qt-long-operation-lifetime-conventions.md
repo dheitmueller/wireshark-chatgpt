@@ -15,3 +15,11 @@ Merged master MR !15198, authored by John Thacker and merged by Anders Broman, f
 **Review implication:** test accepting a long operation and then attempting to close/cancel every still-visible related window before completion, including cancellation through the intended progress UI. Verify that each control either genuinely cancels the operation or cannot destroy state still needed by it.
 
 **Confidence:** Very high. Merged master correctness fix authored by John Thacker plus two merged release backports, with the crash mechanism and intended cancellation ownership explicitly documented.
+
+## Serialize capture-file readers and share cancellation with the operation that owns the progress UI
+
+Merged master !9452, authored by John Thacker, adds a `capture_file::read_lock` guard to Protocol Hierarchy statistics, disables the menu action while capture reads/rescans are underway, and binds its progress dialog to `cf->stop_flag` so the Stop button actually terminates that statistics pass. It releases the lock on completion. Previously the scan could race with file closing or a rescan, segfault, and overwrite an unrelated progress bar's state.
+
+**Implementation rule:** when a user-triggered scan walks capture frames, serialize it against capture close/read/rescan and ensure every exit releases ownership. Its cancellation flag must be the same flag the progress UI controls. Disable entry points while the operation is invalid; do not merely disable redraws after a conflicting scan has begun.
+
+**Regression rule:** attempt capture close, rescan, filter changes and Stop-button cancellation during long statistics work; verify the original operation's progress and lock are restored. **Confidence:** very high, merged John Thacker correctness fix.

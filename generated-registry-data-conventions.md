@@ -17,3 +17,9 @@ Merged master MR !11358, authored and merged by João Valverde, independently ap
 **Review rule:** performance changes to registry loading should verify both lookup equivalence and precedence behavior. Test a shipped/global value, a personal/profile override of that value, and values present only in either layer. Also check packaging and external-consumer expectations before deleting a formerly runtime-read data file.
 
 **Confidence:** Very high. Two merged master changes independently move major global registries to generated static lookup structures, with explicit startup-performance motivation and senior-maintainer discussion of scheduled regeneration, personal overrides, and external artifact use.
+
+## Change the registry generator, not its automatically refreshed output
+
+Merged master !9451 extends `tools/make-sminmpec.py` to treat organization names marked `previously` like names marked `formerly`. Gilbert Ramirez noted a conflict in generated `enterprise.tsv`, but Jaap Keuter specifically directed the contributor to **remove the generated TSV from the MR**: Wireshark's automatic enterprise-registry update would regenerate the new output. The final accepted diff changed only the generator.
+
+**Submission rule:** when a scheduled generator owns a registry table, fix the parser/transform and let that workflow regenerate the artifact unless reviewers explicitly need a synchronized generated result in the same change. Do not resolve a generated-file conflict by hand-editing output while its authoritative source remains wrong. **Confidence:** very high, merged change and explicit Jaap Keuter/Gilbert Ramirez review.
