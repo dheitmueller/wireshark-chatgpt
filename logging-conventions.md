@@ -48,3 +48,9 @@ Merged master MR !9831 adds the Developer's Guide logging section. João Valverd
 **Documentation rule:** describe the logging *domain* (what), *level* (when), and *channel* (where) independently. Document the true default and distinguish runtime filtering from compile-time elimination; do not suggest release builds contain no logging.
 
 **Confidence:** Very high: merged documentation with specific implemented maintainer review.
+
+## Malformed UTF-8 diagnostics need bounded reads and display-width synchronization
+
+Merged !9108 (João Valverde) rebuilds the invalid-UTF-8 log renderer in `wsutil/wslog.c` around a rendered-text buffer and a parallel underline buffer. It validates code points with `g_utf8_get_char_validated` using the explicit remaining source length, escapes an invalid byte as `\\xNN` and marks four underline positions, and accounts for the rendered width of nonprintable Unicode escapes. João's review specifically directs use of `src_length` rather than an unbounded character scan. The patch also adds `wmem_strbuf_append_c_count` and a focused buffer test.
+
+**Rule:** diagnostic pointers and sizes are byte-bounded even if the presentation is Unicode; annotations must align with *rendered* characters/escape widths rather than original input-byte indexes. Include a test with malformed/trailing UTF-8, printable and unprintable valid code points, and source strings without a terminating NUL in the supplied span. **Confidence:** very high, accepted implementation and specific author review.

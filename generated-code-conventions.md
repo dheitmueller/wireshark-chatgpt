@@ -126,3 +126,9 @@ Merged master MR !9893, authored and merged by John Thacker, repairs six Coverit
 **Implementation rule:** identify and patch the authoritative `.cnf`, template, grammar, or generator input whenever changing generated dissector behavior. Regenerate the output, diff-check parity, and add targeted cases for the original error. Treat “fix the template too” as a correctness requirement, not optional cleanup.
 
 **Confidence:** Extremely high. Two independent merged master corrections authored and merged by John Thacker, plus matching stable-branch copies.
+
+## Generated parser correctness fixes belong in the generator and emitted output
+
+Merged master !9092 (Gerald Combs) adds checked arithmetic and an Expert Info field for malformed NCP offsets to both `tools/ncp2222.py` and generated `packet-ncp2222.inc`, with release backports !9102/!9103. In independent merged !9094 (John Thacker), a QCStatement must clear the global `object_identifier_id` at entry, because invalid BER may skip the callback that normally assigns it; the fix edits both `asn1/pkixqualified/pkixqualified.cnf` and generated `packet-pkixqualified.c`.
+
+**Rule:** when a generated dissector needs a new defensive check, state reset, or Expert Info registration, patch the authoritative generator or ASN.1 configuration, regenerate the emitted code and verify synchronization; otherwise the bug returns on regeneration. Include malformed inputs that take the initialization-skipping/error path. **Confidence:** extremely high; separate merged fixes authored by Gerald and John, one with stable backports.

@@ -117,3 +117,9 @@ Merged master !9222, authored and merged by John Thacker, makes expensive packet
 Merged !9143 (Tomasz Moń) replaced unbounded per-record QString column retention with a bounded QCache keyed by frame number. Coloring a row no longer populates expensive column strings merely as a side effect, and capture/model reset invalidates cached column values. Gerald Combs asked about UTF-8 versus QString/UTF-16 conversion boundaries; keeping the type returned by PacketListRecord::columnString avoids conversions during normal visible-column requests.
 
 **Performance caveat:** a cache of 500 rows makes memory predictable but can force repeated dissections during O(N log N) sorting. John Thacker argued sorting by expensive columns remains useful, suggested a configurable budget and a status-bar explanation rather than a disruptive dialog, and implemented the later merged !9222 policy (already described above). **Rule:** reason separately about normal scrolling, colorization, sorting and invalidation; constrain costly operations using a user-visible budget rather than making all sorting silently slow. **Confidence:** very high for merged code plus follow-up reviewer guidance.
+
+## A blank-area context-menu event may supply a negative model row
+
+Merged !9105 (Chuck Craft) fixes a Conversations-table crash when the user right-clicks below the last row. The selected row is `-1`, and a guard that checked only `row >= storage_->len` permitted invalid indexing. The accepted `ui/qt/models/atap_data_model.cpp` guard tests `row < 0` as well as the upper bound and missing storage.
+
+**Rule:** validate both sides of an index range when converting UI coordinates or selection indexes to direct container offsets. Test context menus on cells, empty viewport space and completely empty models; the absence of an item is a normal UI event, not malformed model state. **Confidence:** high, merged one-line crash fix.

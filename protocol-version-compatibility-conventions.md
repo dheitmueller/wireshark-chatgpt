@@ -27,3 +27,9 @@ Merged master MR !11820, authored by Guy Harris, changes the PGM dissector to re
 **Review rule:** do not broaden recognition merely because a sample exists. Ask for provenance: standards drafts, reference implementations, historical code, vendor behavior, or captures that demonstrate interoperability. High-authority maintainer analysis can justify compatibility behavior when the formal specification is genuinely insufficient, but the uncertainty and evidence should remain visible in comments or review history.
 
 **Confidence:** Extremely high for the concrete PGMCC behavior and high for the general rule. The merged master change was authored by Guy Harris and explicitly framed around incomplete specification evidence rather than convenience.
+
+## Draft-to-final protocol transitions need a coherent constants update and a capture
+
+Merged !9085 (Ivan Nardi) updates QUICv2 recognition and cryptographic constants from obsolete draft values to the version ID `0x6b3343cf`, including the initial salt and version-negotiation transport parameter. The proposal was held in draft while the latter IETF value was unsettled, and the author supplied a sample QUICv2 pcapng after finalizing the change. Later discussion identified that an older release could not recognize RFC 9369-compliant packets at all; Alexis La Goutte requested a stable backport, prepared as !11541.
+
+**Rule:** a version's identifier, initial secrets/salts, transport parameters, error codes and dispatch predicates form a coordinated compatibility boundary; updating only a displayed version name is insufficient. Wait for authoritative assignments when a draft is still moving, supply capture evidence for old and new versions, and explicitly consider stable-branch compatibility where valid traffic becomes undecodable. **Confidence:** very high for the merged 2022/23 change and maintainer backport discussion. Check current RFCs and master before using these historical constants today.

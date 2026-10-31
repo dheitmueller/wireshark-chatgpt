@@ -185,3 +185,13 @@ For merged Metamako trailer extension !9300, Alexis La Goutte requested a sample
 In merged !9149's discussion, Chuck Craft asked whether testing another contributor's MR required manually downloading and applying a diff. João Valverde provided the concise supported workflow: glab mr checkout 9149. That check-out was used to reproduce a previously reported dependent-frame crash across environments, though neither tester could reproduce the earlier failure in that snapshot.
 
 **Contributor rule:** prefer a clean MR checkout using glab (or an equivalent isolated branch) for local validation instead of manually layering patches on unrelated work. Record the exact revision, platform and reproduction steps; inability to reproduce an old crash is not proof that dependency recursion and performance hazards have been resolved. **Confidence:** high for direct maintainer workflow guidance; moderate for the historical regression outcome.
+
+## Squash merges must preserve useful diagnostic attribution
+
+In merged !9089 (ciscodump Coverity initialization fix), author Dario Lombardo objected that squashing a single commit had substituted a vague MR title for the original commit message carrying the Coverity CID. The merger confirmed that the descriptive reference was lost. This is evidence about a **real metadata-loss failure**, not a project-wide prohibition on squash merges: it was a discussion between contributors, not an adopted policy banning squashing.
+
+**Review rule:** when squashing, inspect the final commit message and retain bug numbers, issue links, Coverity IDs and technical rationale even when GitLab proposes a shorter MR-title-derived message. A squash operation should not sever traceability to the diagnostic it repairs. **Confidence:** moderate for generalized policy; high for the specific documented consequence.
+
+## Use representative capture files for new capture-format metadata
+
+Merged !9062 adds pcapng Darwin Flow ID and Wake Packet flag decoding. Martin Mathieson requested an example pcapng specifically because it would help test prospective registration callbacks for vendor/private blocks, and Alexis La Goutte asked whether the option description was backed by the pcapng draft/specification. No attached sample was established from the reviewed corpus record. **Submission rule:** protocol/file-format extensions should provide authoritative layout/spec references and small captures containing representative options (including unknown/absent options where relevant), so reviewers can verify byte widths, declared encodings and parser/extensibility behavior. **Confidence:** high for direct maintainer requests; do not claim a test file was delivered.

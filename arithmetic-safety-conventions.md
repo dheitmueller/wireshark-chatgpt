@@ -117,3 +117,11 @@ Merged master MR !9925, authored by John Thacker, corrects three packet-tree bit
 **Testing rule:** include the small negative values immediately adjacent to zero (especially -1 through -7) and the legitimate zero boundary, not only very large malformed lengths.
 
 **Confidence:** Very high. Merged master boundary fix authored by John Thacker, with an explicit arithmetic failure mechanism.
+
+## Parser offset types must cover the maximum legal PDU size
+
+Merged master !9093 (John Thacker), with release backports !9097 and !9111, changes UMTS RLC AMD/UMD reassembly offsets from `guint8` to `guint16`. Protocol PDUs larger than 255 bytes previously wrapped the byte offset and appended the final 256 bytes as a spurious extra fragment. The fix widens both local offset variables and every reassembly/status function parameter that carries that offset. **Rule:** derive offset type width from the maximum input size, not the size of adjacent protocol fields. Audit every helper boundary and test a payload that crosses the integer-width boundary, including reassembly. **Confidence:** extremely high, merged maintainer-authored master fix and two backports.
+
+## Checked parser offset advancement needs a consistent failure signal
+
+Merged !9092 (Gerald Combs), followed by exact release backports !9102 and !9103, adds `check_offset_addition` to the generated NCP parser to detect offset/length overflow and issue malformed Expert Info (`ncp.value_too_large`) rather than silently wrapping and processing the wrong region. The change is made in `tools/ncp2222.py` and carried into its generated include. **Rule:** validate additions *before* updating parser state, and use the appropriate malformed exception/diagnostic to prevent an invalid offset from reentering the parsing loop. Fix the generator, not only the emitted C. **Confidence:** extremely high, merged Gerald master and release fixes.

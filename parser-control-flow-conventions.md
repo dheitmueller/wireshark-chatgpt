@@ -11,3 +11,9 @@ Merged MR !24650, authored and merged by John Thacker, fixes SIP Security Mechan
 **Implementation rule:** whenever a tvbuff/parser helper is replaced or its return convention changes, audit surrounding loop termination, first-iteration behavior, and failure paths—not just the function call. Express the algorithm using the new API's status and output semantics rather than preserving control flow that depended on an old sentinel.
 
 **Confidence:** Very high. Merged master parser correction authored and merged by John Thacker with the obsolete sentinel dependency explicitly documented in the MR.
+
+## Error paths must preserve the parser's offset return contract
+
+Merged master !9082 (John Thacker), with release backports !9083 and !9084, fixes an infinite loop in BPv6 extension-block decoding. The extension-block helper promises to return the **absolute current offset**, but the malformed-data branch instead assigned the **number of remaining bytes** to that offset. That value could decrease and cause the outer parser to repeat indefinitely. The accepted failure path sets `*lastheader = TRUE` and returns the actual current offset.
+
+**Rule:** distinguish absolute offset, consumed-length delta and bytes-remaining return values at every helper boundary. When an error means parsing cannot advance, explicitly signal termination to the caller rather than returning a misleading smaller offset. Add malformed-input tests that assert progress or termination and protect against infinite loops. **Confidence:** extremely high; precise merged master correction and two stable-branch copies.

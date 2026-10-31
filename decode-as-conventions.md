@@ -13,3 +13,9 @@ Merged master MR !20567, authored by John Thacker and merged by Anders Broman, c
 **Review implication:** inspect Decode As presentation when adding multiple table entries that share a protocol ID, especially media-type/string tables. Registration metadata is user-facing behavior, not merely an internal label.
 
 **Confidence:** Extremely high. Merged master work authored by John Thacker, accepted by Anders Broman, and applied across multiple unrelated dissectors.
+
+## Keep transport-protocol dispatch separate from explicit payload fallback and carry context
+
+Merged master !9071 adds a `gre.subproto` Decode As payload table used only after GRE's normal protocol-type dissector table does not accept a packet. John Thacker explicitly asked whether making the existing `gre.proto` table Decode-As-capable would avoid a second table, and clarified that `dissector_try_payload_new(..., &gre_hdr_info)` can pass GRE header metadata through the fallback, just as `dissector_try_uint_new` does through the primary table. His comment also notes that the historical Decode As `label_func` was already unused by Qt.
+
+**Rule:** decide whether Decode As should override/augment a primary keyed dispatch table or provide a deliberate fallback before registering another table. Preserve protocol-private context in either path; test normal hits, disabled/rejecting primary dissectors, explicit Decode As selection and ultimate Data fallback. Do not copy obsolete UI callback scaffolding without checking current Decode As contracts. **Confidence:** very high, accepted merged implementation with direct John Thacker API review.

@@ -21,3 +21,9 @@ In the historical 2023 behavior documented by merged MR !9983, `BASE_UNIT_STRING
 **Compatibility/review rule:** distinguish a field's stored numeric value from its displayed label and verify that the specific field type and insertion API honor a display modifier in the target Wireshark branch. When they do not, format the value explicitly without changing the underlying numeric/filterable field representation. This documents a **historical API gap**, not an assertion that the limitation persists in current master; recheck `proto.c` before applying the workaround today.
 
 **Confidence:** High for the observed 2023 behavior. Direct John Thacker technical guidance incorporated into a merged dissector fix.
+
+## Retain canonical DNS numeric fields while appending human explanation to tree labels
+
+Merged !9073 (Alexis La Goutte) separates canonical DNS RR-type names from descriptive prose. John Thacker pointed out that a hidden/alternative field could still be typed into a display filter yet would be hard to discover through right-click **Apply as Column**. The revised implementation keeps the normal numeric `dns.qry.type`, response and covered-type fields registered and uses `proto_item_append_text` to add explanatory text from a second description table; statistics consumers keep the concise canonical name. His review also prompted consistency across query, response and RRSIG sites and a small syntax correction.
+
+**Rule:** do not compromise field identity, filterability or column discoverability to achieve a friendlier packet-tree label. Store a stable typed value, add presentation-only explanation to the tree item and check filters, columns, statistics and derived views independently. **Confidence:** extremely high, accepted merged change incorporating direct John Thacker feedback.

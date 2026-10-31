@@ -37,3 +37,13 @@ Merged master MR !20320, authored and merged by Martin Mathieson after a crash w
 **Review rule:** when fixing one overflow in a family of formatting helpers, audit sibling helpers and all callers for the same hidden-size assumption rather than applying a one-site bound check.
 
 **Confidence:** Extremely high. Merged crash fix plus direct Guy Harris review; the accepted change generalized the size contract across both affected floating-point formatting paths.
+
+## Grow once, copy the known byte count and maintain a precise NUL terminator
+
+Merged !9108 (João Valverde) changes wmem string-buffer append paths to call `wmem_strbuf_grow()`, copy the known byte count, advance the logical length, and explicitly write the terminating NUL. The new `wmem_strbuf_append_c_count` appends a repeated character without per-character reallocations and is covered by `wmem_test_strbuf`. This replaces a `g_strlcpy`-based append that rescanned a string even though its length was already measured. **Rule:** distinguish the stored byte length, allocation capacity and trailing NUL; if a buffer-growth helper already guarantees room, use a bounded copy and verify length/termination after each append. Test repeated appends and multibyte content. **Confidence:** high, merged implementation with unit coverage.
+
+## Replacing truncated fixed buffers with pointers introduces lifetime obligations
+
+Merged master !9090 (João Valverde) replaces a fixed-size SIP CSeq method buffer with an encoding-aware `proto_tree_add_item_ret_string(..., pinfo->pool, ...)`, avoiding fixed-buffer UTF-8 truncation. However, it also stored the packet-allocated `const char *` directly in long-lived SIP transaction state. The later merged John Thacker fix !9114 repairs an ASAN heap-use-after-free by using `wmem_strdup(wmem_file_scope(), cseq_method)` before retaining the pointer. **Treat !9114, not !9090 alone, as the accepted final lifetime precedent.**
+
+**Rule:** an allocation-safe string extraction is not automatically lifetime-safe. For any value retained in conversation/file scope, copy packet-scoped returned strings into a matching longer-lived allocator. Test redissection and transaction reuse with ASAN. **Confidence:** extremely high, observed regression and specific merged repair.
