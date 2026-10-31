@@ -15,3 +15,9 @@ Merged master MR !12524 (`blf: Use WTAP_ENCAP_NONE, record linktypes must match 
 **Testing rule:** include captures where one source container produces records of different Wiretap encapsulations and verify that each record resolves through an IDB with a matching link type after read/save/export paths.
 
 **Confidence:** Very high. Merged master Wiretap correctness fix authored and merged by John Thacker, followed by an accepted release-4.2 backport, with both the sentinel distinction and record/IDB link-type invariant stated directly in the change.
+
+## Preserve pcapng record-option ownership across dissection and later writing
+
+Merged John Thacker master MR !9716 and stable backport !9727 fix TShark's single- and second-pass paths. `epan_dissect_run_with_taps()` and `epan_dissect_reset()` may unreference `rec->block`, but TShark still needs pcapng packet options to write the record later. The accepted code calls `wtap_block_ref(rec->block)` before dissection and restores the retained block reference after reset, leaving the usual record cleanup responsible for final release.
+
+**Rule:** A processing call may change metadata reference ownership. Retain an explicit reference when a later output consumer needs the same block; test read/dissect/write option fidelity in both pass modes. **Confidence:** Very high, merged master plus backport.

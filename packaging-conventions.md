@@ -41,3 +41,9 @@ Merged master MR !13227, authored and merged by Gerald Combs, fixes Windows pack
 **Testing rule:** validate the installed/package artifact, not only the build tree. For Windows runtime dependencies, exercise a clean target without the developer environment's dependency paths so omitted DLLs cannot be accidentally satisfied by the build host.
 
 **Confidence:** Very high. The missing-runtime fix and immediate single-source cleanup were both merged master packaging changes authored and merged by Gerald Combs, with equivalent release-branch propagation.
+
+## Uninstallers should remove package receipts as well as files
+
+In Gerald Combs's merged macOS MR !9730, ChmodBPF and path_helper uninstall scripts gain `pkgutil --forget` for their corresponding package receipts after deleting the installed resources. Guy Harris requested coverage of the companion path-helper package, and Peter Wu checked the cleanup order. Release backports !9735 and !9736 preserve the fix.
+
+**Rule:** Complete uninstallation includes installer receipt/registry and helper service state, not just payload files. Test a subsequent reinstall or upgrade. **Confidence:** Very high; merged Gerald fix and Guy/Peter review.

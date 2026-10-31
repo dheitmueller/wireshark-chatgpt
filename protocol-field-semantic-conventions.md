@@ -99,3 +99,9 @@ Merged master MR !9846, authored by Guy Harris, corrects Gryphon IOCTL response 
 **Implementation rule:** for a computed or saved state value, use a generated/zero-byte current-packet span when it has no genuine backing bytes in that frame; do not manufacture a source range. Keep the registered `FT_*` width equal to the actual semantic-value domain rather than an incidental displayed byte count.
 
 **Confidence:** Extremely high: Guy Harris's merged master correction and two accepted backports.
+
+## Name Boolean filters so both presence and negation have clear semantics
+
+In merged SMPP MR !9732, Gilbert Ramirez questioned `smpp.command_type` as an FT_BOOLEAN: neither `smpp.command_type` nor `!smpp.command_type` makes request/response meaning obvious. He suggested a predicate such as `smpp.is_command` or an enum. The accepted revision instead adds separate, visible, generated `smpp.request` and `smpp.response` presence fields.
+
+**Rule:** Choose meaningful Boolean predicates or category-presence fields; reserve a `*_type` identifier for a multi-valued semantic classification. **Confidence:** Very high; explicit Gilbert review implemented in merged code.

@@ -22,3 +22,9 @@ Merged John Thacker MR !9772 changes DICOM tag-value display from `%-50.50s...` 
 **Review rule:** identify whether a truncation limit means bytes, Unicode code points, grapheme clusters, or visual width; use an appropriate helper and test multibyte characters exactly at the boundary. Keep the complete protocol value in its correct allocator scope and generate an abbreviated view for the UI independently.
 
 **Confidence:** Very high. Merged mainline correctness fix authored and merged by John Thacker with explicit UTF-8 semantics.
+
+## Decode tvbuff-backed protocol strings directly with a declared encoding
+
+Merged master !9720, authored and merged by John Thacker, replaces six PROFINET string paths built from `wmem_alloc`, `tvb_memcpy`, manual NUL placement and `proto_tree_add_string` with `proto_tree_add_item(..., ENC_UTF_8)`. This enables central encoding and trailing-NUL validation without maintaining temporary character buffers.
+
+**Rule:** When the bytes are already in a tvbuff, prefer an encoding-aware field API; maintain separate explicit cursor increments for protocol blank/padding bytes. **Confidence:** Very high; merged John Thacker patch.

@@ -121,3 +121,9 @@ Closed/unmerged automation MR !9907 tried to update several registries and a gen
 **Submission rule:** automated source/data maintenance must apply the same branch-scope restrictions as hand-written changes. When an updater emits generated protocol additions, restrict master-only feature growth before producing stable-branch cherry-picks. Treat !9907 as an authoritative review-policy rejection, **not** an accepted implementation.
 
 **Confidence:** High for the branch-policy instruction: direct Jaap Keuter review and explicit Gerald Combs remediation. No implementation authority is assigned to the closed proposal.
+
+## Separate urgent regression repair from unfinished feature work
+
+In CoAP MR !9731, Stig Bjørlykke requested splitting a small header-field regression fix from a larger Q-Block enhancement needing a longer review. The author retained the fix in merged !9731 and moved the Q-Block extension to !9742, still a draft/open MR in the corpus.
+
+**Rule:** Submit a narrow, independently testable correction without attaching speculative protocol behavior that might delay it. Distinguish accepted corrections from open successors. **Confidence:** Very high: direct Stig review, implemented split, merged fix.

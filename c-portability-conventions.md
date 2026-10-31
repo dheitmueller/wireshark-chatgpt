@@ -57,3 +57,9 @@ Merged master MR !11809, authored and merged by João Valverde, fixes an unalign
 **Review rule:** when a callback receives `void *`, trace the concrete type the calling library will pass at runtime. Treat casts that reinterpret it as a different struct as portability red flags even when they appear to work on x86.
 
 **Confidence:** Very high. Merged master portability/correctness fix authored and merged by João Valverde with a concrete unaligned-access failure mode.
+
+## A local variable can conflict with a legacy C library symbol
+
+The merged WoW dissector MR !9744 records a shadow warning for a local `index` identifier. Gerald Combs explained that `index` is a deprecated C library function still declared on some systems, while Alexis La Goutte noted historic macOS portability concerns. The contributor corrected the name.
+
+**Rule:** Investigate platform-specific identifier/shadow diagnostics even when the local source contains no same-named variable. Prefer descriptive names over suppressing an actionable checker warning. **Confidence:** High from maintainer review; the corpus omits the oversized final diff.

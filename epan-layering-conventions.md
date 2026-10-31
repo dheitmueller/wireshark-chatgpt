@@ -17,3 +17,11 @@ Merged MR !20688, authored and merged by Michael Mann, introduced an indirect in
 **Architecture rule:** ownership of data and dependency direction matter even for read-only constant tables. A generic UI or tap that needs protocol metadata should ask an epan-level service for it rather than importing a symbol from a protocol dissector. Prefer registries/accessors that preserve the epan↔dissector boundary and permit dissector implementation details to change without creating frontend linkage dependencies.
 
 **Confidence:** Very high. Merged master architectural refactor authored and merged by Michael Mann, with the decoupling/standalone-epan goal stated directly in the MR discussion.
+
+## Shared executable facilities belong below UI; exported dissector headers need justification
+
+João Valverde's merged master !9719 moves compile/runtime version information from `ui/version_info.[ch]` to `wsutil`, updating GUI, CLI, fuzz, epan and their CMake dependencies. His merged !9717 relocates shared exit codes from `ui/exit_codes.h` into `include/ws_exit_codes.h`, namespaced `WS_EXIT_*`. Non-GUI tools must not acquire UI linkage merely to use process-wide information.
+
+His merged !9713 documents that `DISSECTOR_PUBLIC_HEADERS` historically overexposed internal declarations. Martin Mathieson found 274 header-declared symbols without recognized external callers using `tools/check_static.py`; most should be static or removed, except legitimate private-plugin consumers.
+
+**Rule:** Put general APIs in a lower shared layer, update all callers and link targets in one move, and do not export dissector internals merely to avoid local forward declarations. **Confidence:** Very high for merged structural changes; high for João/Martin header guidance.

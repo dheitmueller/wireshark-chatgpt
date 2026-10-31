@@ -27,3 +27,9 @@ Merged master MR !13494, authored and merged by Guy Harris, adds pcapng `if_tsof
 **Testing rule:** construct a capture where the stored packet timestamp and metadata adjustment are individually nontrivial, and verify the resulting absolute timestamp against an independent expected value. Include negative values for signed offsets so an accidental unsigned path cannot pass unnoticed.
 
 **Confidence:** Extremely high. Merged master implementation and validation artifact from Guy Harris, backed by the pcapng type/semantics discussion and the signed option API added immediately beforehand.
+
+## Carry pcapng encoding into custom option dissector callbacks
+
+Merged master !9753 (Martin Mathieson) adds an `encoding` argument to `local_block_option_dissect_t` and passes the active pcapng block encoding from the dispatcher into callback implementations. Martin discovered the need while porting his local dissector.
+
+**Rule:** Custom option decoders need the originating section's byte order; do not guess the host's endianness. Evolve the typedef, dispatch and every implementation together. **Confidence:** High: merged API correction and retained diffs.

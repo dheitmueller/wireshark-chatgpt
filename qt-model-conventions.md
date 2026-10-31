@@ -69,3 +69,9 @@ Merged master MR !9840 (John Thacker) resolves the selected visible proxy column
 **Tests:** hidden/filtered columns, zero visible rows while changing filters, and timeline delegate behavior after column changes.
 
 **Confidence:** Very high: merged master work and implemented review from John Thacker and Roland Knall.
+
+## Cache validity needs the version of its rendering rules
+
+John Thacker's merged !9737 changes Qt `colorized()` to require both `colorized_` and `color_ver_ == rows_color_ver_`; old cached colors should not be considered current after rule changes. Merged !9741 removes an unnecessary packet-list `resize()` that could hide the scrollbar/minimap after column updates, while !9740 and backports correct the minimap final-row fencepost.
+
+**Rule:** Track visual-cache generation, not simply whether output was once computed. Let the Qt view/layout control scrollbar geometry instead of resizing the packet list to column totals. Test off-screen recoloring, add/remove columns, and the final row. **Confidence:** High: merged John Thacker corrections.

@@ -61,3 +61,9 @@ MR !20574 provides unusually strong review evidence. The proposed BLF/LINKTYPE_L
 **Review rule:** when the apparent wire rule comes from ambiguous wording or diagram layout, separate what the document literally requires from what an implementation historically does. Seek authoritative clarification, deployed-implementation evidence, or compatibility rationale before tightening acceptance. Prefer a tolerant reader when the format contract permits it; do not create a new interoperability rule by interpretation alone.
 
 **Confidence:** Extremely high as a review method. Direct, extended protocol-interpretation feedback from Guy Harris on a merged MR, with the ambiguity explicitly identified and escalated to the specification's provenance.
+
+## Report nonconforming but recognizable protocol versions
+
+Guy Harris's merged TLS MR !9758 warns when the ClientHello legacy-version field claims TLS 1.3 (`0x0304`) or DTLS 1.3 (`0xfefc`), contrary to RFC 8446 §4.1.2 and RFC 9147 §5.3, which require the legacy 1.2 value there. The warning is attached to the actual bytes, while the dissector continues to recognize TLS 1.3.
+
+**Rule:** Separate protocol recognition from conformance assessment. Dissect identifiable nonconforming traffic and attach specific expert diagnostics instead of rejecting the entire packet. **Confidence:** Extremely high, merged Guy Harris code and explicit RFC references.

@@ -37,3 +37,9 @@ Merged master MR !13198, authored and merged by John Thacker, fixes several HTTP
 **Review rule:** highlight bugs often indicate mixed coordinate systems even when decoded values are correct. Inspect additions and subtractions of opcode, record, or parent offsets around tree-item calls and confirm that both the start and the computed end/length share one origin.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with multiple QPACK highlight offsets repaired by removing an inappropriate nested-origin subtraction.
+
+## Decode transformed data using its own tvbuff
+
+Merged master RTPS !9722 changes two PL_CDR_LE/PL_CDR_BE branches to use decompressed `data_holder_tvb`, rather than the compressed source `tvb`, for tree items and parameterized decoding. The source buffer has different bytes and may not share the transformed payload's offsets.
+
+**Rule:** At decompression or transformation boundaries, pair each parser call, tree item and offset with the tvbuff holding the bytes actually interpreted. Closed preliminary !9721 is not implementation evidence. **Confidence:** High; focused merged diff.

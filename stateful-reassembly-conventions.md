@@ -95,3 +95,9 @@ Merged master MR !12503, authored and merged by John Thacker, fixes SSH channel 
 **Implementation rule:** model each endpoint's identifier namespace separately and build cross-endpoint aliases only from protocol events that establish them. Route persistent state and subdissector lookup through the direction-correct namespace. If identifiers can be reused over the lifetime of a capture, retain enough generation/time/range history that an older packet cannot be resolved through a newer association.
 
 **Confidence:** Extremely high. Both accepted master changes were authored and merged by John Thacker, and !12503 documents the incorrect equal-number assumption, directionality of the mapping event, one-sided-capture concern, and remaining reuse/random-access limitation explicitly.
+
+## Reset endpoint-local transfer state at a terminal handshake
+
+Merged USBLL master MR !9751 clears the endpoint's active transfer key, offset, expected length, last DATA PID and data length on each appropriate STALL handshake. After a host clears endpoint halt, a fresh DATA0 is not a retransmission or continuation of the previous transfer. The accepted code differentiates endpoint directions and split transactions. Merged !9795 corroborates STALL as a logical transfer-completion event.
+
+**Rule:** Reassembly and duplicate detection are scoped to protocol transfer epochs, not just repeated data-toggle/sequence values. Clear all prior-epoch state on terminal errors. Test old DATA0, STALL, halt-clear and new DATA0 in both directions. **Confidence:** High, merged source and protocol rationale.

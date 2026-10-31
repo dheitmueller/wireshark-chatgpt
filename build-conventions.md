@@ -141,3 +141,9 @@ Merged master MR !20378, authored and merged by John Thacker, marks Wireshark pl
 **Implementation rule:** for diagnostic/instrumented builds, optimize teardown for actionable diagnostics rather than mechanically matching production unload behavior when the difference has no semantic effect on the tested workload. Keep such behavior narrowly conditional on the instrumentation that requires it.
 
 **Confidence:** Very high. Merged master sanitizer-support change authored and merged by John Thacker with before/after diagnostic evidence.
+
+## Diagnose transitive library ABI failures before adding a direct dependency
+
+Closed MR !9718 proposed adding `GCRYPT_LIBRARIES` to sdjournal extcap after an RHEL7 build using custom cryptographic libraries failed on a versioned symbol from system `libsystemd`. João Valverde pointed out that sdjournal does not directly depend on libgcrypt and rejected the linkage workaround as masking an incompatible dependency build. The contributor accepted rebuilding the dependent library or disabling the optional component.
+
+**Rule:** Trace the dependency and symbol-version provenance before adding a target link library unrelated to that target's APIs. This is authoritative **negative review guidance**, not a merged implementation. **Confidence:** High from João's explicit diagnosis and author acknowledgment.

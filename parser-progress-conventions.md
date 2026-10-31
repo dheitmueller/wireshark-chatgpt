@@ -38,3 +38,8 @@ Merged master MR !10756, authored and merged by Gerald Combs, fixes an XRA disse
 
 **Confidence:** High. Merged master infinite-loop fix with a concrete overflow-to-no-progress failure mode.
 
+## Error-skipping parsers must preserve forward progress
+
+Merged master MR !9752 (John Thacker) removes a CBOR chunk-read error-path rollback to `chunk->start` that defeated `wscbor_skip_if_errors()`. A failed parse could repeatedly revisit the same malformed container element, causing nontermination or memory exhaustion.
+
+**Rule:** An error-skipping parser must either consume invalid input or terminate its caller. Do not silently restore a cursor to the same position when the caller may continue. Test malformed/excessive-length lists for monotonic offset progress. **Confidence:** Very high; accepted master fix.

@@ -23,3 +23,9 @@ Merged master MR !16507, authored and merged by John Thacker, fixes 6LoWPAN fiel
 **Implementation rule:** treat field-registration and protocol-tree display parameters according to their declared semantic enum domain. Never substitute a size or width merely because the underlying C type accepts it; prefer named enum constants so the intended behavior is reviewable and resilient to API changes.
 
 **Confidence:** Extremely high. Merged master correctness fix authored and merged by John Thacker and propagated to two stable branches.
+
+## Match 64-bit value strings with the required display flag
+
+In the merged WoW dissector MR !9744, CI explicitly reported a field using `VALS64` whose display did not include `BASE_VAL64_STRING`; the author corrected it. The 32-bit `VALS` registration behavior does not automatically carry over to 64-bit lookups.
+
+**Rule:** Register value-string lookup width, `FT_*` type and display-base flags consistently. Treat dissector checker errors as semantic API-contract failures. **Confidence:** Moderate/high from explicit CI diagnostic and author discussion; the corpus lacks the final oversized diff.

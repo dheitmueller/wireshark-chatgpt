@@ -45,3 +45,9 @@ Companion merged !10331 documents that MPEG's short magic numbers are weak enoug
 **Implementation rule:** make the opener's format decision explicit in per-file state and use it consistently for subsequent record framing; handle format-defined stuffing and terminators separately from record payloads. Treat recognizer confidence and filename extensions as supporting discovery signals, not as interchangeable parsers.
 
 **Confidence:** High — merged John Thacker wiretap changes with explicit failure modes, plus a compatible registration correction.
+
+## Register both file extension metadata and the actual opener
+
+Merged master !9725 updates Wiretap `file_access.c` documentation: every added file type, even extensionless formats, must appear in `open_info_base[]`, not only the extensions list. Reader probes return `WTAP_OPEN_ERROR`, `WTAP_OPEN_MINE` or `WTAP_OPEN_NOT_MINE`; the cleanup contract for reader-private state differs between errors managed by `wtap_close` and NOT_MINE probes preceding another opener.
+
+**Rule:** Review both format-discovery registrations, named open outcomes and cleanup paths together. **Confidence:** High; merged documentation of concrete Wiretap contracts.
