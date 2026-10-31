@@ -125,3 +125,7 @@ Merged master !9093 (John Thacker), with release backports !9097 and !9111, chan
 ## Checked parser offset advancement needs a consistent failure signal
 
 Merged !9092 (Gerald Combs), followed by exact release backports !9102 and !9103, adds `check_offset_addition` to the generated NCP parser to detect offset/length overflow and issue malformed Expert Info (`ncp.value_too_large`) rather than silently wrapping and processing the wrong region. The change is made in `tools/ncp2222.py` and carried into its generated include. **Rule:** validate additions *before* updating parser state, and use the appropriate malformed exception/diagnostic to prevent an invalid offset from reentering the parsing loop. Fix the generator, not only the emitted C. **Confidence:** extremely high, merged Gerald master and release fixes.
+
+## Guard every use of an inferred period or interval
+
+Merged **!8843** hardens PTPv2 timestamp analysis where equal or out-of-order adjacent timestamps imply a zero/negative interval. **Gerald Combs** identified additional reciprocal `1 / period` sites besides the first division guard and flagged an accidental debug `printf`; the author repaired these before merge. Validate all derived ratios and rates using the same positive-period validity flag. Test identical, backward and absent two-step timestamps, not merely normal PTP event ordering. **Confidence:** very high for merged fix and review.

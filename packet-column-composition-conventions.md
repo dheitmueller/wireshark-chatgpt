@@ -13,3 +13,9 @@ Merged master MR !15334 adds callable NR-RRC SIB dissectors and adjusts `COL_INF
 **Review rule:** test column output with the smallest singleton case and with multiple adjacent contributions in the same packet. Column text is a composed user interface; a fragment that looks correct in isolation can still be wrong when another instance appends immediately after it.
 
 **Confidence:** Very high. The cardinality/composition problem was identified directly by Pascal Quantin during review of a merged master NR-RRC change, and the implementation was revised before merge.
+
+## Bound resolved and unresolved custom-column strings independently
+
+Merged **!8826** (John Thacker) fixes custom-column separator corruption near maximum length, disparate truncation between resolved `result` and unresolved `expr`, NULL value formatting, and truncated UTF-8. The display result now marks truncation at a UTF-8 boundary, while the unresolved/filter expression remains a separate semantic value. Test exact-boundary separators, multi-field mixtures, resolved vs numeric rendering, NULL fallbacks and multibyte characters.
+
+Merged **!8823** and backports **!8824/!8825** demonstrate that `try_val_to_str()` may return NULL, so pass `col_add_str()` an explicit unknown fallback such as `val_to_str_const()`. Merged **!8833** filters unprintable PostgreSQL message-type bytes before appending `%c` to Info. Treat packet columns as intentionally formatted, bounded human-readable output. **Confidence:** very high from merged fixes.

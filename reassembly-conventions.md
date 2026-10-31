@@ -173,3 +173,13 @@ Merged **!8931** adds `fragment_add_check_with_fallback()`, used by USBLL to att
 **Tomasz Moń's review** caught reassembly-path changes that prevented TCP from handing correctly reassembled bytes to HTTP. Explicit regression captures were `fuzz-2015-06-09-24315.pcap` packet 117786 and `fuzz-2008-09-29-3181.pcap.gz` packet 1035 (with 1034 reporting a PDU in 1036). Boundary checks must cover equality with final data length, not only strictly greater length.
 
 **Rule:** make protocol-specific late retransmission tolerance explicit at the API/call site; test unchanged consumers of shared reassembly with their historical captures. Verify not merely that a fragment group completes, but that the downstream dissector still receives the reassembled PDU and tree fields reference the right frame. This accepted implementation provides the stronger positive precedent than the later closed global proposal **!9004**. **Confidence:** very high for merged API and specific review failures.
+
+## Separating fragment heads from fragment items requires whole-consumer migration
+
+Merged **!8836** (John Thacker) distinguished `fragment_head` from `fragment_item`, removing fields that belonged to only one of the two and reducing memory usage. **Alexis La Goutte** found new Clang Analyzer NULL dereference reports in OBEX, SMB pipe/SMB2, OPC UA and `reassemble.c`; John linked fixes to merged **!8844**. Merged **!8846** and **!8859** addressed empty/one-element fragment lists, the `prev == NULL` case, `MERGE_FRAG()`, and head/tail rewrites. When changing reassembly internals, audit *every* consumer for assumptions that heads are themselves items; test empty, singleton, multi-fragment and out-of-order paths across unrelated dissectors.
+
+**Caution:** merged !8858 guards an OPC UA access after `for (frag_i = head->next; frag_i; frag_i = frag_i->next) {}`. This loop appears to leave `frag_i == NULL`; merely silencing Coverity does not establish valid last-fragment sequence calculation. **Confidence:** very high for the refactor and reviewer-documented regressions, qualified for the suspicious !8858 correction.
+
+## Identify nested reassembly by its returned TVB, not its frame number
+
+Merged **!8847** repairs PPP Multilink cases where several layered PPP reassemblies occur in the same frame. A test of `pinfo->num == frag_mp->reassembled_in` is insufficient: the returned `next_tvb` from `process_reassembled_data()` verifies the current packet/layer owns the completed result. Call the child dissector only if that TVB exists; otherwise legitimately report no reassembly data. **Rule:** a completion frame number does not uniquely identify a nested reassembly instance. **Confidence:** very high, merged master fix.

@@ -147,3 +147,7 @@ Merged master **!8990** clarifies `proto_tree_add_string()`'s API documentation:
 **Rule:** decide wire-byte decoding, value storage, and UI escaping separately. A string-valued field's searchable semantic value must not be overwritten with escaped or emphasized presentation text. Encode or normalize for the field contract, preserve original wire span where feasible, and leave label formatting to the presentation path.
 
 **Confidence:** Very high for the merged API-comment clarification; !8969 is corroborating protocol-specific behavior, not a universal DNS wire-encoding declaration.
+
+## Represent textual identifiers as decoded protocol strings
+
+Merged **!8812** changes an IEEE 802.11 Hotspot 2.0 OSU NAI from `FT_BYTES` with `ENC_NA` to `FT_STRING` with `ENC_ASCII`. The registered field type and encoding affect filtering and machine exports as well as visible tree labels. When a protocol defines text, register a string with the actual encoding rather than retaining opaque bytes simply because packets carry octets. **Confidence:** high, merged narrow corrective diff.

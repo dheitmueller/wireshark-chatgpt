@@ -117,3 +117,7 @@ Merged master MR !15389, authored by Gerald Combs and merged by Anders Broman, u
 **Review rule:** when CI platform lifecycle semantics change, audit both cleanup and diagnostic paths. Test/inspect at least success, failure, and cancellation separately; a change that fixes canceled-job errors can accidentally suppress the evidence needed to diagnose a genuine failed job.
 
 **Confidence:** Extremely high. Two merged master CI changes from Gerald Combs, with the second immediately correcting the failure-versus-cancellation distinction exposed by the first.
+
+## Preserve strict release checks without blocking instrumented fuzz execution
+
+Merged **!8829** runs an ordinary GCC release build with strict warnings while explicitly supplying `-DENABLE_WERROR=Off` for certain ASan/Valgrind fuzz jobs. A release-compiler hygiene job and a fuzz job have different goals: warnings should remain visible but instrumented fuzz processing should be able to execute in the latter. **Rule:** choose warning severity intentionally per job, inspect whether a new diagnostic prevents test/fuzz binaries from being built, and retain the evidence from those jobs. This is historical accepted CI configuration, not a mandate to disable `-Werror` in all future fuzz jobs. **Confidence:** high.
