@@ -49,3 +49,13 @@ Merged master MR !14362, authored and merged by Guy Harris, stops applying Socke
 **Review rule:** for every byte-swap preference, identify the precise encapsulation, field set, producer/library behavior, and versions it represents. Make the preference label/help text expose that scope, and verify that newer header formats are not accidentally controlled by it.
 
 **Confidence:** Extremely high. The master change and stable backport were authored and merged by Guy Harris, and the MR rationale explicitly separates the classic/CAN FD and CAN XL byte-order contracts.
+
+## Check length units at decoder and child-tvbuff boundaries
+
+Merged master **!8645** and its stable counterparts **!8654/!8655** correct `call_per_oid_callback()` in PER: the open-type length from the PER decoder is counted in **octets**, while `tvb_new_octet_aligned()` expects a length in **bits**. The accepted fix passes `type_length * 8` and documents the expected unit. Related merged **!8625** adds X2AP private-IE OID dispatch through the PER callback, making correct length accounting important for both normal and extension decoding.
+
+**Rule:** write and verify units for each offset/length argument, especially at ASN.1/PER bitstream, byte-aligned tvbuff and private-extension callback interfaces. An aligned buffer is not proof that the API's length parameter uses bytes. Verify non-byte-aligned predecessor fields and the exact child-tvbuff boundary. **Confidence:** high, merged master fix and independent stable backports.
+
+## Do not reuse classic-frame control-bit interpretations for CAN FD
+
+Merged **!8626/!8627** correct Vector BLF wiretap decoding: a flag interpreted as RTR/SRR on one CAN encoding must not imply a remote frame for CAN-FD. The reader now checks the frame variant and its corresponding remote-frame flag before setting `CAN_RTR_FLAG` or suppressing payload. **Rule:** select flag interpretation from the exact record variant/version; adjacent classic and FD formats may reuse bit positions with different meanings. Test both payload-bearing CAN-FD and classic remote frames. **Confidence:** high, accepted master and supported-branch fixes.

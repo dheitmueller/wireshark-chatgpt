@@ -41,3 +41,9 @@ In merged Matter dissector MR !9865, Roland Knall asked the author to make flag 
 **Implementation rule:** ground field names, descriptions, and flag masks in the protocol standard, not just sample SDK code. Review the entire new `hf_` namespace for consistency before submission. Preserve the UI distinction between generated information and bytes genuinely carried by a packet.
 
 **Confidence:** Very high. Direct, actionable maintainer review and revisions within a merged new-protocol MR.
+
+## Separate the public protocol label from the canonical display-filter prefix
+
+Merged **!8636** and stable **!8657** standardize the Protocol-column labels for H.223, H.224, H.264 and H.265 to include the specification's dot. Merged **!8656** similarly corrects H.248's user-visible short name and its registration/table display label; it updates both the ASN.1 source template and generated dissector. In contrast, merged **!8612** ensures the H.224 registration uses the conventional lower-case filter abbreviation `h224` while retaining the human-facing `H.224` name.
+
+**Rule:** review the long protocol description, Protocol-column short name, registered dissector handle and field-filter prefix as distinct surfaces. A human-readable standard name may contain punctuation that would be inappropriate in a stable lower-case filter namespace. For generated dissectors, change generator templates as well as generated output to avoid the next regeneration undoing the fix. **Confidence:** high, multiple accepted upstream and stable changes.

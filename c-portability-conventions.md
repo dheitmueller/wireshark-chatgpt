@@ -73,3 +73,15 @@ Merged !9702 extended the MySQL dissector for native cloning commands. Alexis La
 ## Print fixed-width integer fields with fixed-width format macros
 
 Merged master !9268 introduced CQL row-number text using `%ld` even though the counter was a `gint64`. Stig Bjørlykke's merged !9278 immediately replaces it with `%" PRId64`. His merged !9277 likewise replaces `%04lx` with `%04" PRIx64` for a 64-bit AVSP control word in both the protocol item and Info column. **Rule:** use the relevant `PRI*` fixed-width macros for 64-bit wire values and counters instead of assuming C `long` has the required width across 32-/64-bit and Windows ABIs. Audit formatting in columns as well as tree labels. **Confidence:** Very high; two accepted corrective master MRs (!9277, !9278).
+
+## Test octet bits rather than depending on the signedness of char
+
+Merged **!8611** is a Guy Harris-authored stable-branch correction to the Qt packet-bytes display. An octet is in the seven-bit ASCII range if its `0x80` bit is clear. Testing `ba[i] & 0x80` works whether plain `char` is signed or unsigned; compiler/architecture-dependent sign extension does not change that bit. The code maps non-ASCII octets to a middle-dot placeholder.
+
+**Rule:** test well-defined unsigned byte bits and ranges rather than making implicit assumptions about plain-char signedness across macOS, Windows and ARM. ASCII membership is not the same as printable-character classification: handle control bytes through the display's separate escaping policy. **Confidence:** exceptionally high, direct merged Guy Harris change.
+
+## Account for setjmp-style exception semantics and shift widths across compilers
+
+Merged **!8622** (Brian Sipos, positively reviewed by João Valverde) fixes portability failures in tvbuff exception tests. Values written across TRY/CATCH's setjmp/longjmp boundary and examined after it were made `volatile` where required, and test locals were initialized before the guarded operation. The same patch guards a varint boundary case involving a wide left shift to avoid entering the out-of-range path without checking the index.
+
+**Rule:** ordinary automatic local variables modified after setjmp may not retain a defined observable value after longjmp unless qualified appropriately; tests must satisfy the language/compiler exception model, not just run on one toolchain. Keep integer shift counts within the promoted operand width and make boundary predicates explicit. **Confidence:** high for the accepted compiler fix; consult current exception macros when adapting it.
