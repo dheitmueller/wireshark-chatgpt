@@ -142,3 +142,9 @@ Merged master MR !9953 fixes the packet-details context menu's **Colorize with F
 Merged release-3.6 !9462 (Gerald Combs) adjusts I/O Graph and Sequence dialogs after `ElidedLabel` began escaping HTML in !9261. Callers no longer prepend `<small><i>` or embed `<b>` markup in hint messages; they call `hintLabel->setSmallText()` and pass ordinary text. The existing bold error emphasis was lost, with a comment proposing a future dedicated widget feature.
 
 **GUI rule:** when a reusable label enforces plain-text escaping, treat that as a rendering contract rather than working around it with HTML-looking input. Add explicit style APIs for needed emphasis and test message content and visual semantics when changing the widget's escaping policy. **Confidence:** high, merged stable-branch corrective change; the proposed bolding capability was not part of this MR.
+
+## Register shortcuts independently of lazy menu population
+
+Merged !9121 (Roland Knall) fixes the Packet Comments shortcut being unavailable until its menu had been shown or a packet selected. Both Wireshark and Logray register the action and shortcut at window construction, before the menu's aboutToShow refresh. The author deliberately avoids adding the action in .ui files merely to prevent an unrelated translation refresh.
+
+**Rule:** if a shortcut must work immediately, create/register its QAction before any lazy menu-rebuild callback. Test fresh launch with no selection as well as an already opened menu, and apply shared interaction fixes in both GUI frontends. **Confidence:** high (merged bug fix).

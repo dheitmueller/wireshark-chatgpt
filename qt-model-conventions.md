@@ -111,3 +111,9 @@ Merged master !9222, authored and merged by John Thacker, makes expensive packet
 **UI-performance rule:** model whether a derived column requires expensive extraction, cache at the semantic invalidation boundary, and set an explicit memory budget. Preserve cheap sortable columns and communicate when an expensive sort is unavailable; don't apply one arbitrary limit to every column. Exercise large captures, custom/address columns, filter transitions, cache invalidation and signed/unsigned row-count limits.
 
 **Confidence:** Very high: John Thacker's merged fix and quantified regression analysis in discussion.
+
+## Separate colorization from packet-column extraction in a bounded cache
+
+Merged !9143 (Tomasz Moń) replaced unbounded per-record QString column retention with a bounded QCache keyed by frame number. Coloring a row no longer populates expensive column strings merely as a side effect, and capture/model reset invalidates cached column values. Gerald Combs asked about UTF-8 versus QString/UTF-16 conversion boundaries; keeping the type returned by PacketListRecord::columnString avoids conversions during normal visible-column requests.
+
+**Performance caveat:** a cache of 500 rows makes memory predictable but can force repeated dissections during O(N log N) sorting. John Thacker argued sorting by expensive columns remains useful, suggested a configurable budget and a status-bar explanation rather than a disruptive dialog, and implemented the later merged !9222 policy (already described above). **Rule:** reason separately about normal scrolling, colorization, sorting and invalidation; constrain costly operations using a user-visible budget rather than making all sorting silently slow. **Confidence:** very high for merged code plus follow-up reviewer guidance.

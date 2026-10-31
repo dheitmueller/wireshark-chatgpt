@@ -21,3 +21,13 @@ Merged MR !23210 explicitly moved profile bookkeeping into `ProfileModel`, with 
 **Implementation rule:** when a settings dialog represents a transaction over persistent objects, keep pending mutations in the model, validate the combined final state, and commit at the acceptance boundary. Avoid letting widget callbacks independently mutate persistent storage in ways that make Cancel or multi-step validation unreliable.
 
 **Confidence:** High. Explicit design of a merged refactor, subjected to unusually extensive reviewer-driven scenario testing.
+
+## First-run profile bootstrap cannot assume the normal metadata index exists
+
+Merged !9133 (John Thacker) fixes copying a global profile to a personal directory during CLI startup, before the hash of profile configuration filenames is initialized. The accepted path copies source files directly rather than filtering against an incomplete hash built only after parsing begins. **Rule:** distinguish first-run/bootstrap state from normal indexed operation, and validate profile copying before and after configuration-file discovery. **Confidence:** very high.
+
+## Do not silently invalidate existing profiles to enforce cross-platform naming
+
+Open draft !9117 proposed forbidding leading-dot profile names on all systems for cross-platform exports. Stig Bjørlykke questioned breaking profiles valid on Unix/Linux and suggested considering import/export warnings rather than imposing Windows restrictions on current profiles. Roland Knall acknowledged the compatibility concern and also noted .git directories being misrecognized as profiles.
+
+**Review rule:** distinguish filesystem discovery hygiene and cross-platform archive validation from retroactively invalidating user-created profile names. Consider warnings at the actual export/import boundary and investigate how Windows imports are handled before adopting a global restriction. **Status:** substantive maintainer feedback on an *unmerged open* proposal; no new naming policy was accepted in !9117.

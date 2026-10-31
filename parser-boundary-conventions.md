@@ -65,3 +65,9 @@ Merged master MR !20801, authored by John Thacker, fixes sFlow parsing where unk
 **Implementation rule:** for an unknown but structurally bounded record, distinguish “payload semantics unknown” from “framing unknown.” Preserve the outer framing, consume/skip the whole declared encoded extent, and continue at the next sibling rather than breaking at the unknown subtype.
 
 **Confidence:** Extremely high. Merged master parser correctness fix authored by John Thacker plus an accepted stable backport, with a concrete failure mode in which failing to advance corrupts all subsequent dissection.
+
+## Check addition before advancing offsets obtained from untrusted lengths
+
+Merged master !9124 and release backports !9134/!9135 (Gerald Combs) make RTPS offsets use a checked helper: reject offset > G_MAXUINT32 - value *before* computing offset + value, attach an Expert Info diagnostic when there is a tree, and throw ReportedBoundsError. This replaces numerous unchecked increments, including variable-length member names and sequences. The change also prevents invalid native-type lengths from propagating as negative advancement.
+
+**Rule:** validate representability before arithmetic in parsers, centralize advancement in a helper whose error semantics are explicit, and test lengths near UINT32_MAX as well as malformed/truncated records. A tree annotation does not replace throwing the appropriate packet bounds exception. **Confidence:** extremely high (Gerald's merged master fix and two backports).

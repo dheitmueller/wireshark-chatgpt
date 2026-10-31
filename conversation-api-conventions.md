@@ -41,3 +41,9 @@ Merged master !9249, authored and merged by John Thacker, fixes `conversation_se
 **Rule:** when evolving a keyed conversation, derive the removal table from the **current key shape**, not the newly requested endpoint or a similarly named partial-key table. Verify all combinations of missing address/port components, ensure removal occurs before re-insertion, and test that no stale entry or null lookup is left behind. A table-ownership mismatch can turn a valid endpoint update into a segmentation fault.
 
 **Confidence:** Extremely high: John Thacker's merged master fix, explicit failure analysis, and two accepted backports.
+
+## Keep protocol-private state separate from the transport's dispatch conversation
+
+Merged !9123 introduced CONVERSATION_SNMP to avoid SNMP consuming UDP stream identity, but John Thacker's substantive *post-merge* review identified why the implementation was not a complete fix: conversation_set_dissector() on a private SNMP conversation does not determine what the underlying UDP layer dispatches. Applying it to a UDP conversation is itself wrong if packets on that tuple are not all SNMP. He also noted that the generated packet-snmp.c had not been updated through its ASN.1 source, and regeneration in !9252 largely erased the change. He specifically points to !11629 as the duplicate-stream-ID repair and later !19034 as a proposed reintroduction.
+
+**Rule:** allocate independent application state without conflating it with the lower transport conversation's dissector selection. Only bind a lower-level conversation when the transport's future dispatch contract warrants it (heuristic, wildcard ports, or a well-scoped handoff), and update generator input as well as generated output. **Historical status:** merged !9123 is cautionary evidence, *not* a successful final SNMP implementation. **Confidence:** extremely high for John Thacker's explicit corrective analysis.

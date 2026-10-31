@@ -45,3 +45,9 @@ Merged MR !20997, authored and merged by Guy Harris, renames the `pint.h` load/s
 **Implementation rule:** prefer the shared endian-aware byte helpers for fixed-width wire loads/stores, and make helper/API names encode the value domain they actually implement. Express byte order as big-endian/little-endian (or the applicable protocol order), not relative to the host's native order.
 
 **Confidence:** Extremely high. Two merged master changes authored and merged by Guy Harris, including a tree-wide API rename whose sole purpose was making the unsigned contract explicit.
+
+## Verify portable endian-load idioms on each supported compiler
+
+In the discussion of merged !9153, Guy Harris used compiler-generated code to distinguish GCC/Clang improvements from MSVC and Intel icc limitations. GCC and Clang often optimize byte-wise shift/mask network-order loads, while MSVC/icc at the time did not reliably do so. John Thacker observed that memcpy() from unaligned bytes into a correctly aligned local followed by a byte swap could optimize to a native load and bswap on these compilers. Guy recommended compiler-aware treatment rather than unconditional wide pointer casts.
+
+**Rule:** choose alignment-safe byte loads, standard memcpy-to-local or shared endian helpers; validate optimization claims on all supported architectures and compilers, not one Compiler Explorer target. This discussion proposed a future wsutil/pint.h optimization: **do not treat it as code merged by !9153**. **Confidence:** extremely high for Guy's portability analysis, advisory rather than accepted implementation.

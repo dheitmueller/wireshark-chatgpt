@@ -29,3 +29,9 @@ Merged master !9207 (João Valverde) changes the display-filter VM comparison he
 **Design rule:** when a filter language permits a syntactic operand ordering, its semantic checker and execution VM must both support the resulting value forms. Separate an operand's *location in the AST* from its typed storage representation; bound inference retries and fail normally when no definitive type can be inferred. Preserve relational semantics rather than mechanically swapping operations whose order matters.
 
 **Historical caveat:** adjacent closed !9192 redirected an arithmetic-inference draft to merged !9212, and later merged !9246 partially withdrew that arithmetic-commutation mechanism. The VM operand-form fix and tested type-inference requirement are strong evidence; this particular 2022 commutation implementation is **not** a template for current arithmetic parsing. **Confidence:** High for the merged compatibility requirement and its tests, lower for the superseded intermediate algorithm.
+
+## Reject operators unsupported by the resolved field type before folding constants
+
+Merged !9161 (João Valverde) guards unary minus in display-filter semantic analysis with ftype_can_unary_minus(ftype1), returning a normal semantic diagnostic if the operand type cannot support negation. Constant-folding an invalid operand previously crashed rather than producing a user-visible filter error.
+
+**Rule:** type inference does not imply operator support. Check the resolved type's operator capability before evaluating or folding it; test valid numeric operands and invalid types through the syntax/error path. **Confidence:** very high (merged direct crash fix).

@@ -179,3 +179,9 @@ In closed/unmerged HTTP/3 !9330, Alexis La Goutte requested that an unrelated ma
 ## Supply a small illustrative capture and distinguish protocol features in reviewable increments
 
 For merged Metamako trailer extension !9300, Alexis La Goutte requested a sample capture (supplied) and identified a Windows build failure from an unavailable `abs` declaration; the author revised the code. For merged HTTP/3 additions !9276, Alexis suggested splitting the Datagram and WebTransport feature work into separate patches and requested a capture, even though the final snapshot still merged together. **Rule:** exercise new dissector behavior against a concise reproducer on all relevant platforms and keep separable protocol additions individually reviewable; a suggestion to split a merged MR remains a reviewer preference, not proof that the split happened. **Confidence:** High for capture/build requirements and explicit maintainer feedback.
+
+## Check out another contributor's MR directly for reproduction
+
+In merged !9149's discussion, Chuck Craft asked whether testing another contributor's MR required manually downloading and applying a diff. João Valverde provided the concise supported workflow: glab mr checkout 9149. That check-out was used to reproduce a previously reported dependent-frame crash across environments, though neither tester could reproduce the earlier failure in that snapshot.
+
+**Contributor rule:** prefer a clean MR checkout using glab (or an equivalent isolated branch) for local validation instead of manually layering patches on unrelated work. Record the exact revision, platform and reproduction steps; inability to reproduce an old crash is not proof that dependency recursion and performance hazards have been resolved. **Confidence:** high for direct maintainer workflow guidance; moderate for the historical regression outcome.

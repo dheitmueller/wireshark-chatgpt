@@ -65,3 +65,15 @@ Merged master MR !11493, authored and merged by John Thacker, fixes RTP extended
 A dissector may need synthetic endpoints or port discriminators for a logical conversation (including TLS carried inside EAP), but copying a whole `packet_info` and modifying that copy can desynchronize other packet metadata and later consumers. **Merged release-4.0 !9373**, authored by **Guy Harris**, replaces EAP's temporary `packet_info` clone and private address/port mutations with `conversation_set_conv_addr_port_endpoints()` on the actual `pinfo`. The same packet continues through TLS/application subdissectors while the conversation endpoint layer carries the EAP identity and nested protocol-layer discriminator.
 
 **Architecture rule:** use the explicit conversation-endpoint API for alternate logical identity; do not manufacture a shallow packet-info copy just to affect conversation lookup. Check when the endpoint override is visible to subsequent dissectors and final packet metadata, especially alongside the !9914 final-context contract. **Confidence:** extremely high for Guy Harris's merged correction; !9373 is a stable backport of an earlier master fix.
+
+## A transport five-tuple need not identify one application session
+
+Merged master !9141 (John Thacker) handles multiple QUIC connections multiplexed over one UDP five-tuple. A QUIC connection has its own connection-ID namespace and may migrate between UDP paths; using the UDP conversation as its sole identity merges unrelated sessions. The accepted implementation adds CONVERSATION_QUIC, maintains a chain of connection records for the same tuple, checks the relevant CIDs and Stateless Reset tokens across them, and isolates child TLS state in the logical QUIC conversation. The MR discussion identifies capture-based checks for both multiplexing and migration.
+
+**Rule:** assign flow identity at the layer whose specification defines it, not by reflexively reusing an enclosing transport tuple; test multiplexed sessions, migration and resets as separate cases. **Confidence:** very high (John Thacker's merged implementation and tested reproducers).
+
+## Give all child-flow creation paths the protocol discriminator needed for reassembly
+
+Merged master !9115 and stable backport !9128 (John Thacker) ensure NBAP HS-DSCH bindings created by RadioLinkReconfiguration also carry CommunicationContextID/UEID. Omitting that discriminator in just one creation path allows unrelated radio flows to collide in RLC reassembly despite correct lookup elsewhere.
+
+**Rule:** audit every constructor/handoff that creates the same logical flow; its identity fields must be initialized consistently, including uncommon control-plane transitions. **Confidence:** high (accepted master and backport).

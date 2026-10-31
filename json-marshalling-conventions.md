@@ -31,3 +31,9 @@ Merged sharkd MR !9763 adds an optional `columns` array to the `status` response
 **API/testing rule:** explicitly specify whether each response key is required or conditional, derive values from actual session state, and test the exact JSON envelope before/after loading a file and after profile changes. A missing key, an empty array, and a default array are not necessarily equivalent client contracts.
 
 **Confidence:** High. Merged master feature with synchronized protocol documentation and request/response regression tests.
+
+## Complete the dumper state transition even when a value has zero bytes
+
+John Thacker's merged master !9126 and paired stable !9130 fix a protobuf-to-JSON crash when a bytes field is empty. After emitting the member name, the JSON dumper still requires a Base64 value. The fix moves json_dumper_begin_base64() before conditional buffer access and json_dumper_end_base64() after it, so both transitions occur even when the buffer is NULL or length zero. The related JSON_DUMPER_FLAGS_NO_DEBUG export avoids turning malformed state transitions into fatal logging errors during fuzzing; it is not a license to ignore the dumper's error state.
+
+**Rule:** treat structured-output writers as state machines: once a key is written, emit the corresponding value representation, including explicit empty values, and balance begin/end operations on every path. Test zero length and failure cases, with fuzzing and diagnostics enabled as appropriate. **Confidence:** extremely high (accepted master plus backport).

@@ -177,3 +177,9 @@ Merged MR !9776 (David Fort) changes the RDP client-network channel-name extract
 **Review rule:** audit every assignment from packet-derived strings into persistent conversation/flow/channel objects. Use an owning allocation whose lifetime covers all downstream lookups and redissection; verify capture close/reopen eventually releases it. Do not extend every intermediate string unnecessarily—copy or allocate at the point where it becomes persistent.
 
 **Confidence:** High. Merged stateful-dissector correction; this example reinforces the broader allocator-scope rules already in this notebook.
+
+## Retained transaction strings need an owning allocation, not a borrowed parse result
+
+Merged master !9114 (João Valverde) corrects an ASan-detected SIP use-after-free: resend/transaction state stored the cseq_method pointer directly and then outlived the storage it referenced. Both update paths now use wmem_strdup(wmem_file_scope(), cseq_method) before storing it.
+
+**Rule:** when a parser returns temporary text subsequently retained in transaction/conversation state, copy it into the state owner's lifetime at every assignment site; do not assume a pointer remains stable because it was parsed during this packet. Include sequence/resend transitions in ASan tests. **Confidence:** very high (merged sanitizer-reproduced bug fix).
