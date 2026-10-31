@@ -21,3 +21,7 @@ Merged MR !23146, authored and approved by John Thacker, fixes `DisplayFilterEdi
 **Implementation rule:** treat parser state and sufficiently precise diagnostics as the source of truth for syntax-aware UI. If editor behavior depends on distinguishing grammar states, give those states distinct parser errors and regression tests; do not reduce all parse failures to a single boolean and reconstruct grammar rules in the widget.
 
 **Confidence:** Very high. Two merged master changes authored and approved by John Thacker, with parser regression tests directly covering the UI-relevant distinction.
+
+## Preserve established context-menu meanings when introducing field-existence actions
+
+Open/unmerged !9050 proposed adding value-free field-existence filters beside existing Apply/Prepare-as-Filter actions. **Roland Knall** warned that changing a familiar menu's meaning and size can undermine discoverability; **Stig Bjørlykke** suggested section headings, **Tomasz Moń** suggested explicit 'Field exists' terminology, and **Gerald Combs** questioned excessive 'Selected' wording. The discussion explored keyboard modifiers, click target semantics, grouping and translation. **Review guidance:** prototype additive choices against existing interaction expectations and test translations, modifier collisions and labels. **Status:** open design debate, not an adopted UI convention or feature.

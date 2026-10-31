@@ -77,3 +77,7 @@ Merged master !9141 (John Thacker) handles multiple QUIC connections multiplexed
 Merged master !9115 and stable backport !9128 (John Thacker) ensure NBAP HS-DSCH bindings created by RadioLinkReconfiguration also carry CommunicationContextID/UEID. Omitting that discriminator in just one creation path allows unrelated radio flows to collide in RLC reassembly despite correct lookup elsewhere.
 
 **Rule:** audit every constructor/handoff that creates the same logical flow; its identity fields must be initialized consistently, including uncommon control-plane transitions. **Confidence:** high (accepted master and backport).
+
+## Treat endpoint IDs as address objects when the protocol defines its own flow namespace
+
+Merged master !9054 makes BPv7 source/destination Endpoint IDs first-class `address` values, introduces `CONVERSATION_BP`, and reshapes bundle identity APIs and Debian symbol metadata. Bundle endpoint identity is not necessarily a TCP/UDP address pair; using the protocol's own typed address avoids forcing a network-tuple identity onto a different namespace. **Evidence limit:** the corpus omits the large `packet-bpv7.c` diff, so specific internal lookup mechanics were not independently established by this review. **Rule:** model the protocol's actual endpoint identifier and audit public structure/API changes and exported packaging metadata together. **Confidence:** high for the visible accepted header/enum/API change; narrower for unseen implementation details.

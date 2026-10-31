@@ -103,3 +103,7 @@ Merged master MR !11196, authored by John Thacker, fixes iSCSI `TargetAddress` p
 **Review rule:** distinguish a string's logical syntax from its storage guarantee. A protocol token may look like a C string while the packet only promises a length-delimited byte range; parsing code must honor the latter.
 
 **Confidence:** Very high. Merged master safety fix authored by John Thacker with an accepted stable backport and a concrete out-of-bounds failure mode.
+
+## Search and copy ordinary text spans in bulk while validating exceptional bytes
+
+Merged master !9027 (John Thacker) optimizes `application/x-www-form-urlencoded` parsing using `tvb_ws_mempbrk_pattern_guint8()` and `tvb_find_guint8()` to locate `%`, `+`, `=` and `&`, then copies ordinary source spans with `tvb_memcpy()`. A bounded subset isolates each key/value sequence; percent-escape decoding still checks remaining bytes and invalid hex before advancing. **Rule:** for text with sparse escaping, scan/copy the common valid stretches with TVBuff helpers but keep delimiters, malformed escapes, reported/captured lengths, and offset-progress semantics explicit. Avoid reintroducing unbounded C-string searches or byte-by-byte buffer growth. **Confidence:** very high, merged John Thacker implementation; performance claims are architectural, not independently benchmarked in this notebook run.

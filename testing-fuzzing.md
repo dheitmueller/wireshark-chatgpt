@@ -70,3 +70,9 @@ Reviewer Jaap Keuter additionally challenged the initial UDX heuristic as too we
 ## Future curation
 
 Add exact upstream-recommended fuzz commands and test-suite integration patterns after correlating them with current Wireshark source and maintainer review feedback.
+
+## New protocol options should be backed by feature-specific captures and reproducible fuzz evidence
+
+In merged master !9013, **Alexis La Goutte** requested example packet captures and asked explicitly whether new MP-DCCP parsing had been fuzzed. The contributor supplied six captures exercising JOIN/KEY/SEQ/HMAC/RTT, PRIO/CONFIRM, REMOVEADDR, ADDADDR, multiple confirmations, and CLOSE, then reported >20,000 passes and a 24-hour clean run under `tools/fuzz-test.sh`. This is concrete evidence of reviewer expectations for nontrivial dissector features, **not** a universal requirement to fuzz every MR for 24 hours. Also check registration warnings and incompatible field types: Alexis found duplicate filter abbreviations and a shared `FT_IPv4`/`FT_IPv6` name before the merge.
+
+Merged !9060 provides a complementary compression-test design: known-valid output, concatenated frames, invalid header, insufficient length and malformed later frame; run tests only when Zstd is available, and check cross-platform compiler warnings in test data length conversions. Merged !9028 skips a Follow HTTP/2 test if optional Nghttp2 is not installed, because decoded-vs-compressed headers change the expected output. **Rule:** tests must state feature prerequisites explicitly, rather than failing CI on a supported dependency variant. **Confidence:** very high for the reviewed merged changes and Alexis's direct request; no fuzzing or test execution was done in this notebook review.

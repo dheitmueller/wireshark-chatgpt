@@ -55,3 +55,7 @@ Closed Locamation timestamp submission !9189 originally targeted a release branc
 Open, unmerged TPM20 reassembly !9166 adds a separate branch-hygiene warning: Alexis La Goutte identified that the contributor opened the MR from the fork's `master`, producing an unsuitable compare/pipeline state. Its implementation is not a Wireshark precedent.
 
 **Submission rule:** send new capabilities to a dedicated topic branch targeting master; only propose narrow backports of accepted fixes after evaluating stable-branch compatibility. Inspect the actual compare base, not merely the intended title. **Confidence:** Very high for Martin's explicit policy and the merged replacement/backport chain; the TPM example is process-only evidence from an open MR.
+
+## Package identity changes belong on master before release branches
+
+Closed !9012 targeted release-3.6 with an RPM `Release: 1%{?dist}` package-filename change. **Gerald Combs** requested a master MR, saying Wireshark normally makes changes on master before backporting to release branches and does not typically rename stable-branch packages. The same change merged on master as !9030. **Rule:** package renaming is potentially compatibility-visible release behavior, not an automatic bug-fix backport. Start on master and request stable branches only after explicit compatibility evaluation. **Confidence:** very high for direct Gerald Combs guidance and accepted master successor; !9012 was closed without merge.
