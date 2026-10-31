@@ -13,3 +13,9 @@ Merged master MR !10663, authored and merged by John Thacker, fixes FiveCo Legac
 **Review rule:** when a long-lived table stores a `tvbuff_t *`, ask what frees the tvbuff itself, what owns its backing bytes, and whether the wrapper really needs the same lifetime as the stored data. Managed backing memory does not by itself confer managed lifetime on a separately created tvbuff wrapper.
 
 **Confidence:** Very high. Merged master memory-lifetime fix authored and merged by John Thacker with the ownership failure stated directly in the MR.
+
+## Packet-derived child TVBs stored in proto data need packet lifetime
+
+Merged master !9322, authored by Gerald Combs (corroborated by release backports !9339 and !9340), fixes GNW secured-payload parsing: a child subset TVB was passed to p_add_proto_data with wmem_file_scope(), even though the TVB view belongs to a particular dissection packet. The accepted registration passes pinfo->pool as the allocator and names a local SEC_TVB_KEY, matching the stored view's lifetime.
+
+**Rule:** choose the allocator for packet-protocol data according to the referenced object's lifetime, not a convenient capture-wide arena. Packet-attached transient TVB wrappers belong with pinfo->pool; if bytes truly need to survive into other packets, persist independent backing bytes at the appropriate longer scope and reconstruct a packet-owned view. **Confidence:** extremely high (Gerald Combs master fix plus two merged backports).

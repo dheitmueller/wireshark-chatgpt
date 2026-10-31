@@ -11,3 +11,9 @@ Merged MR !17589 (`NPCAP: Update to 1.80`) updates the bundled Windows Npcap pac
 **Submission rule:** when changing a bundled dependency in a way visible or relevant to users—especially installer/runtime components—check whether the release notes need a corresponding entry and include it in the same submission when practical. Treat release-note integration as part of feature/package completeness rather than post-merge housekeeping.
 
 **Confidence:** Very high. Direct review request from project leader Gerald Combs followed immediately by the merged release-note change.
+
+## Register genuinely new dissectors in the release notes
+
+For merged ATSC LLS !9355, Alexis La Goutte explicitly requested a new entry in docbook/release-notes.adoc as well as fixing analyzer findings. The accepted diff adds Low Level Signalling (ATSC3 LLS) under New Protocol Support and wires the new dissector into the build, with example packet captures supplied by the contributor.
+
+**Submission rule:** when adding user-visible protocol coverage, update the new-protocol section in release notes and provide representative sample captures, rather than relying on CMake registration or MR description alone. **Confidence:** very high (direct Alexis request and accepted change).

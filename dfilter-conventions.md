@@ -143,3 +143,9 @@ Merged master MR !12960 adds `$name(arg1, ...)` as an alternate spelling for the
 **Merged master !9378** adds `dftest --types` and `DF_DUMP_SHOW_FTYPE` so display-filter bytecode dumps can show actual field and literal types at read/compare operations. The change uses a flags argument through `dfilter_dump`/`dfvm_dump` instead of permanently changing every dump, allowing normal output without type annotations.
 
 **Tooling rule:** when adding a semantic diagnostics view to a parser/compiler, make it opt-in and propagate a named dump flag through the underlying API; print the authoritative typed representation rather than trying to reconstruct types from textual syntax. Preserve the baseline diagnostic output for tools/tests that compare it. **Confidence:** high, merged master implementation by João Valverde.
+
+## Generate optional Flex trace code only in debug-enabled build configurations
+
+Merged master !9361, authored and merged by João Valverde, replaces an unconditional Flex scanner '%option debug' with a CMake Flex debug-generation option chosen for Debug/RelWithDebInfo builds; runtime DF_DEBUG_FLEX/DF_DEBUG_LEMON use is guarded by NDEBUG. If a release build was requested to trace an unavailable scanner, the code reports the build limitation instead of assuming the feature exists. Adjacent merged dftest changes !9360–!9345 and !9332–!9328 keep compilation diagnostics separate from normal CLI output and make a no-optimization syntax-check path available (!9356).
+
+**Rule:** compile optional parser trace machinery only in supported build modes, make runtime options report unavailable diagnostic capabilities, and keep stable baseline dump output distinct from opt-in analysis flags. **Confidence:** high (merged João Valverde implementation with adjacent CLI work).

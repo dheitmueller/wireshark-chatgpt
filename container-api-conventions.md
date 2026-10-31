@@ -93,3 +93,9 @@ Merged master MR !14305, authored by Gerald Combs and merged by Jaap Keuter, mak
 **Review rule:** if many callers are repeating the same defensive NULL check because an optional collection is semantically empty when absent, consider centralizing the contract in the collection helper. Conversely, do not hide programmer errors where absence is not a valid state.
 
 **Confidence:** Very high. Merged master API change authored by project lead Gerald Combs, merged by Jaap Keuter, and propagated to multiple maintained branches.
+
+## Distinguish container nodes from their payloads before casting
+
+Guy Harris's accepted patch, merged in main as !9314 by Anders Broman and backported in Guy-authored !9318 and !9320, fixes get_data_source_tvb_by_name(): a GSList iteration variable points to the *list link*, not to a struct data_source. The old code cast source itself; the corrected code casts source->data before accessing its fields. Treating a container link as payload memory can produce invalid reads and crashes.
+
+**Rule:** when iterating GSList, GList, or similar link-based structures, explicitly extract the stored data member (and validate its expected type) before using the payload; a cast cannot change a node into the object it references. **Confidence:** extremely high (Guy Harris solution across main and stable fixes).

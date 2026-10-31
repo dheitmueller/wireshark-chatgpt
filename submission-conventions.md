@@ -163,3 +163,15 @@ In closed/unmerged !9600, Alexis La Goutte directed a contributor fixing a Germa
 Pascal Quantin's review of merged !9418 corrected a contributor who originally tried to fix a name/email in generated `AUTHORS`. Pascal directed the source change to `.mailmap`, then asked that the corrective/revert history be squashed into **one** commit; the final diff contains the mailmap mapping only.
 
 **Rule:** consult the generator/source-of-truth for attribution and other derived files instead of editing generated output. When review necessitates replacing a wrong file with the right source, present the final logical change as a coherent amended/squashed commit rather than leaving a revert-plus-fix sequence unless history itself is important. **Confidence:** very high, direct Pascal Quantin instructions and merged outcome.
+
+## Split mechanically large protocol refactors and keep correctness fixes independent
+
+Closed/unmerged PFCP !9334 carries important *review guidance*, not an accepted code precedent. Alexis La Goutte identified trailing whitespace, Clang Analyzer undefined-value/null-argument findings and Windows build issues, and suggested an IEEE 802.11-style registered dissector table for extensible IE dispatch. Anders Broman said the combined refactor was too large to review in the web interface and proposed splitting it into smaller MRs, with bug fixes in separate changes. The author agreed and submitted the first subset in merged !9363.
+
+**Rule:** stage broad signature churn and protocol architectural changes as reviewable, separately testable increments; isolate already-needed bug fixes from optional structural work. Register extension handlers in a dissector table when independent protocol-specific dispatch benefits, rather than forcing all handlers into a monolithic switch. **Confidence:** very high for Anders/Alexis guidance and successful split, lower for the closed draft's implementation.
+
+## Keep unrelated changes logically separate even when one MR is necessary
+
+In closed/unmerged HTTP/3 !9330, Alexis La Goutte requested that an unrelated macOS self-signing package change be made separately and asked for a small sample capture (under 100 kB). The contributor explained that employer legal review made separate submissions expensive. Gerald Combs accepted the practical constraint *if* the HTTP/3 and packaging work were split into distinct, self-contained commits within the MR so reviewers could independently evaluate them. This is an accommodation, not endorsement of the large unmerged HTTP/3 code.
+
+**Rule:** prefer a dedicated MR per independent feature, but when contribution approval rules force one MR, keep unrelated changes in distinct logical commits and supply a small reproducible capture for dissector features. **Confidence:** high for explicit Gerald/Alexis submission feedback; no accepted implementation evidence from the closed draft.

@@ -85,3 +85,9 @@ Merged master MR !10704, authored and merged by John Thacker, fixes Synphasor by
 **Review rule:** flag expressions where a packet-derived value indexes a `value_string`, `range_string`, or similar mapping table directly. Check both bounds safety and the semantic behavior for unknown/reserved values.
 
 **Confidence:** Very high. Merged master correctness fix authored and merged by John Thacker, with two previously reviewed stable counterparts.
+
+## Do not use an unmasked Boolean field for a numeric value whose domain is 0 or 1
+
+A full-byte or full-word protocol value that happens to define 0 and 1 is not automatically a bitmask. An FT_BOOLEAN registration with mask zero computes truthiness over the whole value, so unexpected nonzero values (including even values) are silently shown as true. Merged !9336, authored by Martin Mathieson, reverts an earlier over-broad conversion from numeric fields to shared true/false strings across COPS, LOG3GPP, NetFlow, SIMPLE, Soulseek, and TDS. The fix uses FT_UINT8 and explicit VALS maps where a full-byte numeric domain must be represented.
+
+**Rule:** reserve FT_BOOLEAN/TFS for genuine flag/bit semantics with the correct containing width and mask. Use a numeric FT_UINT* with a value_string for a whole on-wire numeric enum, even if currently defined values are 0 and 1; keep unexpected values visible as numeric unknowns. **Confidence:** very high (merged corrective cross-dissector change).

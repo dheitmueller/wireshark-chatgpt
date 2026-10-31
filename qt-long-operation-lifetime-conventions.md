@@ -23,3 +23,9 @@ Merged master !9452, authored by John Thacker, adds a `capture_file::read_lock` 
 **Implementation rule:** when a user-triggered scan walks capture frames, serialize it against capture close/read/rescan and ensure every exit releases ownership. Its cancellation flag must be the same flag the progress UI controls. Disable entry points while the operation is invalid; do not merely disable redraws after a conflicting scan has begun.
 
 **Regression rule:** attempt capture close, rescan, filter changes and Stop-button cancellation during long statistics work; verify the original operation's progress and lock are restored. **Confidence:** very high, merged John Thacker correctness fix.
+
+## Cancelable packet-list sorting must share the capture-file read lock and rescan lifecycle
+
+Merged master !9349, authored by John Thacker, adds cancellation to packet-list sorting while comparisons may dissect/parse column values. Sorting checks the capture read lock, shares an explicit stop flag with progress UI, and can be aborted without leaving an invalid sort state. The capture read lock is released before post-read callbacks, and sorting after captureFileReadFinished sees columns invalidated by the completed scan. Related merged !9343 removes an extra resetColumns() in filterPackets because captureFileReadFinished already performs the invalidation after a rescan.
+
+**Rule:** do not perform reentrant dissection-backed sorting while the capture is being read/rescanned; test cancellation and guard every lock/progress exit. Once a canonical completion callback owns column invalidation, avoid duplicate resets in callers. Test filtering, closing, rescan, sort cancellation and subsequent sort order. **Confidence:** very high (two merged John Thacker correctness changes).
