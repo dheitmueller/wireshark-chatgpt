@@ -67,3 +67,9 @@ MR !20574 provides unusually strong review evidence. The proposed BLF/LINKTYPE_L
 Guy Harris's merged TLS MR !9758 warns when the ClientHello legacy-version field claims TLS 1.3 (`0x0304`) or DTLS 1.3 (`0xfefc`), contrary to RFC 8446 §4.1.2 and RFC 9147 §5.3, which require the legacy 1.2 value there. The warning is attached to the actual bytes, while the dissector continues to recognize TLS 1.3.
 
 **Rule:** Separate protocol recognition from conformance assessment. Dissect identifiable nonconforming traffic and attach specific expert diagnostics instead of rejecting the entire packet. **Confidence:** Extremely high, merged Guy Harris code and explicit RFC references.
+
+## When two specifications conflict, identify the heuristic and preserve both valid wire interpretations
+
+Merged **!8884** revises the MIPv6 Service Selection option using `ENC_APN_STR` for label-length-encoded 3GPP APNs while retaining a text interpretation for RFC 5149 service identifiers. The discussion matters more than an over-simple “labels must start with letters” rule: **João Valverde** corrected John Thacker's initial comment that plain UTF-8 text was invalid; RFC 5149 permits it, while 3GPP TS 29.275 describes a DNS-label-like APN representation. John accepted the correction and retained the historical `0x20` first-byte heuristic after discussion.
+
+**Rule:** annotate format-disambiguation heuristics as compatibility choices, not assertions that one standards-compliant representation is malformed. Cite the conflicting normative sources, preserve both decoding paths where observable traffic requires them, and test a UTF-8 service string, a length-coded APN and out-of-range marker bytes. **Confidence:** very high as a review method, direct João/John standards discussion and merged implementation.

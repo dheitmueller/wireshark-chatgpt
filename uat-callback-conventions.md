@@ -33,3 +33,9 @@ Merged master !9704, authored by John Thacker, replaced `UAT_PROTO_DEF` and `UAT
 **Design rule:** give preference/UAT fields the identity domain they actually select: dissector handle, protocol, display-filter field, and value-string key are not interchangeable registries. Keep serialization, validation, configuration macros, and UI widgets consistent when adding a new UAT field kind.
 
 **Post-merge review:** Stig Bjørlykke found that the initial editable combobox did not offer the same useful keyboard completion/dropdown behavior as filter fields. John Thacker pointed to later !10148. Preserve that as usability follow-up rather than claiming the first merged editor was final. **Confidence:** very high for registry semantics, high for usability feedback.
+
+## Callback timing is part of the protocol-field identity contract
+
+John Thacker's merged HTTP/2 repair **!8901** moves dynamic `hf` registration out of per-capture init/cleanup and into UAT `post_update_cb` / reset callbacks. A UAT entry is a declaration of a filterable field, not a per-packet temporary. Recreating it at file-load boundaries invalidates references held by UI features unrelated to the dissector's packet state.
+
+**Rule:** identify whether a UAT drives packet-scope state, capture-scope derived state, or globally registered schema. Rebuild only at that scope's semantic invalidation boundary; test both repeated file loads without UAT change and configuration change with an already open file. The corresponding deferred-freeing details live in `field-deregistration-lifecycle-conventions.md`. **Confidence:** very high, merged John Thacker correction.

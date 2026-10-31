@@ -11,3 +11,9 @@ Merged MR !22894 fixes CBOR bitmask fields whose parent item and boolean childre
 **Implementation rule:** do not use a convenient synthetic TVBuff as an item's source merely because it simplifies value extraction. Keep decoding representation separate from source provenance, and attach protocol-tree items to the original packet range that encoded the represented value when downstream consumers expect physical offsets.
 
 **Confidence:** High. Merged master correctness fix with explicit `jsonraw` before/after verification and maintainer merge.
+
+## A packet byte-range selection can deliberately include bytes omitted from the text value
+
+Merged **!8877** follows Locamation's encoding repairs **!8869** and **!8881**. The user needed the end-of-line bytes highlighted in the packet-byte pane without including them in the decoded field string. John Thacker explained the distinction: `tvb_find_line_end()` returns a line-content `len` and a `next_offset` after the terminator; `proto_tree_add_string_format_value(..., next_offset - offset, decoded_line, ...)` associates the full wire span with the normalized value. He confirmed the submitter's goal from the commit message and permitted a combined backport.
+
+**Rule:** distinguish source-span length from logical string length in packet tree APIs. Delimiters may belong to the highlighted physical field even when omitted from the user's displayed/filterable value; record this distinction explicitly and test byte-pane selection as well as field value. **Confidence:** very high, merged change with direct John Thacker clarification.

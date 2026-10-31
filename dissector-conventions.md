@@ -159,3 +159,15 @@ Merged master **!8916** extends MCTP dispatch with two tables: `mctp.type` for M
 **Rule:** when a container supports multiple decoding contracts, give handlers distinct registration tables or explicit entry points based on *what bytes/context they own*, rather than overloading the same table and hoping consumers guess whether a shim header has been removed. Expose the original wire type and integrity bit as registered fields even when the inner payload is delegated. **Confidence:** high, merged master feature with separate table contracts documented in code.
 
 Merged **!8929** (SAP SNC) independently demonstrates malformed-length diagnostics tied to the offending header field and precise captured-versus-reported distinction. **Martin Mathieson** cautioned that capture truncation does not necessarily mean the packet's reported header is malformed. Use distinct expert/filter abbreviations to avoid clashing with legitimate data fields. **Confidence:** high, accepted new dissector after direct reviewer feedback.
+
+## Verify protocol checksums using the common field/status/expert API
+
+Merged MongoDB OP_MSG enhancement **!8907** initially added a custom checksum display. **Jaap Keuter** explicitly requested `proto_tree_add_checksum()`; **Alexis La Goutte** endorsed it, and the contributor revised the patch. The accepted code checks the OP_MSG checksum-present flag, excludes the four-byte checksum trailer from section iteration, computes CRC32C over the prescribed message range and exposes both checksum value and validation status with Expert Info.
+
+**Rule:** prefer `proto_tree_add_checksum()` and the standard checksum-status/expert pattern over ad hoc labels for verification results. Check endianness, CRC variant/seed, exactly what bytes are covered, and packet-reported-versus-captured bounds. Add valid, invalid, absent and truncated-checksum capture tests. **Confidence:** very high, merged correction following explicit Jaap/Alexis code-review feedback.
+
+## Recompute record stride when per-section encoding metadata changes
+
+Merged O-RAN FH CUS **!8864** moves user-plane PRB byte-count calculation *inside* each section, after optional `udCompHdr` can change bit width and compression method. Modulation compression does not add the extra per-PRB reserved/exponent byte used by some other compression schemes. Computing stride once from a packet-wide default silently misaligns all following samples when sections differ.
+
+**Rule:** any variable-length section header that can change payload representation must update the stride *before* iterating that section's elements. Do not apply per-packet dimensions to per-section decoding; test consecutive sections with different compression modes and widths. **Confidence:** high, merged source fix with no substantive human review.

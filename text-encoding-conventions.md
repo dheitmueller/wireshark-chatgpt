@@ -84,3 +84,19 @@ Merged master **!8960** (John Thacker) handles CitrixAGBasic authentication by d
 Merged master **!8952** replaces custom CIMD character-mapping code with explicit conversion of CIMD's escaping into GSM 7-bit alphabet and then to Unicode/UTF-8 through Wireshark charset helpers. Merged **!8934** similarly uses existing `format_text()` when presenting unknown HSP/HFP commands instead of copying arbitrary bytes into a string of the same size.
 
 **Rule:** decode the wire-defined character repertoire in its declared order (transport encoding, then character-set conversion); keep arbitrary bytes from being silently represented as valid UTF-8. Reuse shared charset/escape helpers, keep precise allocation scope, and test multibyte/invalid input. **Confidence:** very high, independently merged malformed-text fixes.
+
+## Percent-decoding does not imply valid UTF-8
+
+Merged HTTP/2 **!8894** validates the text returned by `g_uri_unescape_string()` before inserting it into an `FT_STRING` field, and sanitizes invalid byte sequences with `g_utf8_make_valid()`. A syntactically valid percent-escape sequence can decode to arbitrary bytes or malformed UTF-8. **Rule:** validation belongs *after* transfer/escape decoding and before tree/column presentation; do not treat a URI decoder as a character-set decoder. Check the null/error paths for the resulting generated tree item. **Confidence:** high, merged malformed-input fix.
+
+## Prefer encoding-aware byte presentation over literal `%c` and raw-byte strings
+
+Merged **!8890** introduces shared `format_char()` so a raw IAX2 control byte is displayed as one valid UTF-8 character or a printable C/hex escape, rather than injecting arbitrary bytes through `%c`. Merged **!8889** switches AT command names to `format_text()`; **!8888** converts reversed T.30 number bytes through `get_utf_8_string()`; **!8878** registers AOL's two-character ASCII token as `FT_STRING`, not a `FT_UINT16`; and **!8881**/**!8869** replace Locamation's raw buffer/string copying with `tvb_get_string_enc(..., ENC_UTF_8)` and `tvb_find_line_end()`.
+
+**Rule:** match a field's storage type to its semantic domain and make its character encoding explicit. Avoid assuming that a two-byte code is a number or that a raw octet is valid display text. Reuse packet-scoped encoding helpers rather than hand formatting untrusted packet bytes. **Confidence:** very high for the merged changes.
+
+## An unbounded UTF-8 buffer still needs a valid initialization state
+
+Merged **!8863** replaces X.509 distinguished-name fixed-size concatenation buffers with packet-scoped `wmem_strbuf_t`, avoiding truncation partway through a multibyte character; it updates the ASN.1 template and emitted dissector together. The follow-up merged **!8868** is important: it guards `x509if_get_last_dn()` against a NULL buffer and initializes the DN buffer with an empty string rather than an inappropriate zero-size constructor.
+
+**Rule:** dynamic string buffers solve capacity problems but not initialization, lifetime or absent-value semantics. Check accessor calls before the first DN and after the frame-end reset; review the later corrective merge rather than treating the first merge as a complete final design. **Confidence:** very high, accepted fix followed by a concrete merged crash correction.

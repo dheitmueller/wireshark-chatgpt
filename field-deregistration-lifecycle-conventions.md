@@ -41,3 +41,9 @@ Merged master MR !15750 makes newly assigned Lua `Proto.fields` and `Proto.exper
 **Review implication:** exercise repeated mutation/commit cycles, including adding fields after initial registration. Check both registration identity (`hf_id`/expert IDs) and backing-storage lifetime; a result that merely makes the newest field visible can still contain a latent use-after-free or duplicate registration.
 
 **Confidence:** Very high. Merged master WSLua lifecycle fix with explicit comments tying the replacement arrays to epan's deregistration lifetime rules, approved by John Thacker.
+
+## Tie UAT-backed header-field registrations to schema changes, not capture lifetimes
+
+Merged **!8901**, authored by John Thacker, fixes HTTP/2's dynamically registered header fields. Previously the dissector removed and re-registered UAT-defined `hf` entries on every capture open/close; saved columns, display filters and coloring rules could then hold stale field IDs and crash when switching files. The accepted implementation instead performs replacement in the UAT `post_update_cb`, deregisters on reset, calls `proto_deregister_field()`, and transfers field-array backing storage through `proto_add_deregistered_data()`. The hash table mixes static and UAT entries, so only UAT-owned entries are removed.
+
+**Rule:** distinguish capture-scoped protocol state from registration-scoped schema state. Do not invalidate user-visible field identities on mere capture reload; update them only when configuration changes. Keep static registry entries and deferred field metadata ownership intact. Regression coverage should include saved filters/columns and coloring rules while repeatedly switching captures, followed by UAT edit/reset/reload and ASAN checks. John Thacker reported no ASAN leaks for the revised implementation. **Confidence:** very high for the merged fix and its explicit bug rationale.
