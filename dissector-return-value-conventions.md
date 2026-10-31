@@ -13,3 +13,9 @@ When the entire supplied tvbuff belongs to the protocol — including trailing e
 **Review rule:** when a dissector returns a byte count, distinguish three quantities that can differ: protocol-declared/reported length, captured tvbuff length, and the subset actually claimed by the dissector. Use the quantity that matches the API contract. In particular, do not make truncation look like successful consumption of bytes that are not present.
 
 **Confidence:** Very high. The master change and both stable backports were authored/merged by Guy Harris, and the rationale directly states the intended semantics.
+
+## Do not invent magic dissector status sentinels without a full dispatch contract
+
+Closed and unmerged **!8926** proposed `DISSECT_OK_NO_DATA` to make zero-payload but recognized protocols count as successful. **Guy Harris** instead questioned whether a distinct `PACKET_NOT_OURS` signal and a broader typed result model would better distinguish: bytes dissected; protocol rejection; a known number of missing stream bytes; waiting for one more segment; and waiting until connection end. The author ultimately closed the large change after acknowledging objections about overloading an integer return value, upstream migration from Boolean returns, and generator-wide impact.
+
+**Rule:** if changing dissector return semantics, enumerate and preserve *all* dispatch/desegmentation states and audit callers, protocol stacks, taps, code generators, and conversion paths; avoid adding magic nonzero values that only appear to work because most callers use truthiness. **Crucially, neither proposed `DISSECT_OK_NO_DATA` nor the alternative `PACKET_NOT_OURS` is established as an accepted API by this MR.** Guy's high-authority comments inform design, not the status of the closed patch. **Confidence:** high for design hazards, low as positive implementation precedent.

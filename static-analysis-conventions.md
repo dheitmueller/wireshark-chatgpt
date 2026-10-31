@@ -13,3 +13,9 @@ Merged MR !13002, authored by João Valverde, reverts an attempted Clang Analyze
 **Review rule:** when a warning fix changes control-flow shape, ask what diagnostics the previous shape enabled. A `default`, assertion, cast, or initialization may suppress useful future warnings even if it makes the current report disappear.
 
 **Confidence:** High. The accepted merged correction explicitly restores the compiler's ability to diagnose unhandled enum values, reinforced by merged Clang Analyzer cleanup work in adjacent MRs.
+
+## Fix the analyzer's parsing assumptions and verify generated warning text
+
+Merged **!8956** narrows `check_typed_item_calls.py`'s regular expression to prevent a parsed field label from accidentally retaining a closing quote, which had produced false duplicate-label diagnostics. Closed **!8953** proposed changing the diagnostic string instead, but **Martin Mathieson** traced the problem to the regex's greediness and supplied the accepted parser fix in !8956.
+
+Merged **!8957** brings remaining internal symbols into static linkage to satisfy `check_static.py`; merged **!8924** removes dead stores exposed by Clang Analyzer after a preceding dissector change; merged **!8922** removes redundant HTTP conversation initialization after **Alexis La Goutte** spotted that the next call initialized the same state again, and **John Thacker** verified the side effect. **Rule:** correct the input analysis/parsing or redundant work rather than hiding symptoms in messages, preserve legitimate initialization side effects when removing unused-return calls, and re-run the relevant checkers after generator and dissector edits. **Confidence:** high, merged tool and source repairs with direct reviewer discussion.

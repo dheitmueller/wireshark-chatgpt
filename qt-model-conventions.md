@@ -131,3 +131,9 @@ Merged Qt **!9011** adds Move Up/Down controls to IO Graphs. Its handlers swap e
 **Rule:** when adding model-backed row reordering, enforce end-row boundaries, preserve the logical selected item through the move, and keep model/view state and button enablement synchronized. Review toolbar density and existing accessibility/interaction conventions as well as correct data movement. A small UI addition can deserve a broader layout evaluation without blocking useful behavior.
 
 **Confidence:** High for merged implementation; maintainers did not establish an absolute preferred layout.
+
+## Root and synthetic protocol-tree nodes may not have field metadata
+
+Merged **!8915** (John Thacker) fixes an Expert Info dialog crash: the synthetic root of `ProtoTreeModel` has no associated `field_info`, so `PNODE_FINFO(node->protoNode())->hfinfo->id` was an invalid dereference. The accepted check tests `PNODE_FINFO(...)` before accessing its `hfinfo`; **Jim Young** confirmed the original crash could no longer be reproduced.
+
+**Rule:** Qt protocol-tree search, filtering and navigation must handle root/placeholder nodes separately from real packet fields; do not assume every visible or traversable model node owns an `hfinfo`. Include expanded-root and non-field nodes in UI regression tests. **Confidence:** very high, merged crash repair with independent reporter reproduction.

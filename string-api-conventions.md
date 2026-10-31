@@ -55,3 +55,11 @@ Merged master **!8964** removes the `max_size` parameter from `wmem_strbuf_sized
 **Rule:** keep initial allocation capacity separate from output limits. If policy demands a finite output budget, enforce it explicitly at the producing parser/loop or truncate at valid code-point boundaries with a clear visible indication, not through an implicit cap inside a generic UTF-8 string buffer. Maintain `len`, `alloc_size` and NUL-termination invariants across retry-after-growth formatting, and avoid assuming unbounded appends are safe simply because an API no longer enforces a maximum.
 
 **Confidence:** Very high: merged cross-tree API migration with direct project-founder explanation of the original safety rationale.
+
+## Keep packet field values complete and leave display-only clipping to the UI
+
+Merged **!8946** removes `wmem_strbuf_new_label()` across dissectors: its `ITEM_LABEL_LENGTH` limit counts *bytes*, can bisect a UTF-8 sequence and should not silently change the actual field value. Merged **!8933** applies this to IEEE 802.11's feedback matrix: `proto_tree_add_string()` receives the complete string and the UI itself handles display-label clipping. Related merged **!8947** removes a label-length clamp in AJP13 and **!8919** retains the full SIP Call-ID while separately bounding its hash lookup.
+
+The IEEE 802.11 patch also changes `wmem_strbuf_finalize()` to `wmem_strbuf_get_str()`. **João Valverde** noted that finalize may realloc, potentially invalidating outstanding string pointers; **Gerald Combs** asked to clarify whether finalize remains useful for long-lived scope memory savings. Borrow the scope-managed string if no shrink/copy ownership transition is required; do not infer that finalize is universally invalid.
+
+Closed **!8923** proposed a separate `wmem_u8buf` API. **Guy Harris** questioned why a non-UTF-8-safe capped buffer would be needed; **John Thacker** distinguished a code-point limit from a byte-capacity limit and described the danger of accepting a subsequent single-byte character after a prior multibyte append failed to fit. **Do not recommend the closed API as existing or merged.** **Confidence:** very high for merged no-truncation behavior; the unmerged buffer discussion is provisional design guidance.

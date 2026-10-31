@@ -91,3 +91,9 @@ Merged master **!8962** adds `dfw_error_set_msg(errpp, ...)` to the fallback bra
 **Rule:** any API promising an error object on failure must populate it on *every* failure path, including unexpected internal fallback paths. Logging is not a replacement for propagating an actionable error to the caller, and the error result must remain safe for the caller to free. Test deliberately malformed expressions and exceptional compile failures for both status and non-NULL diagnosis.
 
 **Confidence:** High; merged, narrowly scoped correctness fix.
+
+## A structured diagnostic must be populated even on supposedly fatal fallback paths
+
+Merged **!8948** by João Valverde turns display-filter compilation's parallel error-string/location outputs into `df_error_t { code, msg, loc }` with a dedicated free API. A machine-readable error code lets callers classify failure without parsing display text; the location supports precise UI diagnostics. **John Thacker** immediately flagged Coverity reports: `dfilter_compile_real()` could return failure with `*errpp` unset, even though an adjacent `ws_critical` was believed normally fatal.
+
+João confirmed merged **!8962** subsequently initializes the result on that fallback. **Rule:** return-value status and output error object are an inseparable contract; callers must be able to dereference/free a documented diagnostic whenever an API returns failure. Do not depend on logger configuration or assertions to make a missing error object harmless. This strengthens the earlier !8962 note. **Confidence:** very high, original accepted refactor plus accepted follow-up and named maintainer static-analysis feedback.

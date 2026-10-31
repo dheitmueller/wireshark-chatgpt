@@ -27,3 +27,11 @@ Merged master MR !11102, authored and merged by John Thacker, optimizes the !110
 **Review rule:** inspect nested loops in reassembly paths for repeated list/tree scans. A helper that is individually linear can become quadratic when called after every fragment; correctness-preserving incremental state or gap metadata is preferable when the fragment set can be large.
 
 **Confidence:** Very high. Merged master performance/correctness refinement authored and merged by John Thacker immediately after the underlying out-of-order reassembly fix.
+
+## Cache the first gap across all fragment-list operations, not only append
+
+Merged master **!8937** (Tomasz Moń) adds `fragment_head::first_gap` and `contiguous_len` so in-order fragments can start insertion near the tail rather than repeatedly scanning from the beginning. The final diff updates the cache from `LINK_FRAG` and `MERGE_FRAG`, handles bulk multi-insert, and calls `fragment_items_removed()` after truncation/removal. A truncate may also shorten an existing fragment, requiring `contiguous_len = MIN(contiguous_len, tot_len)` before derived state is reused.
+
+**John Thacker** tested varied reassembly stress captures and found the approach sound; **Ivan Nardi** reported substantial real-capture speedups, from approximately 20 seconds to 1 second on #17311 after the final refinements. This is historical reviewer-reported performance, not a fresh local benchmark.
+
+**Rule:** cached first-gap pointers are derived state with a strict topology/lifetime invariant. Account for list splitting, node removal/relinking, truncation *within* an existing node and out-of-order insertion before the frontier; never leave a pointer to a freed or moved fragment. Regress with in-order high-fragment-count captures, gaps, overlaps and `MERGE_FRAG` captures (historically #12548 and #18644), not just synthetic append loops. **Confidence:** very high, merged master plus stress-test signoff and concrete performance reports.

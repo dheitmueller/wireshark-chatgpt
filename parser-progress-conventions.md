@@ -67,3 +67,9 @@ Merged master **!8977**, with backports **!8984/!8985**, rejects an OpenFlow v6 
 **Rule:** write down whether a child decoder returns an absolute offset, bytes consumed, remaining bytes or a status; never interchange them. For nested loops assert a monotonic cursor or a terminal condition, handle zero/undersized lengths before subtracting the fixed header, and impose a bounded work/memory budget independent of progress. Validate with zero, one-byte, truncated and malformed frames. **Caveat:** !9003 historically used `DISSECTOR_ASSERT_HINT` on budget exhaustion; this does not establish that malformed traffic should generally raise an internal assertion rather than an ordinary parse diagnostic.
 
 **Confidence:** Very high for accepted failure-mode fixes, corroborating duplicates and a concrete malformed Kafka capture; later shared decompression API is the preferred architectural precedent.
+
+## Error exits in cursor-returning helpers must return an absolute cursor
+
+Merged **!8961** by **John Thacker** repairs BPv6's `display_extension_block()`: on malformed data the helper returned `tvb_reported_length_remaining(tvb, offset)`, but its caller expects an *absolute offset*. When the remaining byte count is less than the current offset, treating it as a new cursor can move backward and cause an infinite loop. The accepted fix sets `*lastheader = TRUE` and returns `offset` at each failing path.
+
+**Rule:** a function returning an absolute byte/bit offset must preserve that contract on *every* path, including early malformed-input returns. When the child cannot advance, signal terminal state or return a value forcing the parent to stop; do not confuse bytes remaining with bytes consumed or a new cursor. Include malformed inputs whose current offset already exceeds remaining bytes. **Confidence:** extremely high, merged fix and explicit John Thacker root-cause note.

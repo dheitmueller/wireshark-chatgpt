@@ -165,3 +165,11 @@ Closed/unmerged **!9004** tried to mark fragments received after completed defra
 **Rule:** prefer an explicitly named API for special retransmission tolerance rather than silently changing the global fragment engine's meaning for every consumer. Validate both expected duplicate-fragment handling and unrelated protocols that share the engine; verify expert severity and packet-tree interpretation, not only reassembly completion. **Do not** use !9004 as an accepted implementation precedent.
 
 **Confidence:** High for the concrete negative regression report and closed status; the ultimate accepted behavior of !8931 is not independently established by this batch.
+
+## An opt-in completed-reassembly fallback must not change the global fragment contract
+
+Merged **!8931** adds `fragment_add_check_with_fallback()`, used by USBLL to attach late retransmissions of a *final* fragment to the preceding completed transfer. The normal `fragment_add_check()` wrapper passes the current frame as the fallback, preserving its behavior. The fallback looks up a completed reassembly by frame and ID and tracks the retransmission without creating a new transfer; isochronous USB does not use DATA0/DATA1 retries because it has no ACK/NAK.
+
+**Tomasz Moń's review** caught reassembly-path changes that prevented TCP from handing correctly reassembled bytes to HTTP. Explicit regression captures were `fuzz-2015-06-09-24315.pcap` packet 117786 and `fuzz-2008-09-29-3181.pcap.gz` packet 1035 (with 1034 reporting a PDU in 1036). Boundary checks must cover equality with final data length, not only strictly greater length.
+
+**Rule:** make protocol-specific late retransmission tolerance explicit at the API/call site; test unchanged consumers of shared reassembly with their historical captures. Verify not merely that a fragment group completes, but that the downstream dissector still receives the reassembled PDU and tree fields reference the right frame. This accepted implementation provides the stronger positive precedent than the later closed global proposal **!9004**. **Confidence:** very high for merged API and specific review failures.

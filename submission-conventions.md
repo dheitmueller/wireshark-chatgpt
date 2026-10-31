@@ -209,3 +209,11 @@ Merged **!8963** fixes EAP conversation endpoints; **Anders Broman** and **Geral
 **Rule:** submit focused branches rather than a fork's protected/default branch, preserve maintainer collaboration, correct author identity and obtain applicable builds/tests. Keep orthogonal compiler or UI fixes in separate MRs; prefer existing protocol-generation/integration architecture to duplicative plugins. Closed proposals provide review-process lessons but not accepted design.
 
 **Confidence:** Very high for direct Alexis/Anders/Gerald feedback; low for treating either closed patch's implementation as canonical.
+
+## Make captured counterexamples and commit-message metadata reviewable
+
+In merged **!8951** (PostgreSQL ErrorResponse), **Alexis La Goutte** required an actual `pgsql_error_on_startup.pcapng` and clarified that his request to shorten the message referred to the *Git commit message*, not the MR title. **Peter Wu** identified an independently useful encrypted PostgreSQL sample, supplied TLS secret-injection commands and cited the PostgreSQL wire message format. Reproducibility across different configurations matters more than a one-line diff.
+
+In merged LAPDm **!8917**, **Pascal Quantin** explained that first-pass state may be updated in packet-number order while later GUI redissection is arbitrary; he recommended an explicit `!PINFO_FD_VISITED` guard, amending the existing commit rather than adding a gratuitous follow-up commit, and a `Fixes #<issue>` line in the commit message so GitLab closes the relevant issue. The illustrative `#18676` identifier in the discussion differed from the issue number originally linked by the contributor; verify the *actual* associated issue rather than copying a suggested number blindly.
+
+Merged **!8925** provides a post-merge quality caution: **John Thacker** found an unterminated flags array causing a fuzz crash (fixed in later merged !8966), and **Gerald Combs** identified an unreachable fallback in Coverity. Running checker/fuzz tests and revisiting post-merge feedback are not optional merely because review approvals were received. **Confidence:** very high, named reviewer feedback with concrete captures and corrections.

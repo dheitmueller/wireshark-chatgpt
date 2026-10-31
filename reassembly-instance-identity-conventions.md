@@ -35,3 +35,11 @@ Merged master MR !9996 replaces a SOME/IP-TP XOR-derived integer fragment key wi
 **Testing rule:** interleave segmented messages that share a service/method yet differ by client/session or endpoint; check that their reconstructed data remain separate.
 
 **Confidence:** High. Merged master change with direct protocol-maintainer review and a concrete preexisting key-collision defect.
+
+## Distinguish first-pass state mutation from reproducible per-frame state
+
+In merged **!8917** (LAPDm fragment-ID reuse), **Pascal Quantin** reminded the contributor that Wireshark's first pass visits frames in increasing packet-number order, while later GUI selection can cause redissection in arbitrary order. A map used only to build the first-pass reassembly mapping may be cleared after completion, but that must be visibly guarded with `!PINFO_FD_VISITED(pinfo)`; otherwise an innocent-looking mutation could break historical redissection.
+
+For state that actually affects later packet decoding, Pascal suggested MBIM's approach: increment an epoch/open counter on the first pass, save `frame_number -> epoch` in a conversation `wmem_tree`, and during redissection use `wmem_tree_lookup32_le()` to recover the epoch valid at that packet number.
+
+**Rule:** review every fragment-ID-reuse and conversation-epoch transition against both sequential construction and arbitrary backward/forward packet navigation. A packet number plus persistent epoch is often a safer reassembly discriminator than destructive deletion of a reused ID. Explicitly guard first-pass-only mutations and add redissection tests. **Confidence:** very high, accepted LAPDm fix and direct Pascal Quantin explanation.

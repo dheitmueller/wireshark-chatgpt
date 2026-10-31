@@ -59,3 +59,9 @@ Merged master MR !11819, authored and merged by John Thacker, fixes CAMEL time/t
 **Review rule:** for string-producing numeric/BCD helpers, test malformed/sentinel nibbles and shortened output, not only well-formed examples. Confirm that every subsequent index or substring operation is guarded by the post-decode length/format actually guaranteed by the API.
 
 **Confidence:** Very high. Merged master malformed-input correctness fix authored and merged by John Thacker, with direct Guy Harris review of the resulting timezone presentation.
+
+## Prefer typed extraction helpers when tree fields also control parsing
+
+In merged SAP SNC **!8929**, **Martin Mathieson** repeatedly suggested `proto_tree_add_item_ret_uint()` when the parser also needs `header_length` and related numeric fields; the field could then own its wire extraction, after which `proto_item_set_len()` or `proto_item_append_text()` could adjust presentation. Martin made the same suggestion for the merged DECT dissector **!8925**, but explicitly clarified that this is an *alternative*, not an absolute style requirement: separate `tvb_get_*` plus `proto_tree_add_item()` is also acceptable when clean and safe.
+
+**Additional review rules:** align `printf` conversion with actual integer type (e.g. `%u` for unsigned `guint16`); give malformed-length expert fields their own filter abbreviations instead of colliding with a registered normal field; and check field metadata length against every `proto_tree_add_item` read (Martin found a two-byte read registered as `FT_UINT8` in !8925). **Confidence:** very high for direct maintainer advice and merged protocols, with the non-mandatory nature of the helper preference preserved.
