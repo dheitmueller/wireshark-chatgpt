@@ -21,3 +21,9 @@ In the discussion on !9957, Chuck Craft reported that an enabled Follow submenu 
 **Evidence qualification:** this is explicit authoritative **post-merge UI feedback**, not proof that every subsequently shipping branch implements the disabled-empty-menu behavior. Check current UI source before treating it as implemented.
 
 **Confidence:** High for the usability direction (direct John Thacker feedback), with implementation status intentionally left unasserted.
+
+## Follow Stream consumers should query registered follower capabilities, not the historical enum
+
+John Thacker's merged !9540 removes the dialog's cached `follow_type_t` member and replaces a switch over TCP/UDP/etc. with a check for the resolved `register_follow_t *follower_`. Protocol-specific failure text can be obtained through `get_follow_proto_id(follower_)` rather than enumerating a special case such as QUIC. Its preceding merged !9531 removes the `FOLLOW_TCP` conditional around cleanup of `follow_info_.fragments[0..1]`: the fragment lists are initialized and null on protocols not using them, so freeing the actual stored lists is safer than guessing from a protocol enum.
+
+**Rule:** Once a registration/capability object is available, use its presence and its own data to drive UI and cleanup logic. Avoid closed-protocol switch statements that must change for every new follower; a data structure's lifetime should not depend on an unrelated hard-coded type guard. These 2023 changes are precursors to the more comprehensive accepted plugin registration work in !9957. **Confidence:** Very high (merged John Thacker implementations, later architecture consistent).

@@ -45,3 +45,9 @@ Merged master MRs !15108 and !15120, both authored by John Thacker, apply this t
 **Performance rule:** for expensive capture-wide operations such as retaps, prefer explicit dirty/invalidation state over unconditional refresh on every visibility or configuration transition. Ensure every configuration change that affects collected data sets the dirty state; changes that affect presentation only should not trigger a capture-wide recomputation.
 
 **Confidence:** Very high. Two merged master changes authored by John Thacker distinguish semantic retap requirements from visibility-driven work and implement explicit deferred invalidation.
+
+## Qt selection and current-index state are different notifications
+
+John Thacker's merged master !9548 and maintained-branch backports !9547/!9546 fix `PacketList::drawCurrentPacket()`. `QItemSelectionModel` has both the **current** index and the **selected** indices. Clearing only the current index before calling `setCurrentIndex(index, QItemSelectionModel::SelectCurrent | QItemSelectionModel::Rows)` can emit `currentChanged` but not `selectionChanged` when the same row was already selected. The packet list redraw path listened for selection changes, so reselecting the current packet could fail to refresh it. The accepted fix uses `clearSelection()`.
+
+**UI rule:** Make the state mutation match the signal to which the consumer is subscribed. Verify repeated selection of the same row, clearing current versus selected state, and callbacks that depend on `selectionChanged`; a visually similar Qt API can have materially different notification semantics. **Confidence:** Very high; merged John Thacker master fix and two backports.

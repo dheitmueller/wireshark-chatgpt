@@ -127,3 +127,15 @@ Merged master MR !9795 (Tomasz Moń) teaches the USBLL dissector to finish trans
 **Implementation rule:** model error/abort/terminal handshakes explicitly in the reassembly state machine, including acknowledgment and direction. Do not append unacknowledged bytes or synthesize a completed PDU in the wrong direction. Verify normal termination, early STALL, split transfers, acknowledged vs unacknowledged final data, and redissection behavior.
 
 **Confidence:** High. Merged protocol-specific correctness fix; the general terminal-event/acknowledgment invariant is portable, while exact USB state names are not.
+
+## Address and endpoint lifecycle boundaries must terminate prior USB transfers
+
+Merged !9554 (Tomasz Moń) resets USBLL endpoint state on a validated SET_ADDRESS request for a nonzero device address so a new logical device cannot inherit an earlier device's reassembly/retransmission history. Endpoint 0 remains control; other endpoints reset to unknown. The accepted code intentionally does **not** reset the default address 0 on SET_ADDRESS because only control transfers are legal there and the already learned max control-packet size must remain available.
+
+**Rule:** Key reassembly state by both logical identity and the lifetime in which that identity is valid. Explicit protocol identity resets/reassignments must invalidate old fragment state, with narrowly documented exceptions for negotiated state required for continued decoding. Test reuse of addresses, reset boundaries, new transfers, and redissection. **Confidence:** High (merged USBLL correctness fix).
+
+## Beware quadratic deduplication in dependency tracking
+
+John Thacker's merged !9538 added duplicate suppression for frame dependencies with a linear `g_slist_find` check before appending; Tomasz Moń reported a real capture becoming unusably CPU-bound and linked the regression to this change. A later accepted !9622 replaced the repeatedly scanned dependency list with hash-based tracking, eliminating the reported high-CPU behavior.
+
+**Performance rule:** A logically correct uniqueness check is not sufficient on an unbounded per-frame dependency collection. For high-fanout captures, choose an expected-O(1) membership structure when appends/queries repeat, and include a stress capture in regression evaluation. Evaluate the later corrective implementation as stronger evidence than the initially merged slow version. **Confidence:** Very high for the documented regression and successor fix; both issues are explicitly cross-linked in the discussion.

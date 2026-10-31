@@ -23,3 +23,11 @@ Merged master MR !16372, authored and merged by John Thacker, adds a `TRIED_RESO
 **Invalidation/precedence rule:** define when negative state is reset and preserve the intended precedence among resolver sources. Avoid broad masks that collapse “resolved elsewhere”, “attempted here and failed”, and “not attempted because disabled” into one state when those cases lead to different future behavior.
 
 **Confidence:** Very high. Merged master implementation authored and merged by John Thacker, contrasted directly with a closed competing draft whose semantic flaw John identified.
+
+## Parsed pcapng Name Resolution Blocks must survive and be replayed on redissection
+
+Merged master MR !9550 (John Thacker) makes IPv4/IPv6 address/name entries mandatory data owned by each `WTAP_BLOCK_NAME_RESOLUTION` rather than treating a one-time parsing callback as their only representation. Wiretap's new NRB processing helper replays accumulated entries whenever a name-resolution callback is registered. In `file.c`, a redissection resets the IPv4/IPv6 callbacks alongside the DSB secrets callback after the prior `epan` context is discarded. The packet-only reread does not necessarily reread NRB records, so without replay names previously present in the file would disappear.
+
+**Architecture rule:** Persist non-packet metadata at the file-reader/block lifetime, replay it when a consumer's cache or dissection context is recreated, and free the owned records with the block. Test names before the first packet, between packets, after packets, and after redissection.
+
+**Scope qualification:** !9550 did **not** implement full NRB deep-copy/serialization for writers (the proposed mandatory-data copy routine remained disabled); do not mistake its replay behavior for a guarantee that an arbitrary capture transform preserves NRBs. Related later accepted NRB work appears in !9573, !9608 and !9669. **Confidence:** Very high for the reader/redissection invariant (merged John Thacker implementation); later MRs qualify output preservation.

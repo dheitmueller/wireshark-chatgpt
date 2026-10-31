@@ -53,3 +53,11 @@ In Gerald Combs's merged macOS MR !9730, ChmodBPF and path_helper uninstall scri
 Merged !9566 fixes a personal extcap path relocation whose earlier work had changed the documented folder but left `extcap_get_extcap_paths()` reading the old personal configuration path. The accepted code uses `get_extcap_pers_dir()` for runtime discovery. Merged !9565 separately demonstrates that RPM `%docdir` only *marks* a directory as documentation; the spec still needs an explicit file-list entry for `%{_datadir}/doc/wireshark`.
 
 **Rule:** migrate the runtime producer/consumer path with the public documentation and upgrade behavior; verify actual feature discovery from the new path and fallback behavior. In RPM specs distinguish metadata declarations from package ownership so installed directories are represented explicitly. **Confidence:** high; merged targeted fixes.
+
+## Personal extcap paths and documentation moves need end-to-end validation
+
+Merged !9559 (João Valverde) moves the advertised personal extcap folder from the configuration directory toward the per-user plugin location and adds release notes. Gerald Combs requested those release notes during review. This **was not the complete runtime fix**: later merged !9566 corrected `extcap_get_extcap_paths()` to use the new location. Do not treat a new `get_extcap_pers_dir()` accessor or an updated About dialog as proof that extcap discovery uses the new path.
+
+Merged !9513 moves HTML help documentation to `DOCDIR` and updates installation manifests plus help-URL/path consumers; !9533 follows up on PDML/XSL documentation paths. These changes have platform-specific scope (Unix/FHS versus Windows), and !9513 explicitly called out the need to test macOS packaging.
+
+**Review rule:** For installed-path migrations, trace producer, packaging manifest, runtime discovery/help consumers, release notes, and supported-platform fallbacks as separate obligations. Verify with fresh installs and upgrades on representative platforms. **Confidence:** Very high for the cross-component rule, based on merged initial changes and corrective follow-up !9566.

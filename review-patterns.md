@@ -187,3 +187,9 @@ Before submitting one of our Wireshark MRs, check and, where useful, state in th
 ## Review-access note
 
 Use the local JSON corpus in `dheitmueller/wireshark-corpus-mrs` as the preferred source for MR mining. It contains MR metadata, full discussions (including DiffNote `position` objects), changes/diffs, commits, and diff-version metadata, avoiding dependence on GitLab web indexing while preserving review context.
+
+## A merged MR can be contradicted by an immediate revert or a later performance fix
+
+MR !9512 was merged before its initial pipeline ran; its O-RAN `FT_STRING` item carried an invalid nonzero mask, a user reported a Wireshark break, and merged !9516 reverted the change. John Thacker's direct field-registration feedback remains valid, but the reverted implementation is **negative** evidence, not a style example. Separately, merged !9538 introduced duplicate frame-dependency checks using a linear list scan; a real capture triggered severe CPU usage and the later merged !9622 used hash-based dependency tracking instead.
+
+**Mining/review rule:** Never equate the GitLab state `merged` with continued implementation correctness. Check the discussion for late bug reports, near-term follow-up MRs and reverts, and give the surviving correction more weight. For additions to per-frame/per-packet hot paths, look for asymptotic regressions, not just code-level validity. **Confidence:** Very high: both original MRs were merged, both had explicit adverse follow-up and corrective accepted changes.

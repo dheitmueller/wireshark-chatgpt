@@ -105,3 +105,15 @@ Merged master MR !9846, authored by Guy Harris, corrects Gryphon IOCTL response 
 In merged SMPP MR !9732, Gilbert Ramirez questioned `smpp.command_type` as an FT_BOOLEAN: neither `smpp.command_type` nor `!smpp.command_type` makes request/response meaning obvious. He suggested a predicate such as `smpp.is_command` or an enum. The accepted revision instead adds separate, visible, generated `smpp.request` and `smpp.response` presence fields.
 
 **Rule:** Choose meaningful Boolean predicates or category-presence fields; reserve a `*_type` identifier for a multi-valued semantic classification. **Confidence:** Very high; explicit Gilbert review implemented in merged code.
+
+## Frame-number fields should encode the direction of the relationship
+
+In merged !9544, John Thacker adds `FRAMENUM_TYPE(FT_FRAMENUM_RESPONSE)` to GTP/GTPv2 `response_in` fields and `FRAMENUM_TYPE(FT_FRAMENUM_REQUEST)` to `response_to` fields. These retain `FT_FRAMENUM` values but tell Wireshark's presentation layer which kind of related frame is referenced, enabling the appropriate navigation symbols/arrows.
+
+**Implementation rule:** For cross-packet reference fields, register the semantic relationship as well as the frame number; check request and response arrows in the packet tree. **Confidence:** Very high (merged John Thacker change).
+
+## Attach generated-packet diagnostics to the item that actually exists
+
+Merged CIP analysis MR !9542 (Dylan Ulis) builds generated connection-information subtrees and displays matching Forward Close frames or an expert diagnostic when no close was observed. Gilbert Ramirez specifically caught a call-site issue: an expert annotation should be made only in the branch that created the corresponding `proto_item *pi`, not unconditionally outside it; the author fixed this before merge.
+
+**Review rule:** A generated field, stored cross-packet state, and its expert indicator have distinct lifetimes and source ranges. Attach expert information to the precise existing item that represents the condition, and guard optional fields instead of reusing a stale/null item pointer. **Confidence:** High (merged implementation with explicit Gilbert Ramirez correction).

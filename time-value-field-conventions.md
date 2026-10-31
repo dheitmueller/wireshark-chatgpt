@@ -31,3 +31,9 @@ Merged !15574, authored and merged by Guy Harris, introduced a Zigbee ZCL time e
 **Review rule:** whenever adding a new epoch, test at least one value at the epoch, one value on each relevant side of the Unix epoch when representable, and the supported field widths. Audit whether the helper stores a signed offset, an epoch timestamp, or an unsigned magnitude plus an implicit operation; post-Unix epochs are a particularly useful test of whether the abstraction is sound.
 
 **Confidence:** High for the semantic-naming rule (two merged Guy Harris changes with explicit rationale). High as a review caution for the signed/directional epoch rule: it is based on a merged implementation plus later substantive John Thacker review that exposed the abstraction risk, not on a later corrected MR in this batch.
+
+## Register custom numeric presentation when formatted values must work in columns
+
+Merged master MR !9527 (John Thacker) corrects DHCP time-option presentation: replacing `proto_tree_add_int_format_value()` and `proto_tree_add_uint_format_value()` with registered `BASE_CUSTOM` fields using `CF_FUNC(...)` plus ordinary `proto_tree_add_item()` makes the intended human-readable seconds value available in custom columns, not only in the packet tree. Keep the underlying `FT_INT32`/`FT_UINT32` semantic value, distinguish signed Time Offset from unsigned timeouts, and render the protocol's `0xffffffff` infinity sentinel explicitly.
+
+**Implementation rule:** If a field's formatting must be consistent in packet details and column output, express that formatting in the registered field display contract when the branch's API supports it. Preserve filterable numeric identity and test normal, signed, boundary and sentinel values in both UI surfaces. **Confidence:** Very high for this historical implementation (merged John Thacker change); check current branch display APIs before blindly copying older helpers.

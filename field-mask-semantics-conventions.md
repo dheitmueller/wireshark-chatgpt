@@ -35,3 +35,9 @@ Merged master MR !9789 (Martin Mathieson) extends `tools/check_typed_item_calls.
 **Implementation/review rule:** derive every bitmask member's containing width from the actual on-wire parent field, check the width of the **whole array**, and run the typed-item checker after changing related registrations. Do not treat mask magnitude or `FT_BOOLEAN` alone as proof of a matching container width; validate both the parent and each member with asymmetric bit patterns.
 
 **Confidence:** Very high. Merged mainline cross-dissector cleanup plus mechanical checker enhancement by Martin Mathieson.
+
+## Structural labels are not masked string fields; check corrective merges
+
+Merged master !9512 added an O-RAN `bfwCompHdr` grouping item using `FT_STRING` with a nonzero `0xf0` mask while inserting an empty string. John Thacker explicitly identified that the mask must be zero for `FT_STRING` or `FT_NONE` and preferred `FT_NONE` for a structural item with no real string value (including its more useful presence/checkmark behavior in a custom column). The original change was merged before its pipeline ran, a build break was reported, and merged !9516 reverted it. **Do not use !9512 as an accepted implementation exemplar** merely because its state is `merged`.
+
+**Rule:** Match a grouping field's registered type to its actual semantics, keep masks at zero for `FT_STRING`/`FT_NONE`, and do not fabricate a string value solely to create a subtree. Run field-registration checks and CI before merge; treat the revert and specific maintainer correction as more authoritative evidence than the original merge. **Confidence:** Very high for the invalid-mask rule (direct John Thacker review and revert); the `FT_NONE` preference is an explicit reviewer recommendation, not a corrected implementation in this pair.
