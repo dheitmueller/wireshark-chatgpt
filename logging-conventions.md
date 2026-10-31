@@ -54,3 +54,11 @@ Merged master MR !9831 adds the Developer's Guide logging section. João Valverd
 Merged !9108 (João Valverde) rebuilds the invalid-UTF-8 log renderer in `wsutil/wslog.c` around a rendered-text buffer and a parallel underline buffer. It validates code points with `g_utf8_get_char_validated` using the explicit remaining source length, escapes an invalid byte as `\\xNN` and marks four underline positions, and accounts for the rendered width of nonprintable Unicode escapes. João's review specifically directs use of `src_length` rather than an unbounded character scan. The patch also adds `wmem_strbuf_append_c_count` and a focused buffer test.
 
 **Rule:** diagnostic pointers and sizes are byte-bounded even if the presentation is Unicode; annotations must align with *rendered* characters/escape widths rather than original input-byte indexes. Include a test with malformed/trailing UTF-8, printable and unprintable valid code points, and source strings without a terminating NUL in the supplied span. **Confidence:** very high, accepted implementation and specific author review.
+
+## Treat standard-stream file descriptors as optional under logging initialization
+
+Merged master **!8980**, with stable-branch **!8981**, checks `fileno(stdout)` and `fileno(stderr)` before passing the descriptors to `g_log_writer_supports_color()`: `fileno()` may fail (for example on detached or redirected standard streams), and GLib asserts when passed a negative descriptor. The patch avoids requesting color capability for an invalid descriptor.
+
+**Rule:** do not assume stdout/stderr always have valid native descriptors, especially in GUI, detached and service contexts. Validate the descriptor or stream handle before querying tty/color capabilities or calling APIs that require nonnegative values. A failed capability probe should degrade to no-color/logging fallback, not terminate initialization.
+
+**Confidence:** High, accepted original and matching stable backport.

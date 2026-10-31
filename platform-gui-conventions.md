@@ -148,3 +148,11 @@ Merged release-3.6 !9462 (Gerald Combs) adjusts I/O Graph and Sequence dialogs a
 Merged !9121 (Roland Knall) fixes the Packet Comments shortcut being unavailable until its menu had been shown or a packet selected. Both Wireshark and Logray register the action and shortcut at window construction, before the menu's aboutToShow refresh. The author deliberately avoids adding the action in .ui files merely to prevent an unrelated translation refresh.
 
 **Rule:** if a shortcut must work immediately, create/register its QAction before any lazy menu-rebuild callback. Test fresh launch with no selection as well as an already opened menu, and apply shared interaction fixes in both GUI frontends. **Confidence:** high (merged bug fix).
+
+## Creating native Qt windows can break other display backends
+
+Merged **!8971** used `winId()` in a ByteViewText constructor before connecting `QWindow::screenChanged` to repaint packet bytes, addressing a reported multi-monitor/high-DPI bug. **Gerald Combs** noted that `winId()` might be forcing native window creation and suggested deferred lifecycle wiring as an alternative. **John Thacker** reported severe packet-list scrolling regression under **Qt 6 Wayland** (not `QT_QPA_PLATFORM=xcb`) and linked Qt limitations of `winId()` on Wayland, with later corrective **!11677**. A reproducer subsequently withdrew initial positive Windows test claims because the comparison confounded Qt/build revisions.
+
+**Rule:** do not force native handles merely to obtain a screen-change notification without checking Qt backend lifecycle requirements. Test X11/xcb, Wayland, macOS and Windows multi-monitor scenarios with the *same base build* and explicit scaling values. Measure packet-list scrolling, not just pixel rendering. Treat !8971 as historical negative evidence despite its merge; consult !11677 for the later solution.
+
+**Confidence:** Very high for John Thacker's detailed platform-specific regression and the controlled-comparison lesson.

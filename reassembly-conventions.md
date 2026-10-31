@@ -157,3 +157,11 @@ Merged master !9327, authored by Gerald Combs, replaces DISSECTOR_ASSERT in tcp_
 Merged !9149 (Sake Blok) moved dependent frame lists out of transient packet_info into frame_data, reworked mark_frame_as_depended_upon() callers, and traversed ancestors for filtered save. This retried previously reverted !6329/!6509 work after a crash could no longer be reproduced. The later !9414/!9538/!9622 record demonstrates that graph recursion, duplicate membership and asymptotic work still required corrections. The original successful merge therefore proves the frame-lifetime requirement, not that recursive GSList traversal is safe at scale.
 
 **Rule:** preserve dependency edges for the lifetime of each frame and close the transitive graph, but maintain visited/deduplication state and test deep, cyclic-looking or repeated paths on real captures. Treat follow-up correctness/performance fixes as part of the feature's acceptance evidence. **Confidence:** high for the ownership invariant; lower for !9149's original recursion algorithm.
+
+## Do not blanket-reclassify late retransmissions without real capture regression checks
+
+Closed/unmerged **!9004** tried to mark fragments received after completed defragmentation as overlaps instead of throwing, while changing reassembly unit tests and expert-output expectations. **Tomasz Moń** demonstrated an actual SMB capture in which previously valid packet 109400 of `fuzz-2016-12-22-32089.pcap` became `[Illegal Segments]`. The author later characterized the approach as superseded by an opt-in `fragment_add_check_with_fallback()` path associated with **!8931**, and **Anders Broman** invited rebase/reopening only if still relevant.
+
+**Rule:** prefer an explicitly named API for special retransmission tolerance rather than silently changing the global fragment engine's meaning for every consumer. Validate both expected duplicate-fragment handling and unrelated protocols that share the engine; verify expert severity and packet-tree interpretation, not only reassembly completion. **Do not** use !9004 as an accepted implementation precedent.
+
+**Confidence:** High for the concrete negative regression report and closed status; the ultimate accepted behavior of !8931 is not independently established by this batch.

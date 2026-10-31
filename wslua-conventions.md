@@ -29,3 +29,13 @@ Merged master MR !9823, authored by Gilbert Ramirez and merged by Martin Mathies
 **Implementation rule:** distinguish a documented sentinel from other negative values; validate native-side signed lengths before adding offsets or casting to unsigned. Report script misuse through Lua's error boundary instead of passing a malformed range to TVBuff operations.
 
 **Confidence:** High: merged WSLua correctness fix with maintainer approval.
+
+## Avoid proliferating redundant ByteArray APIs; test binding metadata and signed boundaries
+
+Merged master **!8997** added fixed-width and endian-specific Lua `ByteArray` integer readers. **Stig Bjørlykke** immediately challenged duplicating the existing `ByteArray:tvb():range(...):int()` family, asked for consistent names and generic `(le_)?u?int(offset,length)` / `(le_)?u?int64(offset,length)`, and subsequently reported that **!11757** implemented those naming/API changes. The author argued that `ByteArray:tvb()` is unavailable during initialization and supplied a 100,000-iteration *microbenchmark* showing an approximately 419-fold difference for this particular conversion-heavy path; that figure should not be generalized without representative measurements.
+
+The merged !8997 code's `WSLUA_ARG_ByteArray_get_index_INDEX` macro used another method's identifier, breaking generated `make-wsluarm.py` documentation; **Chuck Craft** traced and linked the correction in **!9342**. Subsequent unit-test work exposed a negative-integer handling bug. These post-merge problems materially narrow the original merge's evidentiary value.
+
+**Rule:** before introducing a scripting API, audit an equivalent `TvbRange` or subset API, execution-phase availability, consistency with the rest of WSLua and realistic performance. Keep generated argument-ID prefixes aligned with the containing method; exercise documentation generation as part of CI. Test unsigned and signed values (including negative values), each supported width/endian, offset/length boundaries, and Lua initialization vs dissector contexts. Prefer later corrections !11757/!9342 to copying the original !8997 interface.
+
+**Confidence:** Extremely high for Stig's maintainer feedback and observed generator failure; medium for performance magnitude outside the supplied microbenchmark.

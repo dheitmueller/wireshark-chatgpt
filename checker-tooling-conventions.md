@@ -63,3 +63,11 @@ Merged master !9234 adds an optional `tools/check_tfs.py --check-value-strings` 
 **Checker rule:** distinguish correctness violations from optional canonicalization, and severity-rank approximate matches below exact ones. Before making an advisory scan CI-blocking, inventory and address its baseline; accommodate generated sources and plugin linkage boundaries rather than recommending an unavailable dependency. A merged optional diagnostic is not evidence that its results are project-wide mandatory errors.
 
 **Confidence:** Very high: direct Jaap Keuter review and Martin Mathieson implementation/CI comments, with final merged diagnostic levels.
+
+## Bitmask-array lint must confirm that the array is actually used as a field list
+
+Merged master **!8993** adds optional `--check-bitmask-fields` to `tools/check_typed_item_calls.py`, searching static field-pointer arrays for duplicate elements and missing NULL termination. The new code itself notes that similarly shaped arrays have other legitimate purposes and that a later revision should cross-reference actual `proto_tree_add_bitmask*()` argument positions. The patch also removes a duplicate CFDP field entry.
+
+**Rule:** treat regex-based shape detection as an advisory candidate generator until it confirms the array is used in the API whose invariant is being enforced. Do not promote false-positive-prone scans to required CI checks merely because a merged diagnostic exists. Prefer checking the declared container's terminator, element uniqueness and the call-site semantic role together.
+
+**Confidence:** High for the observed error patterns and explicitly documented checker limitation; implementation is an incomplete historical baseline.

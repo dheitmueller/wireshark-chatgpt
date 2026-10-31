@@ -83,3 +83,11 @@ Merged MR !9919 also corrects the RTP SSRC field in `sharkd` tap results from a 
 Merged !9203 changes preference-file syntax diagnostics in `read_prefs_file()` from `ws_warning()` (normally only the console/log) to `report_warning()`, which Wireshark can surface through its GUI reporting mechanism. The MR's motivating case was a user who could not understand why migrated custom columns did not load because the original warning was effectively invisible.
 
 **Reporting rule:** choose the diagnostic API for the intended audience and failure class. An error that prevents user-provided configuration from loading should be discoverable to the interactive user, including a preference name, line number, and source path, rather than being emitted only as developer telemetry. Preserve CLI usefulness and avoid modal/pop-up behavior for routine nonerrors. **Confidence:** High, merged focused user-facing correctness fix.
+
+## Failure contracts must initialize both the status and diagnostic result
+
+Merged master **!8962** adds `dfw_error_set_msg(errpp, ...)` to the fallback branch of display-filter compilation failure. Previously `dfilter_compile_real()` could fail with no message when an unexpected parser state left `dfw->error.msg == NULL`, despite logging a critical diagnostic.
+
+**Rule:** any API promising an error object on failure must populate it on *every* failure path, including unexpected internal fallback paths. Logging is not a replacement for propagating an actionable error to the caller, and the error result must remain safe for the caller to free. Test deliberately malformed expressions and exceptional compile failures for both status and non-NULL diagnosis.
+
+**Confidence:** High; merged, narrowly scoped correctness fix.

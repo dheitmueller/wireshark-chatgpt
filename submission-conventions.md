@@ -199,3 +199,13 @@ Merged !9062 adds pcapng Darwin Flow ID and Wake Packet flag decoding. Martin Ma
 ## Avoid unnecessary rebase churn and resolve independent reviewer concerns distinctly
 
 Closed/unmerged !9048 received **Alexis La Goutte's** requests for an Arista TGen capture, a separate MetaMako change, and specific static-check/filter-abbreviation corrections. **Jaap Keuter** additionally asked the contributor to limit manual rebasing to roughly once daily because repeated rebases strained CI/infrastructure; the author had mistaken manual rebase for a mandatory step in the merge workflow. **Review rule:** do not mechanically rebase each time an MR changes state; respond to reviewer requests, keep protocol features and unrelated fixes separable, and supply focused captures. The closed patch is process evidence only, **not** an accepted design. **Confidence:** high for direct maintainer instructions.
+
+## Use a named topic branch and keep unrelated fixes out of protocol patches
+
+Closed/unmerged MP-DCCP **!8982** drew **Alexis La Goutte** feedback about `proto_tree_add_item()`, option-length parsing, commit identity, rebasing and the required setting allowing maintainer pushes. When the contributor found that maintainer collaboration was unavailable for a protected fork default branch, Alexis explained that they must create a *non-master topic branch*; the author planned a new MR. The later merged MP-DCCP **!9013** is more authoritative for the protocol implementation.
+
+Merged **!8963** fixes EAP conversation endpoints; **Anders Broman** and **Gerald Combs** explicitly insisted on moving an unrelated Qt/GCC workaround to its own MR (later **!9260**). Closed **!8998** likewise shows Anders favoring integration with Wireshark's existing CMS ASN.1 support over an obsolete standalone plugin proposal.
+
+**Rule:** submit focused branches rather than a fork's protected/default branch, preserve maintainer collaboration, correct author identity and obtain applicable builds/tests. Keep orthogonal compiler or UI fixes in separate MRs; prefer existing protocol-generation/integration architecture to duplicative plugins. Closed proposals provide review-process lessons but not accepted design.
+
+**Confidence:** Very high for direct Alexis/Anders/Gerald feedback; low for treating either closed patch's implementation as canonical.

@@ -47,3 +47,11 @@ Merged !9108 (João Valverde) changes wmem string-buffer append paths to call `w
 Merged master !9090 (João Valverde) replaces a fixed-size SIP CSeq method buffer with an encoding-aware `proto_tree_add_item_ret_string(..., pinfo->pool, ...)`, avoiding fixed-buffer UTF-8 truncation. However, it also stored the packet-allocated `const char *` directly in long-lived SIP transaction state. The later merged John Thacker fix !9114 repairs an ASAN heap-use-after-free by using `wmem_strdup(wmem_file_scope(), cseq_method)` before retaining the pointer. **Treat !9114, not !9090 alone, as the accepted final lifetime precedent.**
 
 **Rule:** an allocation-safe string extraction is not automatically lifetime-safe. For any value retained in conversation/file scope, copy packet-scoped returned strings into a matching longer-lived allocator. Test redissection and transaction reuse with ASAN. **Confidence:** extremely high, observed regression and specific merged repair.
+
+## Do not bound UTF-8 output by silently truncating an arbitrary byte count
+
+Merged master **!8964** removes the `max_size` parameter from `wmem_strbuf_sized_new()`, renames the constructor `wmem_strbuf_new_sized()`, and simplifies append/format growth. The old maximum counted **octets**, not Unicode characters, and could silently cut a multibyte UTF-8 character. **Gerald Combs** explained that the original cap was intended as protection against runaway appends and accepted removing it because it introduced worse behavior.
+
+**Rule:** keep initial allocation capacity separate from output limits. If policy demands a finite output budget, enforce it explicitly at the producing parser/loop or truncate at valid code-point boundaries with a clear visible indication, not through an implicit cap inside a generic UTF-8 string buffer. Maintain `len`, `alloc_size` and NUL-termination invariants across retry-after-growth formatting, and avoid assuming unbounded appends are safe simply because an API no longer enforces a maximum.
+
+**Confidence:** Very high: merged cross-tree API migration with direct project-founder explanation of the original safety rationale.

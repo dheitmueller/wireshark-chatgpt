@@ -15,3 +15,11 @@ Merged master MR !11092 adds two checks to the SAP HANA SQL Command Network Prot
 **Review rule:** for each proposed heuristic check, ask two questions separately: (1) how much does this reduce plausible false positives, and (2) what malformed-but-recognizable protocol traffic would it hide? The appropriate boundary is recognition, not full conformance validation.
 
 **Confidence:** High. Merged master heuristic correction approved/merged by Alexis La Goutte, with the false-positive/debuggability tradeoff stated directly in the accepted MR rationale.
+
+## Separate dissector recognition from tree mutation and preserve sliced-packet diagnostics
+
+Merged master **!8978** (John Thacker), with matching release backports **!9009/!9010**, adds a pre-dissection predicate to the NXP 802.15.4 UDP/49999 dissector because the port is not registered and may carry unrelated traffic. It probes an ASCII NUL-terminated identifier with `tvb_strsize()`, a constrained channel, an IEEE 802.15.4 frame-size range, and equality with `tvb_reported_length_remaining()`. Bounds exceptions in the probe cause a declined match; it does not first add fields and then return zero. **Guy Harris** explicitly recommended using **reported**, rather than captured, remaining length: recognizable packets sliced by the capture mechanism should reach the dissector and produce appropriate short-frame diagnostics. He also asked to compare the wire length field with the remaining reported bytes.
+
+**Rule:** a heuristic must make its identity decision *before* adding protocol-tree items or changing columns. Distinguish `captured_length` (available bytes to read) from `reported_length` (actual packet length) so capture truncation is not mistaken for another protocol. Catch bounds errors in the recognition probe, while considering the resulting false-negative tradeoff for truly sliced packets. Treat positive recognition as permission for normal dissection and malformed-data diagnostics, not proof of full packet validity.
+
+**Confidence:** Very high for the accepted master change and especially Guy Harris's direct reasoning; do not infer that every suggested truncated-header edge case was tested by the MR.

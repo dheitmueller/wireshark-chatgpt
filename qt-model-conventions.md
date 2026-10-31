@@ -123,3 +123,11 @@ Merged !9143 (Tomasz Moń) replaced unbounded per-record QString column retentio
 Merged !9105 (Chuck Craft) fixes a Conversations-table crash when the user right-clicks below the last row. The selected row is `-1`, and a guard that checked only `row >= storage_->len` permitted invalid indexing. The accepted `ui/qt/models/atap_data_model.cpp` guard tests `row < 0` as well as the upper bound and missing storage.
 
 **Rule:** validate both sides of an index range when converting UI coordinates or selection indexes to direct container offsets. Test context menus on cells, empty viewport space and completely empty models; the absence of an item is a normal UI event, not malformed model state. **Confidence:** high, merged one-line crash fix.
+
+## A list-reordering feature must preserve view selection and model notification
+
+Merged Qt **!9011** adds Move Up/Down controls to IO Graphs. Its handlers swap entries in the `ioGraphs_` collection, rebuild the UAT view as needed and keep controls disabled without a valid row. **Gerald Combs** supported the feature while flagging accidental UI text and warning that adding controls further crowded the dialog.
+
+**Rule:** when adding model-backed row reordering, enforce end-row boundaries, preserve the logical selected item through the move, and keep model/view state and button enablement synchronized. Review toolbar density and existing accessibility/interaction conventions as well as correct data movement. A small UI addition can deserve a broader layout evaluation without blocking useful behavior.
+
+**Confidence:** High for merged implementation; maintainers did not establish an absolute preferred layout.

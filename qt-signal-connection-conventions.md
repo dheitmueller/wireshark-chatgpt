@@ -39,3 +39,11 @@ A default direct Qt action connection can enter an unsafe synchronous call chain
 **Merged master !9394**, authored by **John Thacker**, fixes ColoringRulesDialog: Qt Designer had a button-box `accepted()` → `accept()` connection while an auto-connected `on_buttonBox_accepted()` slot was also writing the rule file. The dialog could close and trigger packet-list recoloring before its new colors were saved. The fix removes the UI-file connection and lets the persistence slot call `done(QDialog::Accepted)` only on success, or `done(QDialog::Rejected)` after reporting failure. Accepted backports !9395 and !9396 corroborate the behavior.
 
 **UI rule:** for dialogs whose acceptance triggers consumers of edited state, establish a single controlled accept path; perform validation/persistence first, then publish the accepted result. Audit both `.ui` signal connections and Qt auto-connected slot naming when diagnosing duplicate/out-of-order handlers. **Confidence:** very high, merged John Thacker fix and two release branches.
+
+## Modernize Qt connections together with action ownership and frontend parity
+
+Merged **!9008** replaces legacy Qt `SIGNAL`/`SLOT` string connections in multiple Qt widgets/models with typed member-function or lambda connections, including packet-list deferred work. Merged **!8996** explicitly connects Analyze-menu actions in both Wireshark and Logray rather than depending on Designer auto-connect names. **Martin Mathieson** later reported that the “Add as Column” context-menu action disappeared with a `QWidget::insertAction: Attempt to insert null action` warning after rebuilding.
+
+**Rule:** a typed connection makes signature errors easier to detect, but changing action identifiers and moving connections out of generated `.ui` files requires an audit of every menu and dynamically populated context menu that reuses the action. Test newly launched GUI, selection-dependent menus, keyboard shortcuts, Logray parity and both Qt versions. For deferred lambdas, preserve receiver lifetime and avoid capturing stack references. A merged bulk conversion is not proof that follow-up action regressions were absent.
+
+**Confidence:** High for accepted conversion style; very high that the post-merge null-action report warrants regression tests, without attributing all possible symptoms to one unseen cause.

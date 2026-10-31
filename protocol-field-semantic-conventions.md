@@ -139,3 +139,11 @@ Merged DECT-NWK Coverity fix !9190 widens the extended-location type mask from `
 Merged John Thacker master !9201 brings `FT_IPv4`, `FT_IPv6` and `FT_FCWWN` custom-field presentation through the shared `address_to_display()` name-resolution path. Its UI changes enable the custom-column resolution toggle for the newly resolvable field types and keep preference helper logic consistent with the runtime formatter.
 
 **Presentation rule:** a field's displayed label, custom-column value, optional name resolution, and UI capability flags must agree. Changing the formatting API alone is insufficient if users cannot select whether they want the resolved or numeric representation. Preserve distinct machine/filter values. **Confidence:** Very high; merged John Thacker cross-layer correction.
+
+## Separate protocol string values from escaped/display-only labels
+
+Merged master **!8990** clarifies `proto_tree_add_string()`'s API documentation: the passed UTF-8 string is the packet-derived **field value**, not a preformatted display label. Embedding `format_text()`-style escaping or markup in the value would change display-filter matching, obscure whitespace semantics and reduce the UI's freedom to render it appropriately. Related merged **!8969** converts an ICMPv6 DNS search-name representation to valid UTF-8 when adding it as a string, recognizing that raw DNS names do not prescribe a general text encoding.
+
+**Rule:** decide wire-byte decoding, value storage, and UI escaping separately. A string-valued field's searchable semantic value must not be overwritten with escaped or emphasized presentation text. Encode or normalize for the field contract, preserve original wire span where feasible, and leave label formatting to the presentation path.
+
+**Confidence:** Very high for the merged API-comment clarification; !8969 is corroborating protocol-specific behavior, not a universal DNS wire-encoding declaration.
