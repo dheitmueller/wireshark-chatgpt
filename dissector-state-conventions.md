@@ -154,3 +154,15 @@ This is an earlier direct example of the same principle later sharpened by !1076
 Merged master !9701 by Tomasz Moń fixes USB link-layer dissection state after random-access redissection. On the first pass, `usbll_create_data(pinfo)` sets the evolving global `usbll_data_ptr`; on a visited packet, `usbll_restore_data(pinfo)` supplies a **local** `usbll_data_t *data` to the decoding functions without overwriting that global pointer. The previous code made the current global state move backwards whenever an old packet was revisited.
 
 **Rule:** maintain a strict separation between the mutable first-pass frontier and a packet-scoped historical snapshot used to render a revisited packet. Pass the appropriate snapshot explicitly through subdissectors; do not assign historical state into a global that subsequent first-pass packets may consult. **Review tests:** sequential pass, revisit an earlier packet, then decode newer packets; compare state and outputs. **Confidence:** very high; merged master correctness patch.
+
+## Eliminate packet-derived global state and make its lifetime explicit
+
+Merged HTTP cleanup !9616 replaces a shared global `stat_info` with packet-scoped protocol data reachable through `packet_info`, and passes `pinfo` or `wmem_allocator_t *` explicitly to helpers. It also replaces ad hoc `wmem_packet_scope()` calls with `pinfo->pool`, following an earlier request from Evan Huus.
+
+**Rule:** when temporary data is about one packet, store it in that packet's protocol-data namespace and pass the packet or allocator to consumers. Do not silently expose last-packet state through globals; preserve reproducible redissection and prevent a nested dissection from overwriting a different packet's context. **Confidence:** high (merged master); the historical code's exact protocol-data key scheme is not a new API mandate.
+
+## Match dependent-frame data structures to their actual operations
+
+Merged !9622 replaces a linked list of dependent frame numbers with a hash table because order is irrelevant and long fragmented captures otherwise incur excessive lookup work. John Thacker caught a real GLib assertion: `g_hash_table_foreach` must not be called on a NULL table. The author retained lazy initialization and added NULL guards rather than eagerly allocating for every frame.
+
+**Rule:** use set-like structures when order is semantically irrelevant and many dependencies accumulate, but audit **all** callers, recursion, reset, and destruction for lazy-initialization invariants. Benchmark large reassembled captures and include frames with no dependencies. **Confidence:** very high (merged code plus John review and correction).
