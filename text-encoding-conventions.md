@@ -129,3 +129,27 @@ Merged **!8634** (John Thacker) uses `ENC_APN_STR` for GTP/GTPv2 FQDN elements s
 ## Provide a safe fallback for unmapped one-octet enumerations
 
 Merged **!8649** (João Valverde) introduces `char_val_to_str()` for S7Comm character-like value mappings. If an octet is absent from the value table, the helper formats the original value in hexadecimal instead of emitting invalid literal UTF-8. **John Thacker** requested the clearer name `char_val_to_str` rather than `ascii_val_to_str`, and the author adopted it. **Rule:** when a protocol field is an arbitrary octet, use a value-to-string fallback that preserves the numeric value; do not assume it is printable ASCII or interpolate a high-bit byte into a UTF-8 label. **Confidence:** very high, accepted helper and direct John review.
+
+## Keep encoded DNS labels opaque until the caller selects their text semantics
+
+Merged **!8572** (João Valverde) revises the `get_dns_name()` consumers in LDAP/Netlogon, SMB, GSUP, and DNS instead of imposing a single character set on a shared DNS-label decoder. The proposed universal ASCII conversion in **closed !8570** was withdrawn after **John Thacker** pointed out that Microsoft's LDAP encodes UTF-8 strings in RFC 1035-style compressed labels. The corrected master change keeps the shared DNS decoder's output as length-delimited opaque octets; each consumer applies its actual protocol's conversion and allocates a suitable result instead of copying decoded UTF-8 into a short fixed-size array. ASN.1 templates, generated sources, and dependent prototypes were updated together.
+
+**Rule:** framing syntax and text encoding are separate contracts. Do not force ASCII on a generic length-/label-decoding API just because most callers use ASCII-like identifiers. Carry the decoded octet length to the protocol-specific caller, then explicitly convert/validate the resulting text. A closed broad normalization proposal is not precedent for the merged caller-specific design. **Confidence:** very high, John Thacker's direct objection and the merged correction.
+
+## Decode hex-represented character sets in stages, using the specified alphabet
+
+Merged **!8604** (John Thacker) corrects UCP/EMI strings encoded as slash-terminated pairs of ASCII hexadecimal characters representing *unpacked GSM 7-bit alphabet codes*. The dissector first obtains bytes through `tvb_get_string_bytes()` with `ENC_ASCII|ENC_STR_HEX|ENC_SEP_NONE`, checks the delimiter/bounds, and only then calls `get_ts_23_038_7bits_string_unpacked()`; a previous hand-rolled fixed buffer and direct interpretation were inappropriate.
+
+**Rule:** parse the transport's textual hex representation first and subsequently decode the *actual underlying character set*. The two transformations have distinct offset, malformed-input, and output-size contracts. A hex dump is not automatically ASCII text or UTF-8. **Confidence:** high, merged John Thacker master fix.
+
+## Validate Unicode scalars only at the conversion boundaries that require it
+
+Merged **!8569** (John Thacker), revised following **João Valverde's** review, introduces `wmem_strbuf_append_unichar_validated()` as a distinct opt-in API rather than silently changing the contract of every generic `wmem_strbuf_append_unichar()` call. UCS-2/UTF-16/UTF-32 conversion uses it to replace unpaired surrogate code points and values above U+10FFFF, and appends U+FFFD for an odd trailing UCS-2 byte. João explicitly requested that error checking remain visible at call sites; the accepted design reflects that preference. UTF-8 decoder replacement rules need not be needlessly revalidated or duplicated.
+
+**Rule:** distinguish arbitrary code-point append operations from decoding untrusted input into valid Unicode scalar values. Select the validated append API explicitly in the latter case, with tests for invalid scalars, surrogate sequences, and incomplete trailing code units. **Confidence:** very high, direct João review and merged revised implementation.
+
+## A counted UTF-8 buffer can legitimately contain NUL bytes
+
+Merged **!8574** (João Valverde) changes `wmem_strbuf_utf8_validate()` to inspect the *full counted buffer*, skip embedded NULs as permitted payload octets, and continue validating bytes after them. `g_utf8_validate()` with an explicit length by itself rejects an embedded NUL. Unit tests exercise multiple NULs, an invalid sequence before/after a NUL, and the reported offending pointer.
+
+**Rule:** the caller must distinguish validating a counted string buffer from interpreting a NUL-terminated protocol string. An embedded NUL is not an invalid UTF-8 byte, but may still be a protocol-level terminator (e.g. pcapng option rules); do not generalize this buffer-specific behavior to all wire formats. **Confidence:** high, merged API implementation and direct unit tests.

@@ -69,3 +69,9 @@ Closed **!8923** proposed a separate `wmem_u8buf` API. **Guy Harris** questioned
 Merged **!8643** and **!8644** replace repeated `snprintf` calls into stack buffers with `wmem_strbuf_append_printf()` in IEEE 802.11 feedback-matrix and DSCP summaries; merged **!8646/!8647** carry the DSCP correction to maintained branches. The source-level bug is that an accumulated *would-have-written* count from `snprintf` can run past the remaining buffer and make the next pointer offset unsafe. Incremental append with allocator-managed capacity avoids that specific offset bookkeeping failure.
 
 **Temporal caveat:** the 2022 implementation used `wmem_strbuf_new_label()`, which later merged **!8933/!8946** replaced because an internal byte limit can silently truncate multibyte or protocol field values. Apply the **incremental formatting** lesson, not the obsolete capped-label-constructor choice. For protocol fields that must retain a complete value, use a normal scoped strbuf and let the UI clip its label. **Confidence:** very high for both merged fixes and the subsequent accepted correction.
+
+## Return the offset of the last completely consumed source token
+
+Merged **!8602** (John Thacker) fixes `hex_str_to_bytes_encoding()` so its end pointer advances only after both hex digits of an octet are valid and consumed. An unmatched terminal digit must not move the pointer because no corresponding output byte was produced. The same change makes `tvb_get_string_bytes()` report its *input starting offset* instead of zero when conversion fails; this permits callers to retry or report errors relative to their actual starting position.
+
+**Rule:** source character consumption and decoded output length are separate units. Do not report a partially examined token as consumed; return meaningful failure offsets in the caller's coordinate system, and test odd-digit, separator and malformed-input cases. **Confidence:** very high, merged master implementation.

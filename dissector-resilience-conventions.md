@@ -33,3 +33,9 @@ Merged MR !20646, authored and merged by Guy Harris, handles LDANeo picosecond t
 **Implementation rule:** optional numeric decoding should degrade explicitly. If an exact result cannot be computed on a supported build target, omit that derived value and report the limitation; never present an approximation as though it were the protocol value unless the protocol/API explicitly defines that approximation.
 
 **Confidence:** Extremely high. Merged master change authored and merged by Guy Harris, with the graceful-degradation behavior stated directly in the MR description.
+
+## Explicitly diagnose length values larger than Wireshark's offset type can represent
+
+Merged master **!8583** (Brian Sipos) fixes TCPCL 64-bit wire lengths used in paths expecting signed `gint` positions. It reuses a common `get_clamped_length()` helper to cap values at `G_MAXINT` before any narrowing arithmetic, and, where a tree item and `packet_info` are available, adds `tcpcl.length_clamped` Expert Info with an undecoded/error classification. Related unmerged Windows-fix alternatives **!8580** and **!8581** were closed, and reviewers identified additional 32-bit `unsigned long` and GCC `-Werror=clobbered` failures, addressed by later merged work (!8587 and !8622).
+
+**Rule:** if the protocol permits values wider than Wireshark's TVBuff offset/length domain, retain the full wire value for parsing/diagnostics, range-check before narrowing or addition, and explicitly report data that cannot be represented instead of silently wrapping. Re-check supported platforms and downstream test binaries after the first merge. **Confidence:** high for accepted clamping/Expert Info contract; a single merge is not proof the adjacent portability fixes were unnecessary.

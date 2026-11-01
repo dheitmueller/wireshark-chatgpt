@@ -81,3 +81,9 @@ Merged master !9115 and stable backport !9128 (John Thacker) ensure NBAP HS-DSCH
 ## Treat endpoint IDs as address objects when the protocol defines its own flow namespace
 
 Merged master !9054 makes BPv7 source/destination Endpoint IDs first-class `address` values, introduces `CONVERSATION_BP`, and reshapes bundle identity APIs and Debian symbol metadata. Bundle endpoint identity is not necessarily a TCP/UDP address pair; using the protocol's own typed address avoids forcing a network-tuple identity onto a different namespace. **Evidence limit:** the corpus omits the large `packet-bpv7.c` diff, so specific internal lookup mechanics were not independently established by this review. **Rule:** model the protocol's actual endpoint identifier and audit public structure/API changes and exported packaging metadata together. **Confidence:** high for the visible accepted header/enum/API change; narrower for unseen implementation details.
+
+## Use the protocol setup frame consistently across related multiplexed dissectors
+
+Merged master **!8571** (John Thacker), followed by merged release-4.0 backport **!8600**, corrects `srtcp_add_address()` to use `setup_frame_number` for both `find_conversation()` and `conversation_new()` instead of the current `pinfo->num`. This makes RTCP and SRTP agree when setup occurs together, including RTP/RTCP-multiplexed conversations.
+
+**Rule:** when control-plane signaling establishes a logical flow before or independently of the frame currently being dissected, use the *same recorded setup frame* in all related lookup/creation paths. Check both existing-conversation lookup and fresh creation; mismatching one path can split a single logical session. Test RTP+RTCP multiplexing and repeated redissection. **Confidence:** very high, merged John Thacker master and stable backport.

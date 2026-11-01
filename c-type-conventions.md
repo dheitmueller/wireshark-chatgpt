@@ -83,3 +83,11 @@ During review of merged !16450, Stig Bjørlykke explicitly requested retaining `
 **Implementation rule:** do not treat `gboolean`/`bool` or `TRUE`/`true` as mechanically interchangeable across dependency calls. Conversion scripts should exclude or specially handle dependency-owned API arguments, and reviewers should check the callee prototype when a bulk migration changes scalar types or boolean spellings at a library boundary.
 
 **Confidence:** Very high. Direct maintainer review plus two merged corrective follow-ups, consistent with independently reviewed later API-boundary evidence.
+
+## Match integer literal width and radix to the target ABI and protocol value
+
+Merged **!8587** (João Valverde) fixes Win64 varint test constants after assuming `1ul << 63` would be 64-bit. On Windows' LLP64 ABI, `unsigned long` remains 32-bit, making that shift invalid; `G_GUINT64_CONSTANT(1)` ensures a wide operand. A related proposal **!8586** was closed, so the merged fix is the implementation precedent. The broader TCPCL sequence !8583 and subsequent !8622 also encountered cross-platform warning-as-error and `setjmp`/`longjmp` clobber concerns, so a merged single-platform fix does not prove all target toolchains pass.
+
+Merged **!8597** (Gerald Combs) also demonstrates a *different* portability trap: replacing a nonportable CRC64 `%lx` with `PRIu64` preserved integer width but unintentionally changed the displayed hash from hexadecimal to decimal. Lewis Hamilton reported the regression after merge; the later merged correction **!8635** switches to `PRIx64`.
+
+**Rule:** use explicitly wide literal types before shifting, use the correct fixed-width formatting macros, *and* preserve the semantic radix of the field. Validate on Windows/MSVC as well as GCC/Clang; give post-merge regression reports and corrective commits greater weight than the initially merged but faulty display change. **Confidence:** very high for accepted corrective history.
